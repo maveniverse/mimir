@@ -15,6 +15,10 @@ import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.execution.MavenSession;
 
+/**
+ * Lifecycle participant that creates Mimir session early, as it may be costly operation (spawning a new Java process,
+ * or connecting to some cluster or whatever).
+ */
 @Singleton
 @Named
 public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant {

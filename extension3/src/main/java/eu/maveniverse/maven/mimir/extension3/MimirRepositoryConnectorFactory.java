@@ -16,6 +16,9 @@ import org.eclipse.aether.spi.connector.RepositoryConnector;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.transfer.NoRepositoryConnectorException;
 
+/**
+ * Factory for now "hard wraps" basic, but it should be made smarter.
+ */
 @Named(MimirRepositoryConnectorFactory.NAME)
 public class MimirRepositoryConnectorFactory implements RepositoryConnectorFactory {
     public static final String NAME = "mimir";
@@ -47,6 +50,7 @@ public class MimirRepositoryConnectorFactory implements RepositoryConnectorFacto
     }
 
     private boolean supports(RepositorySystemSession session, RemoteRepository repository) {
+        // for now we do only "real remote" artifact caching, those coming over HTTP only (but this includes S3/minio)
         String protocol = repository.getProtocol();
         return protocol != null && protocol.contains("http");
     }

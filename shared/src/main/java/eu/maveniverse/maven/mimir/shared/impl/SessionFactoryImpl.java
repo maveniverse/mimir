@@ -27,6 +27,8 @@ public class SessionFactoryImpl implements SessionFactory {
                 Paths.get(System.getProperty("user.home")).resolve(".mimir").resolve("local");
         Files.createDirectories(localBaseDir);
         LocalNodeImpl localNode = new LocalNodeImpl(localBaseDir);
+        // here some sort of discovery could happen, and session would get a (dynamic) list of nodes sorted by distance
+        // hence "local" would be always first element
         return new SessionImpl(Collections.singletonList(localNode));
     }
 }

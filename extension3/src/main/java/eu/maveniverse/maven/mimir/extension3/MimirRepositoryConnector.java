@@ -25,6 +25,9 @@ import org.eclipse.aether.spi.connector.MetadataUpload;
 import org.eclipse.aether.spi.connector.RepositoryConnector;
 import org.eclipse.aether.transfer.ArtifactTransferException;
 
+/**
+ * Mimir connector wraps another connector that does real job.
+ */
 public class MimirRepositoryConnector implements RepositoryConnector {
     private final Session mimirSession;
     private final RemoteRepository remoteRepository;
@@ -44,7 +47,7 @@ public class MimirRepositoryConnector implements RepositoryConnector {
         List<ArtifactDownload> ads = new ArrayList<>();
         if (artifactDownloads != null && !artifactDownloads.isEmpty()) {
             for (ArtifactDownload artifactDownload : artifactDownloads) {
-                if (artifactDownload.getArtifact().isSnapshot() || artifactDownload.isExistenceCheck()) {
+                if (!isSupported(artifactDownload)) {
                     ads.add(artifactDownload);
                 } else {
                     try {
@@ -65,9 +68,7 @@ public class MimirRepositoryConnector implements RepositoryConnector {
         delegate.get(ads, metadataDownloads);
         if (!ads.isEmpty()) {
             for (ArtifactDownload artifactDownload : ads) {
-                if (!artifactDownload.getArtifact().isSnapshot()
-                        && !artifactDownload.isExistenceCheck()
-                        && artifactDownload.getException() == null) {
+                if (isSupported(artifactDownload)) {
                     CacheKey cacheKey = getCacheKey(artifactDownload.getArtifact());
                     try {
                         mimirSession.store(cacheKey, artifactDownload.getFile().toPath());
@@ -90,6 +91,12 @@ public class MimirRepositoryConnector implements RepositoryConnector {
     @Override
     public void close() {
         delegate.close();
+    }
+
+    private boolean isSupported(ArtifactDownload artifactDownload) {
+        return !artifactDownload.getArtifact().isSnapshot()
+                && !artifactDownload.isExistenceCheck()
+                && artifactDownload.getException() == null;
     }
 
     private CacheKey getCacheKey(Artifact artifact) {
