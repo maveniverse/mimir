@@ -1,7 +1,7 @@
 # Mímir
 
-A system-wide (and wider) cache for Maven artifacts. Makes you love to nuke your local repository, as it 
-contains only hard linked artifacts from Mímir (global) cache.
+A system-wide (later maybe a LAN or even organization wide) cache for Maven artifacts. Will make you love to nuke 
+your local repository, as it contains only hard linked artifacts from Mímir (global) cache.
 
 This is still a "rough proof of concept" that "works for me" (as my home is a huge btrfs volume, so hard-linking works).
 
@@ -13,6 +13,8 @@ Concept:
 * this is the simplest proof of concept, but a node may be a separate Java process (thus exposing for others as "remote node")
 * the node could offer locally and also remotely cached contents
 * on local caching, "hard linking" should be used whenever possible (otherwise fallback to plain "copy")
+* current "simple proof of concept" is trivial, but later on, "local node" could spawn a daemon (a la mvnd) offering
+  its cache content not only locally but also for remote nodes
 
 Build requirements:
 * Java 21
