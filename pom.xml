@@ -83,17 +83,6 @@
         <artifactId>shared</artifactId>
         <version>${project.version}</version>
       </dependency>
-      <dependency>
-        <groupId>eu.maveniverse.maven.plugins</groupId>
-        <artifactId>toolbox</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>eu.maveniverse.maven.plugins</groupId>
-        <artifactId>toolbox</artifactId>
-        <version>${project.version}</version>
-        <classifier>cli</classifier>
-      </dependency>
 
       <!-- Logging (except API, runtime only) -->
       <dependency>
@@ -111,6 +100,11 @@
         <artifactId>jcl-over-slf4j</artifactId>
         <version>${version.slf4j}</version>
       </dependency>
+      <dependency>
+        <groupId>javax.inject</groupId>
+        <artifactId>javax.inject</artifactId>
+        <version>1</version>
+      </dependency>
 
       <!-- Resolver + Maven -->
       <dependency>
@@ -120,7 +114,22 @@
       </dependency>
       <dependency>
         <groupId>org.apache.maven.resolver</groupId>
+        <artifactId>maven-resolver-spi</artifactId>
+        <version>${version.resolver}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.resolver</groupId>
         <artifactId>maven-resolver-util</artifactId>
+        <version>${version.resolver}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.resolver</groupId>
+        <artifactId>maven-resolver-impl</artifactId>
+        <version>${version.resolver}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.resolver</groupId>
+        <artifactId>maven-resolver-connector-basic</artifactId>
         <version>${version.resolver}</version>
       </dependency>
       <dependency>
