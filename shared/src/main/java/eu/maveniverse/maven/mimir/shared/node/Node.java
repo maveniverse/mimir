@@ -19,7 +19,7 @@ public interface Node extends AutoCloseable {
     String id();
 
     /**
-     * The "distance" of node. Distance of 0 (zero) is "closest", and positive integers are "further" away.
+     * The "distance" of node. Distance of 0 (zero) is "closest", and positive integers are "further away".
      */
     int distance();
 
