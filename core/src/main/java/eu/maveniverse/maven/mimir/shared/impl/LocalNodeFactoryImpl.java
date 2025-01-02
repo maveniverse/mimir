@@ -24,8 +24,9 @@ public final class LocalNodeFactoryImpl implements LocalNodeFactory {
 
     @Override
     public LocalNode createLocalNode(Map<String, Object> config) throws IOException {
-        Path localBaseDir =
-                Paths.get((String) config.get("user.home")).resolve(".mimir").resolve("local");
+        Path localBaseDir = Paths.get((String) config.getOrDefault("user.home", System.getProperty("user.home")))
+                .resolve(".mimir")
+                .resolve("local");
         Files.createDirectories(localBaseDir);
         return new LocalNodeImpl(NAME, 0, localBaseDir);
     }

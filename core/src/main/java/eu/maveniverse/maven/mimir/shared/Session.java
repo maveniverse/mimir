@@ -32,5 +32,5 @@ public interface Session extends AutoCloseable {
     /**
      * Stores content under given cache key.
      */
-    boolean store(CacheKey key, Path content) throws IOException;
+    void store(CacheKey key, Path content) throws IOException;
 }

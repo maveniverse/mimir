@@ -11,7 +11,9 @@ import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.CacheKey;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.util.FileUtils;
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -48,13 +50,13 @@ public final class LocalNodeImpl implements LocalNode {
     }
 
     @Override
-    public boolean store(CacheKey key, Path content) throws IOException {
+    public CacheEntry store(CacheKey key, Path content) throws IOException {
         Path path = resolve(key);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path, false)) {
             Utils.copyOrLink(content, f.getPath());
             f.move();
         }
-        return true;
+        return new LocalCacheEntry(path);
     }
 
     @Override
@@ -88,6 +90,11 @@ public final class LocalNodeImpl implements LocalNode {
                 Utils.copyOrLink(cacheFile, f.getPath());
                 f.move();
             }
+        }
+
+        @Override
+        public InputStream getInputStream() throws IOException {
+            return new BufferedInputStream(Files.newInputStream(cacheFile));
         }
     }
 }

@@ -15,7 +15,6 @@ public final class Stats {
     private final LongAdder queries = new LongAdder();
     private final LongAdder queryHits = new LongAdder();
     private final LongAdder stores = new LongAdder();
-    private final LongAdder storesHits = new LongAdder();
 
     public long queries() {
         return queries.sum();
@@ -29,10 +28,6 @@ public final class Stats {
         return stores.sum();
     }
 
-    public long storesHits() {
-        return storesHits.sum();
-    }
-
     public Optional<CacheEntry> query(Optional<CacheEntry> entry) {
         queries.increment();
         if (entry.isPresent()) {
@@ -41,11 +36,8 @@ public final class Stats {
         return entry;
     }
 
-    public boolean store(boolean stored) {
+    public CacheEntry store(CacheEntry stored) {
         stores.increment();
-        if (stored) {
-            storesHits.increment();
-        }
         return stored;
     }
 }

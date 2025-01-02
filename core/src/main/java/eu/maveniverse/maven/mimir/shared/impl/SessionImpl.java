@@ -63,7 +63,8 @@ public class SessionImpl implements Session {
             for (Node node : this.nodes) {
                 result = node.locate(key);
                 if (result.isPresent()) {
-                    result = Optional.of(localNode.store(key, result.get()));
+                    result = Optional.of(localNode.store(
+                            key, result.orElseThrow(() -> new IllegalStateException("should be present"))));
                     break;
                 }
             }
@@ -72,13 +73,13 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public boolean store(CacheKey key, Path content) throws IOException {
+    public void store(CacheKey key, Path content) throws IOException {
         requireNonNull(key, "key");
         requireNonNull(content, "content");
         if (!Files.isRegularFile(content)) {
             throw new IllegalArgumentException("Not a regular file: " + content);
         }
-        return stats.store(localNode.store(key, content));
+        stats.store(localNode.store(key, content));
     }
 
     @Override
@@ -102,12 +103,7 @@ public class SessionImpl implements Session {
             throw illegalStateException;
         }
         if (logger.isDebugEnabled()) {
-            logger.debug(
-                    "Session stats: Q={}/{} S={}/{}",
-                    stats.queries(),
-                    stats.queryHits(),
-                    stats.stores(),
-                    stats.storesHits());
+            logger.debug("Session stats: Q={}/{} S={}", stats.queries(), stats.queryHits(), stats.stores());
         }
     }
 }

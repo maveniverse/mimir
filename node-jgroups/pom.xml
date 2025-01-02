@@ -21,6 +21,10 @@
 
   <name>${project.groupId}:${project.artifactId}</name>
 
+  <properties>
+    <maven.compiler.release>17</maven.compiler.release>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>eu.maveniverse.maven.mimir</groupId>

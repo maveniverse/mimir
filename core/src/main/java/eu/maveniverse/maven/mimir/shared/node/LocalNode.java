@@ -16,10 +16,10 @@ public interface LocalNode extends Node {
     /**
      * Stores content under given cache key on this node.
      */
-    boolean store(CacheKey key, Path content) throws IOException;
+    CacheEntry store(CacheKey key, Path content) throws IOException;
 
     /**
-     * Write through cache.
+     * Stores cache entry and offers it as own entry.
      */
     CacheEntry store(CacheKey key, CacheEntry entry) throws IOException;
 }
