@@ -14,33 +14,48 @@ import java.util.Objects;
 
 public interface CacheKey extends Serializable {
     /**
-     * The "bucket".
+     * The "container".
      */
-    String bucket();
+    String container();
 
     /**
      * The "name".
      */
     String name();
 
-    static CacheKey of(final String bucket, final String name) {
-        requireNonNull(bucket, "bucket");
+    static String toKeyString(CacheKey cacheKey) {
+        requireNonNull(cacheKey, "cacheKey");
+        return cacheKey.container() + "@" + cacheKey.name();
+    }
+    ;
+
+    static CacheKey fromKeyString(String string) {
+        requireNonNull(string);
+        int index = string.indexOf('@');
+        if (index > 1) {
+            return of(string.substring(0, index), string.substring(index + 1));
+        }
+        throw new IllegalArgumentException("Invalid key string");
+    }
+
+    static CacheKey of(final String container, final String name) {
+        requireNonNull(container, "container");
         requireNonNull(name, "name");
-        return new Impl(bucket, name);
+        return new Impl(container, name);
     }
 
     class Impl implements CacheKey {
-        private final String bucket;
+        private final String container;
         private final String name;
 
-        private Impl(String bucket, String name) {
-            this.bucket = bucket;
+        private Impl(String container, String name) {
+            this.container = container;
             this.name = name;
         }
 
         @Override
-        public String bucket() {
-            return bucket;
+        public String container() {
+            return container;
         }
 
         @Override
@@ -54,17 +69,17 @@ public interface CacheKey extends Serializable {
                 return false;
             }
             Impl impl = (Impl) o;
-            return Objects.equals(bucket, impl.bucket) && Objects.equals(name, impl.name);
+            return Objects.equals(container, impl.container) && Objects.equals(name, impl.name);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(bucket, name);
+            return Objects.hash(container, name);
         }
 
         @Override
         public String toString() {
-            return "Impl{" + "bucket='" + bucket + '\'' + ", name='" + name + '\'' + '}';
+            return "Impl{" + "container='" + container + '\'' + ", name='" + name + '\'' + '}';
         }
     }
 }

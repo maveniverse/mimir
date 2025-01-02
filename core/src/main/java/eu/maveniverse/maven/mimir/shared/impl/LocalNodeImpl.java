@@ -67,7 +67,7 @@ public final class LocalNodeImpl implements LocalNode {
     public void close() {}
 
     private Path resolve(CacheKey key) {
-        return basedir.resolve(key.bucket()).resolve(key.name());
+        return basedir.resolve(key.container()).resolve(key.name());
     }
 
     private static final class LocalCacheEntry implements CacheEntry {
