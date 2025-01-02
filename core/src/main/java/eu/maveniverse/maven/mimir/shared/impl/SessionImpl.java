@@ -63,6 +63,7 @@ public class SessionImpl implements Session {
             for (Node node : this.nodes) {
                 result = node.locate(key);
                 if (result.isPresent()) {
+                    result = Optional.of(localNode.store(key, result.get()));
                     break;
                 }
             }

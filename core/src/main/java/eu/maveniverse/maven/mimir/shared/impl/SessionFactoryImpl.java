@@ -38,13 +38,12 @@ public class SessionFactoryImpl implements SessionFactory {
 
     @Override
     public Session createSession(Map<String, Object> config) throws IOException {
-        LocalNode localNode = createLocalNode(config);
         ArrayList<Node> nodes = new ArrayList<>();
         for (NodeFactory nodeFactory : this.nodeFactories.values()) {
-            nodes.add(nodeFactory.createNode(config, localNode));
+            nodes.add(nodeFactory.createNode(config));
         }
         nodes.sort(Comparator.comparing(Node::distance));
-        return new SessionImpl(nameMappers.get(SimpleNameMapper.NAME), localNode, nodes);
+        return new SessionImpl(nameMappers.get(SimpleNameMapper.NAME), createLocalNode(config), nodes);
     }
 
     private LocalNode createLocalNode(Map<String, Object> config) throws IOException {
