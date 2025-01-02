@@ -17,20 +17,24 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 public final class LocalNodeImpl implements LocalNode {
+    private final String name;
+    private final int distance;
     private final Path basedir;
 
-    public LocalNodeImpl(Path basedir) {
+    public LocalNodeImpl(String name, int distance, Path basedir) {
+        this.name = name;
+        this.distance = distance;
         this.basedir = basedir;
     }
 
     @Override
     public String id() {
-        return "local";
+        return name;
     }
 
     @Override
     public int distance() {
-        return 0;
+        return distance;
     }
 
     @Override

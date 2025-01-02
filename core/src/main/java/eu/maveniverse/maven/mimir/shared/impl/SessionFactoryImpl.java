@@ -10,13 +10,10 @@ package eu.maveniverse.maven.mimir.shared.impl;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
 import eu.maveniverse.maven.mimir.shared.naming.NameMapper;
-import eu.maveniverse.maven.mimir.shared.node.LocalNode;
+import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.Node;
 import eu.maveniverse.maven.mimir.shared.node.NodeFactory;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Map;
@@ -28,11 +25,16 @@ import javax.inject.Singleton;
 @Named
 public class SessionFactoryImpl implements SessionFactory {
     private final Map<String, NameMapper> nameMappers;
+    private final LocalNodeFactory localNodeFactory;
     private final Map<String, NodeFactory> nodeFactories;
 
     @Inject
-    public SessionFactoryImpl(Map<String, NameMapper> nameMappers, Map<String, NodeFactory> nodeFactories) {
+    public SessionFactoryImpl(
+            Map<String, NameMapper> nameMappers,
+            LocalNodeFactory localNodeFactory,
+            Map<String, NodeFactory> nodeFactories) {
         this.nameMappers = nameMappers;
+        this.localNodeFactory = localNodeFactory;
         this.nodeFactories = nodeFactories;
     }
 
@@ -43,13 +45,6 @@ public class SessionFactoryImpl implements SessionFactory {
             nodes.add(nodeFactory.createNode(config));
         }
         nodes.sort(Comparator.comparing(Node::distance));
-        return new SessionImpl(nameMappers.get(SimpleNameMapper.NAME), createLocalNode(config), nodes);
-    }
-
-    private LocalNode createLocalNode(Map<String, Object> config) throws IOException {
-        Path localBaseDir =
-                Paths.get((String) config.get("user.home")).resolve(".mimir").resolve("local");
-        Files.createDirectories(localBaseDir);
-        return new LocalNodeImpl(localBaseDir);
+        return new SessionImpl(nameMappers.get(SimpleNameMapper.NAME), localNodeFactory.createLocalNode(config), nodes);
     }
 }

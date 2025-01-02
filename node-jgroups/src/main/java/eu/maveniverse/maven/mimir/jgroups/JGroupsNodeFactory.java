@@ -8,6 +8,7 @@ import java.util.Map;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.jgroups.JChannel;
+import org.jgroups.blocks.MessageDispatcher;
 
 @Singleton
 @Named(JGroupsNodeFactory.NAME)
@@ -23,10 +24,10 @@ public class JGroupsNodeFactory implements NodeFactory {
         }
     }
 
-    private JChannel createChannel(Map<String, Object> config) throws Exception {
-        return new JChannel()
+    private MessageDispatcher createChannel(Map<String, Object> config) throws Exception {
+        return new MessageDispatcher(new JChannel("udp-new.xml")
                 .name(InetAddress.getLocalHost().getHostName())
                 .setDiscardOwnMessages(true)
-                .connect("mimir-jgroups");
+                .connect("mimir-jgroups"));
     }
 }

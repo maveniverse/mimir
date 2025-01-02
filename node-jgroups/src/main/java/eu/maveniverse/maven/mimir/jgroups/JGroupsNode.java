@@ -5,15 +5,13 @@ import eu.maveniverse.maven.mimir.shared.CacheKey;
 import eu.maveniverse.maven.mimir.shared.node.Node;
 import java.io.IOException;
 import java.util.Optional;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.ObjectMessage;
+import org.jgroups.blocks.MessageDispatcher;
 
 public class JGroupsNode implements Node {
-    private final JChannel channel;
+    private final MessageDispatcher messageDispatcher;
 
-    public JGroupsNode(JChannel channel) {
-        this.channel = channel;
+    public JGroupsNode(MessageDispatcher messageDispatcher) {
+        this.messageDispatcher = messageDispatcher;
     }
 
     @Override
@@ -28,12 +26,11 @@ public class JGroupsNode implements Node {
 
     @Override
     public Optional<CacheEntry> locate(CacheKey key) throws IOException {
-        Message message = new ObjectMessage(null, "LOCATE " + CacheKey.toKeyString(key));
         return Optional.empty();
     }
 
     @Override
     public void close() throws Exception {
-        channel.close();
+        messageDispatcher.close();
     }
 }
