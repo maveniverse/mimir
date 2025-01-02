@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.mimir.extension3;
 
+import eu.maveniverse.maven.mimir.shared.Session;
 import javax.inject.Inject;
 import javax.inject.Named;
 import org.eclipse.aether.RepositorySystemSession;
@@ -34,11 +35,10 @@ public class MimirRepositoryConnectorFactory implements RepositoryConnectorFacto
     public RepositoryConnector newInstance(RepositorySystemSession session, RemoteRepository repository)
             throws NoRepositoryConnectorException {
         RepositoryConnector repositoryConnector = basicRepositoryConnectorFactory.newInstance(session, repository);
-        if (supports(session, repository)) {
+        Session mimirSession = MimirUtils.requireSession(session);
+        if (mimirSession.supports(repository)) {
             return new MimirRepositoryConnector(
-                    MimirUtils.requireSession(session),
-                    repository,
-                    basicRepositoryConnectorFactory.newInstance(session, repository));
+                    mimirSession, repository, basicRepositoryConnectorFactory.newInstance(session, repository));
         } else {
             return repositoryConnector;
         }
@@ -47,11 +47,5 @@ public class MimirRepositoryConnectorFactory implements RepositoryConnectorFacto
     @Override
     public float getPriority() {
         return 10;
-    }
-
-    private boolean supports(RepositorySystemSession session, RemoteRepository repository) {
-        // for now we do only "real remote" artifact caching, those coming over HTTP only (but this includes S3/minio)
-        String protocol = repository.getProtocol();
-        return protocol != null && protocol.contains("http");
     }
 }

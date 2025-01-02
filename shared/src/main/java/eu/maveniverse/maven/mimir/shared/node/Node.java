@@ -13,9 +13,18 @@ import java.io.IOException;
 import java.util.Optional;
 
 public interface Node extends AutoCloseable {
+    /**
+     * Node ID.
+     */
     String id();
 
+    /**
+     * The "distance" of node. Distance of 0 (zero) is "closest", and positive integers are "further" away.
+     */
     int distance();
 
+    /**
+     * Locates cache entry by key on this node.
+     */
     Optional<CacheEntry> locate(CacheKey key) throws IOException;
 }

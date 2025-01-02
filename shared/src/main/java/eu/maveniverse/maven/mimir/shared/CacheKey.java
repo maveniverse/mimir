@@ -9,14 +9,21 @@ package eu.maveniverse.maven.mimir.shared;
 
 import static java.util.Objects.requireNonNull;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public interface CacheKey {
+public interface CacheKey extends Serializable {
+    /**
+     * The "bucket".
+     */
     String bucket();
 
-    GACEV name();
+    /**
+     * The "name".
+     */
+    String name();
 
-    static CacheKey of(final String bucket, final GACEV name) {
+    static CacheKey of(final String bucket, final String name) {
         requireNonNull(bucket, "bucket");
         requireNonNull(name, "name");
         return new Impl(bucket, name);
@@ -24,9 +31,9 @@ public interface CacheKey {
 
     class Impl implements CacheKey {
         private final String bucket;
-        private final GACEV name;
+        private final String name;
 
-        private Impl(String bucket, GACEV name) {
+        private Impl(String bucket, String name) {
             this.bucket = bucket;
             this.name = name;
         }
@@ -37,7 +44,7 @@ public interface CacheKey {
         }
 
         @Override
-        public GACEV name() {
+        public String name() {
             return name;
         }
 

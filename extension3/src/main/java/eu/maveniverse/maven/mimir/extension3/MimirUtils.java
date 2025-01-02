@@ -11,7 +11,6 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Session;
 import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.SessionData;
 
 public final class MimirUtils {
     private MimirUtils() {}
@@ -19,28 +18,23 @@ public final class MimirUtils {
     public static void seedSession(RepositorySystemSession repositorySystemSession, Session mimirSession) {
         requireNonNull(repositorySystemSession, "repositorySystemSession");
         requireNonNull(mimirSession, "mimirSession");
-        SessionData data = repositorySystemSession.getData();
-        if (data.get(Session.class) != null) {
+        Session session = (Session) repositorySystemSession.getData().get(Session.class);
+        if (session != null) {
             throw new IllegalStateException("Mimir session already created");
         }
-        data.set(Session.class, mimirSession);
+        repositorySystemSession.getData().set(Session.class, mimirSession);
     }
 
     public static void closeSession(RepositorySystemSession repositorySystemSession) throws Exception {
-        requireNonNull(repositorySystemSession, "repositorySystemSession");
-        SessionData data = repositorySystemSession.getData();
-        if (data.get(Session.class) == null) {
-            throw new IllegalStateException("Mimir session not yet seeded");
-        }
-        ((Session) data.get(Session.class)).close();
+        requireSession(repositorySystemSession).close();
     }
 
     public static Session requireSession(RepositorySystemSession repositorySystemSession) {
         requireNonNull(repositorySystemSession, "repositorySystemSession");
-        SessionData data = repositorySystemSession.getData();
-        if (data.get(Session.class) == null) {
+        Session session = (Session) repositorySystemSession.getData().get(Session.class);
+        if (session == null) {
             throw new IllegalStateException("Mimir session not yet seeded");
         }
-        return (Session) data.get(Session.class);
+        return session;
     }
 }

@@ -10,9 +10,27 @@ package eu.maveniverse.maven.mimir.shared;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.repository.RemoteRepository;
 
 public interface Session extends AutoCloseable {
+    /**
+     * Tells whether session is configured to support given remote repository.
+     */
+    boolean supports(RemoteRepository remoteRepository);
+
+    /**
+     * Creates cache key out of remote repository and artifact.
+     */
+    CacheKey cacheKey(RemoteRepository remoteRepository, Artifact artifact);
+
+    /**
+     * Locates cache entry by key.
+     */
     Optional<CacheEntry> locate(CacheKey key) throws IOException;
 
+    /**
+     * Stores content under given cache key.
+     */
     boolean store(CacheKey key, Path content) throws IOException;
 }

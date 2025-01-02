@@ -45,10 +45,8 @@ public final class LocalNodeImpl implements LocalNode {
     @Override
     public boolean store(CacheKey key, Path content) throws IOException {
         Path path = resolve(key);
-        Files.createDirectories(path.getParent());
         Files.deleteIfExists(path);
-        Files.createLink(path, content);
-        Files.setLastModifiedTime(path, Files.getLastModifiedTime(content));
+        Utils.copyOrLink(content, path);
         return true;
     }
 
@@ -56,35 +54,20 @@ public final class LocalNodeImpl implements LocalNode {
     public void close() {}
 
     private Path resolve(CacheKey key) {
-        if (key.name().c().isPresent()) {
-            return basedir.resolve(key.bucket())
-                    .resolve(key.name().g())
-                    .resolve(key.name().a())
-                    .resolve(key.name().v())
-                    .resolve(key.name().a() + "-" + key.name().v() + "-"
-                            + key.name().c().get() + "." + key.name().e());
-        } else {
-            return basedir.resolve(key.bucket())
-                    .resolve(key.name().g())
-                    .resolve(key.name().a())
-                    .resolve(key.name().v())
-                    .resolve(key.name().a() + "-" + key.name().v() + "."
-                            + key.name().e());
-        }
+        return basedir.resolve(key.bucket()).resolve(key.name());
     }
 
     private static final class LocalCacheEntry implements CacheEntry {
-        private final Path file;
+        private final Path cacheFile;
 
-        public LocalCacheEntry(Path file) {
-            this.file = file;
+        public LocalCacheEntry(Path cacheFile) {
+            this.cacheFile = cacheFile;
         }
 
         @Override
         public void transferTo(Path file) throws IOException {
-            Files.createDirectories(file.getParent());
             Files.deleteIfExists(file);
-            Files.createLink(file, this.file);
+            Utils.copyOrLink(cacheFile, file);
         }
     }
 }

@@ -5,15 +5,15 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.shared.node;
+package eu.maveniverse.maven.mimir.shared.naming;
 
 import eu.maveniverse.maven.mimir.shared.CacheKey;
-import java.io.IOException;
-import java.nio.file.Path;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.repository.RemoteRepository;
 
-public interface WritableNode extends Node {
+public interface NameMapper {
     /**
-     * Stores content under given cache key on this node.
+     * Creates a cache key according to naming strategy.
      */
-    boolean store(CacheKey key, Path content) throws IOException;
+    CacheKey cacheKey(RemoteRepository remoteRepository, Artifact artifact);
 }

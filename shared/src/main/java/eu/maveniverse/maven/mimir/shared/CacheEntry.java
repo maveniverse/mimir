@@ -11,5 +11,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 public interface CacheEntry {
+    /**
+     * Transfers cached entry to given file. The file will be overwritten, if existed.
+     */
     void transferTo(Path file) throws IOException;
 }

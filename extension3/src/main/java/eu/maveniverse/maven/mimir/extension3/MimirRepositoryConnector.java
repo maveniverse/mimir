@@ -9,11 +9,11 @@ package eu.maveniverse.maven.mimir.extension3;
 
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.CacheKey;
-import eu.maveniverse.maven.mimir.shared.GACEV;
 import eu.maveniverse.maven.mimir.shared.Session;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import org.eclipse.aether.artifact.Artifact;
@@ -45,18 +45,20 @@ public class MimirRepositoryConnector implements RepositoryConnector {
             Collection<? extends ArtifactDownload> artifactDownloads,
             Collection<? extends MetadataDownload> metadataDownloads) {
         List<ArtifactDownload> ads = new ArrayList<>();
+        HashMap<Artifact, CacheKey> keys = new HashMap<>();
         if (artifactDownloads != null && !artifactDownloads.isEmpty()) {
             for (ArtifactDownload artifactDownload : artifactDownloads) {
                 if (!isSupported(artifactDownload)) {
                     ads.add(artifactDownload);
                 } else {
                     try {
-                        CacheKey cacheKey = getCacheKey(artifactDownload.getArtifact());
+                        CacheKey cacheKey = mimirSession.cacheKey(remoteRepository, artifactDownload.getArtifact());
                         Optional<CacheEntry> entry = mimirSession.locate(cacheKey);
                         if (entry.isPresent()) {
                             entry.get().transferTo(artifactDownload.getFile().toPath());
                         } else {
                             ads.add(artifactDownload);
+                            keys.put(artifactDownload.getArtifact(), cacheKey);
                         }
                     } catch (IOException e) {
                         artifactDownload.setException(
@@ -68,12 +70,13 @@ public class MimirRepositoryConnector implements RepositoryConnector {
         delegate.get(ads, metadataDownloads);
         if (!ads.isEmpty()) {
             for (ArtifactDownload artifactDownload : ads) {
-                if (isSupported(artifactDownload)) {
-                    CacheKey cacheKey = getCacheKey(artifactDownload.getArtifact());
+                CacheKey cacheKey = keys.get(artifactDownload.getArtifact());
+                if (cacheKey != null) {
                     try {
                         mimirSession.store(cacheKey, artifactDownload.getFile().toPath());
                     } catch (IOException e) {
-                        // hum gum
+                        artifactDownload.setException(
+                                new ArtifactTransferException(artifactDownload.getArtifact(), remoteRepository, e));
                     }
                 }
             }
@@ -97,16 +100,5 @@ public class MimirRepositoryConnector implements RepositoryConnector {
         return !artifactDownload.getArtifact().isSnapshot()
                 && !artifactDownload.isExistenceCheck()
                 && artifactDownload.getException() == null;
-    }
-
-    private CacheKey getCacheKey(Artifact artifact) {
-        String bucket = remoteRepository.getId();
-        GACEV name = GACEV.gacev(
-                artifact.getGroupId(),
-                artifact.getArtifactId(),
-                artifact.getClassifier(),
-                artifact.getExtension(),
-                artifact.getVersion());
-        return CacheKey.of(bucket, name);
     }
 }

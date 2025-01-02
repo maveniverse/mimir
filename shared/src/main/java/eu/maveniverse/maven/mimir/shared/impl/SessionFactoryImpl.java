@@ -9,18 +9,27 @@ package eu.maveniverse.maven.mimir.shared.impl;
 
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
+import eu.maveniverse.maven.mimir.shared.naming.NameMapper;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 @Singleton
 @Named
 public class SessionFactoryImpl implements SessionFactory {
+    private final Map<String, NameMapper> nameMappers;
+
+    @Inject
+    public SessionFactoryImpl(Map<String, NameMapper> nameMappers) {
+        this.nameMappers = nameMappers;
+    }
+
     @Override
     public Session createSession(Map<String, Object> config) throws IOException {
         Path localBaseDir =
@@ -29,6 +38,6 @@ public class SessionFactoryImpl implements SessionFactory {
         LocalNodeImpl localNode = new LocalNodeImpl(localBaseDir);
         // here some sort of discovery could happen, and session would get a (dynamic) list of nodes sorted by distance
         // hence "local" would be always first element
-        return new SessionImpl(Collections.singletonList(localNode));
+        return new SessionImpl(nameMappers.get(SimpleNameMapper.NAME), Collections.singletonList(localNode));
     }
 }

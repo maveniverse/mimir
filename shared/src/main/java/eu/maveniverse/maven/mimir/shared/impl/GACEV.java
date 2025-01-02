@@ -5,14 +5,15 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.shared;
+package eu.maveniverse.maven.mimir.shared.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
-public interface GACEV {
+public interface GACEV extends Serializable {
     String g();
 
     String a();
