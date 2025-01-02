@@ -71,7 +71,7 @@ public class MimirRepositoryConnector implements RepositoryConnector {
         if (!ads.isEmpty()) {
             for (ArtifactDownload artifactDownload : ads) {
                 CacheKey cacheKey = keys.get(artifactDownload.getArtifact());
-                if (cacheKey != null) {
+                if (cacheKey != null && artifactDownload.getException() == null) {
                     try {
                         mimirSession.store(cacheKey, artifactDownload.getFile().toPath());
                     } catch (IOException e) {
