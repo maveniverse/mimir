@@ -10,6 +10,7 @@ package eu.maveniverse.maven.mimir.shared.impl;
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.CacheKey;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
+import eu.maveniverse.maven.mimir.shared.util.FileUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,9 +46,21 @@ public final class LocalNodeImpl implements LocalNode {
     @Override
     public boolean store(CacheKey key, Path content) throws IOException {
         Path path = resolve(key);
-        Files.deleteIfExists(path);
-        Utils.copyOrLink(content, path);
+        try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path, false)) {
+            Utils.copyOrLink(content, f.getPath());
+            f.move();
+        }
         return true;
+    }
+
+    @Override
+    public CacheEntry store(CacheKey key, CacheEntry entry) throws IOException {
+        Path path = resolve(key);
+        try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path, false)) {
+            entry.transferTo(f.getPath());
+            f.move();
+        }
+        return new LocalCacheEntry(path);
     }
 
     @Override
@@ -67,7 +80,10 @@ public final class LocalNodeImpl implements LocalNode {
         @Override
         public void transferTo(Path file) throws IOException {
             Files.deleteIfExists(file);
-            Utils.copyOrLink(cacheFile, file);
+            try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(file, false)) {
+                Utils.copyOrLink(cacheFile, f.getPath());
+                f.move();
+            }
         }
     }
 }

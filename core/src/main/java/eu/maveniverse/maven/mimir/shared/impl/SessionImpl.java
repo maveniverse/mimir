@@ -13,8 +13,8 @@ import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.CacheKey;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.naming.NameMapper;
+import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.Node;
-import eu.maveniverse.maven.mimir.shared.node.WritableNode;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,11 +29,13 @@ import org.slf4j.LoggerFactory;
 public class SessionImpl implements Session {
     private final Logger logger = LoggerFactory.getLogger(SessionImpl.class);
     private final NameMapper nameMapper;
+    private final LocalNode localNode;
     private final List<Node> nodes;
     private final Stats stats;
 
-    public SessionImpl(NameMapper nameMapper, List<Node> nodes) {
+    public SessionImpl(NameMapper nameMapper, LocalNode localNode, List<Node> nodes) {
         this.nameMapper = requireNonNull(nameMapper);
+        this.localNode = requireNonNull(localNode);
         this.nodes = requireNonNull(nodes);
         this.stats = new Stats();
     }
@@ -56,11 +58,13 @@ public class SessionImpl implements Session {
     @Override
     public Optional<CacheEntry> locate(CacheKey key) throws IOException {
         requireNonNull(key, "key");
-        Optional<CacheEntry> result = Optional.empty();
-        for (Node node : this.nodes) {
-            result = node.locate(key);
-            if (result.isPresent()) {
-                break;
+        Optional<CacheEntry> result = localNode.locate(key);
+        if (!result.isPresent()) {
+            for (Node node : this.nodes) {
+                result = node.locate(key);
+                if (result.isPresent()) {
+                    break;
+                }
             }
         }
         return stats.query(result);
@@ -73,14 +77,7 @@ public class SessionImpl implements Session {
         if (!Files.isRegularFile(content)) {
             throw new IllegalArgumentException("Not a regular file: " + content);
         }
-        boolean result = false;
-        for (Node node : this.nodes) {
-            if (node instanceof WritableNode) {
-                result = ((WritableNode) node).store(key, content);
-                break;
-            }
-        }
-        return stats.store(result);
+        return stats.store(localNode.store(key, content));
     }
 
     @Override
@@ -92,6 +89,11 @@ public class SessionImpl implements Session {
             } catch (Exception e) {
                 exceptions.add(e);
             }
+        }
+        try {
+            localNode.close();
+        } catch (Exception e) {
+            exceptions.add(e);
         }
         if (!exceptions.isEmpty()) {
             IllegalStateException illegalStateException = new IllegalStateException("Could not close session");

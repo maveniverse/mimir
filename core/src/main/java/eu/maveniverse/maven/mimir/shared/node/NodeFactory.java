@@ -7,4 +7,12 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
-public interface LocalNode extends WritableNode {}
+import java.io.IOException;
+import java.util.Map;
+
+public interface NodeFactory {
+    /**
+     * Creates a {@link Node} instance.
+     */
+    Node createNode(Map<String, Object> config, LocalNode localNode) throws IOException;
+}

@@ -20,7 +20,6 @@ public final class Utils {
      * any precondition (source exists and is regular file, destination does not exist), it is caller job.
      */
     public static void copyOrLink(Path src, Path dest) throws IOException {
-        Files.createDirectories(dest.getParent());
         if (Objects.equals(Files.getFileStore(src), Files.getFileStore(dest.getParent()))) {
             Files.createLink(dest, src);
         } else {

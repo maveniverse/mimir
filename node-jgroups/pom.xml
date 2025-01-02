@@ -17,40 +17,25 @@
     <version>0.1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>shared</artifactId>
+  <artifactId>node-jgroups</artifactId>
 
   <name>${project.groupId}:${project.artifactId}</name>
 
   <dependencies>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mimir</groupId>
+      <artifactId>core</artifactId>
+    </dependency>
+
     <!-- Logging -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
-    <!-- Maven -->
     <dependency>
-      <groupId>org.apache.maven</groupId>
-      <artifactId>maven-core</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.codehaus.plexus</groupId>
-      <artifactId>plexus-utils</artifactId>
-    </dependency>
-
-    <!-- Resolver -->
-    <dependency>
-      <groupId>org.apache.maven.resolver</groupId>
-      <artifactId>maven-resolver-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.resolver</groupId>
-      <artifactId>maven-resolver-spi</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.resolver</groupId>
-      <artifactId>maven-resolver-util</artifactId>
+      <groupId>org.jgroups</groupId>
+      <artifactId>jgroups</artifactId>
     </dependency>
 
     <dependency>

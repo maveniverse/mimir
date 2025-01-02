@@ -7,13 +7,19 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
+import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.CacheKey;
 import java.io.IOException;
 import java.nio.file.Path;
 
-public interface WritableNode extends Node {
+public interface LocalNode extends Node {
     /**
      * Stores content under given cache key on this node.
      */
     boolean store(CacheKey key, Path content) throws IOException;
+
+    /**
+     * Write through cache.
+     */
+    CacheEntry store(CacheKey key, CacheEntry entry) throws IOException;
 }

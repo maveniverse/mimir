@@ -10,11 +10,15 @@ package eu.maveniverse.maven.mimir.shared.impl;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
 import eu.maveniverse.maven.mimir.shared.naming.NameMapper;
+import eu.maveniverse.maven.mimir.shared.node.LocalNode;
+import eu.maveniverse.maven.mimir.shared.node.Node;
+import eu.maveniverse.maven.mimir.shared.node.NodeFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -24,20 +28,29 @@ import javax.inject.Singleton;
 @Named
 public class SessionFactoryImpl implements SessionFactory {
     private final Map<String, NameMapper> nameMappers;
+    private final Map<String, NodeFactory> nodeFactories;
 
     @Inject
-    public SessionFactoryImpl(Map<String, NameMapper> nameMappers) {
+    public SessionFactoryImpl(Map<String, NameMapper> nameMappers, Map<String, NodeFactory> nodeFactories) {
         this.nameMappers = nameMappers;
+        this.nodeFactories = nodeFactories;
     }
 
     @Override
     public Session createSession(Map<String, Object> config) throws IOException {
+        LocalNode localNode = createLocalNode(config);
+        ArrayList<Node> nodes = new ArrayList<>();
+        for (NodeFactory nodeFactory : this.nodeFactories.values()) {
+            nodes.add(nodeFactory.createNode(config, localNode));
+        }
+        nodes.sort(Comparator.comparing(Node::distance));
+        return new SessionImpl(nameMappers.get(SimpleNameMapper.NAME), localNode, nodes);
+    }
+
+    private LocalNode createLocalNode(Map<String, Object> config) throws IOException {
         Path localBaseDir =
-                Paths.get(System.getProperty("user.home")).resolve(".mimir").resolve("local");
+                Paths.get((String) config.get("user.home")).resolve(".mimir").resolve("local");
         Files.createDirectories(localBaseDir);
-        LocalNodeImpl localNode = new LocalNodeImpl(localBaseDir);
-        // here some sort of discovery could happen, and session would get a (dynamic) list of nodes sorted by distance
-        // hence "local" would be always first element
-        return new SessionImpl(nameMappers.get(SimpleNameMapper.NAME), Collections.singletonList(localNode));
+        return new LocalNodeImpl(localBaseDir);
     }
 }
