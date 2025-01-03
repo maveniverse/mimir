@@ -23,6 +23,20 @@ Concept:
 * current "simple proof of concept" is trivial, but later on, "local node" could spawn a daemon (a la mvnd) offering
   its cache content not only locally but also for remote nodes
 
+To use it (you can make it user-wide extension with Maven4):
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<extensions>
+    <extension>
+        <groupId>eu.maveniverse.maven.mimir</groupId>
+        <artifactId>extension3</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </extension>
+</extensions>
+```
+Note: currently `extension3` works with Maven 3 and Maven 4. Later we may introduce `extension4` specifically for
+Maven 4.
+
 Build requirements:
 * Java 21
 * Maven 3.9.9+
