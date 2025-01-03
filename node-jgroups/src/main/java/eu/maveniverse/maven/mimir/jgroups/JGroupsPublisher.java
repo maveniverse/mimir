@@ -2,14 +2,18 @@ package eu.maveniverse.maven.mimir.jgroups;
 
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.CacheKey;
+import eu.maveniverse.maven.mimir.shared.impl.LocalNodeFactoryImpl;
 import eu.maveniverse.maven.mimir.shared.node.LocalCacheEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,6 +28,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class JGroupsPublisher implements RequestHandler, AutoCloseable {
+    public static void main(String... args) throws Exception {
+        Logger logger = LoggerFactory.getLogger(JGroupsPublisher.class);
+
+        LocalNode localNode = new LocalNodeFactoryImpl().createLocalNode(Collections.emptyMap());
+        JGroupsPublisher publisher = new JGroupsPublisher(
+                localNode,
+                new JChannel("udp-new.xml")
+                        .name(InetAddress.getLocalHost().getHostName())
+                        .setDiscardOwnMessages(true)
+                        .connect("mimir-jgroups"));
+
+        logger.info("");
+        logger.info("JGroupsPublisher started (Ctrl+C to exit)");
+        logger.info("Publishing:");
+        logger.info("* {} ({})", localNode.id(), localNode.basedir());
+        try {
+            new CountDownLatch(1).await(); // this is merely to get interrupt
+        } catch (InterruptedException e) {
+            publisher.close();
+        }
+    }
+
     public static final String CMD_LOOKUP = "LOOKUP ";
     public static final String RSP_LOOKUP_OK = "OK ";
     public static final String RSP_LOOKUP_KO = "KO ";
@@ -36,6 +62,7 @@ public class JGroupsPublisher implements RequestHandler, AutoCloseable {
     private final ServerSocket serverSocket;
     private final ConcurrentHashMap<String, LocalCacheEntry> tx;
     private final ExecutorService executor;
+    private final Thread serverThread;
 
     public JGroupsPublisher(LocalNode localNode, JChannel channel) throws IOException {
         this.localNode = localNode;
@@ -45,7 +72,7 @@ public class JGroupsPublisher implements RequestHandler, AutoCloseable {
         this.tx = new ConcurrentHashMap<>();
         this.executor = Executors.newFixedThreadPool(6);
 
-        Thread serverThread = new Thread(() -> {
+        this.serverThread = new Thread(() -> {
             try {
                 while (true) {
                     final Socket accepted = serverSocket.accept();

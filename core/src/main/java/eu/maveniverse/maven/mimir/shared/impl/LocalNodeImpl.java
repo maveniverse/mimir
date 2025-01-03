@@ -51,6 +51,11 @@ public final class LocalNodeImpl implements LocalNode {
     }
 
     @Override
+    public Path basedir() {
+        return basedir;
+    }
+
+    @Override
     public LocalCacheEntry store(CacheKey key, Path content) throws IOException {
         Path path = resolve(key);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path, false)) {

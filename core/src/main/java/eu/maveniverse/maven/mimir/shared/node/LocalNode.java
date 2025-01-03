@@ -14,6 +14,11 @@ import java.nio.file.Path;
 
 public interface LocalNode extends Node {
     /**
+     * Tells the basedir local node uses.
+     */
+    Path basedir();
+
+    /**
      * Stores content under given cache key on this node.
      */
     LocalCacheEntry store(CacheKey key, Path content) throws IOException;
