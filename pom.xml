@@ -19,7 +19,7 @@
 
   <groupId>eu.maveniverse.maven.mimir</groupId>
   <artifactId>mimir</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.1.0</version>
   <packaging>pom</packaging>
 
   <name>${project.groupId}:${project.artifactId}</name>
@@ -44,7 +44,7 @@
   <scm>
     <connection>scm:git:git@github.com:maveniverse/mimir.git</connection>
     <developerConnection>scm:git:git@github.com:maveniverse/mimir.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>release-0.1.0</tag>
     <url>https://github.com/maveniverse/mimir</url>
   </scm>
 
@@ -59,7 +59,7 @@
   </ciManagement>
 
   <properties>
-    <project.build.outputTimestamp>2024-12-30T15:00:05Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-01-03T16:47:34Z</project.build.outputTimestamp>
 
     <!--
     Build time: latest stable Maven and latest Java LTS.
