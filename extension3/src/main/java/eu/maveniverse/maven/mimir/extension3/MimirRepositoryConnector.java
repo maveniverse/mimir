@@ -24,11 +24,14 @@ import org.eclipse.aether.spi.connector.MetadataDownload;
 import org.eclipse.aether.spi.connector.MetadataUpload;
 import org.eclipse.aether.spi.connector.RepositoryConnector;
 import org.eclipse.aether.transfer.ArtifactTransferException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Mimir connector wraps another connector that does real job.
  */
 public class MimirRepositoryConnector implements RepositoryConnector {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Session mimirSession;
     private final RemoteRepository remoteRepository;
     private final RepositoryConnector delegate;
@@ -55,7 +58,10 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                         CacheKey cacheKey = mimirSession.cacheKey(remoteRepository, artifactDownload.getArtifact());
                         Optional<CacheEntry> entry = mimirSession.locate(cacheKey);
                         if (entry.isPresent()) {
-                            entry.get().transferTo(artifactDownload.getFile().toPath());
+                            CacheEntry ce = entry.orElseThrow(() -> new IllegalStateException("Cache entry not found"));
+                            logger.debug(
+                                    "Fetched {} from Mimir '{}' cache", artifactDownload.getArtifact(), ce.origin());
+                            ce.transferTo(artifactDownload.getFile().toPath());
                         } else {
                             ads.add(artifactDownload);
                             keys.put(artifactDownload.getArtifact(), cacheKey);
@@ -73,6 +79,7 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                 CacheKey cacheKey = keys.get(artifactDownload.getArtifact());
                 if (cacheKey != null && artifactDownload.getException() == null) {
                     try {
+                        logger.debug("Storing {} to Mimir 'local' cache", artifactDownload.getArtifact());
                         mimirSession.store(cacheKey, artifactDownload.getFile().toPath());
                     } catch (IOException e) {
                         artifactDownload.setException(

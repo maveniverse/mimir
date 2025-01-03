@@ -6,11 +6,14 @@ import eu.maveniverse.maven.mimir.shared.impl.LocalNodeFactoryImpl;
 import eu.maveniverse.maven.mimir.shared.node.LocalCacheEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -31,11 +34,28 @@ public class JGroupsPublisher implements RequestHandler, AutoCloseable {
     public static void main(String... args) throws Exception {
         Logger logger = LoggerFactory.getLogger(JGroupsPublisher.class);
 
-        LocalNode localNode = new LocalNodeFactoryImpl().createLocalNode(Collections.emptyMap());
+        Path basedir;
+        String nodeName;
+        if (args.length > 0) {
+            basedir = Paths.get(args[0]).toAbsolutePath();
+        } else {
+            basedir =
+                    Paths.get(System.getProperty("user.home")).resolve(".mimir").resolve("local");
+        }
+        if (args.length > 1) {
+            nodeName = args[1];
+        } else {
+            nodeName = InetAddress.getLocalHost().getHostName();
+        }
+
+        HashMap<String, Object> config = new HashMap<>();
+        config.put("mimir.basedir", basedir.toString());
+        config.put("mimir.local.name", nodeName);
+        LocalNode localNode = new LocalNodeFactoryImpl().createLocalNode(config);
         JGroupsPublisher publisher = new JGroupsPublisher(
                 localNode,
                 new JChannel("udp-new.xml")
-                        .name(InetAddress.getLocalHost().getHostName())
+                        .name(nodeName)
                         .setDiscardOwnMessages(true)
                         .connect("mimir-jgroups"));
 
@@ -79,13 +99,18 @@ public class JGroupsPublisher implements RequestHandler, AutoCloseable {
                     executor.submit(() -> {
                         try (Socket socket = accepted) {
                             byte[] buf = socket.getInputStream().readNBytes(36);
+                            OutputStream out = socket.getOutputStream();
                             if (buf.length == 36) {
                                 String txid = new String(buf, StandardCharsets.UTF_8);
-                                LocalCacheEntry cacheEntry = tx.get(txid);
+                                LocalCacheEntry cacheEntry = tx.remove(txid);
                                 if (cacheEntry != null) {
-                                    cacheEntry.getInputStream().transferTo(socket.getOutputStream());
+                                    logger.info("SERVER HIT: {} to {}", txid, socket.getRemoteSocketAddress());
+                                    cacheEntry.getInputStream().transferTo(out);
+                                } else {
+                                    logger.info("SERVER MISS: {} to {}", txid, socket.getRemoteSocketAddress());
                                 }
                             }
+                            out.flush();
                         } catch (Exception e) {
                             logger.error("Error while serving a client", e);
                         }
@@ -139,7 +164,8 @@ public class JGroupsPublisher implements RequestHandler, AutoCloseable {
     public void handle(Message msg, Response response) throws Exception {
         String cmd = msg.getObject();
         if (cmd != null && cmd.startsWith(CMD_LOOKUP)) {
-            CacheKey key = CacheKey.fromKeyString(cmd.substring(CMD_LOOKUP.length()));
+            String keyString = cmd.substring(CMD_LOOKUP.length());
+            CacheKey key = CacheKey.fromKeyString(keyString);
             Optional<CacheEntry> entry = localNode.locate(key);
             if (entry.isPresent()) {
                 String txid = UUID.randomUUID().toString();
@@ -148,12 +174,15 @@ public class JGroupsPublisher implements RequestHandler, AutoCloseable {
                         RSP_LOOKUP_OK + serverSocket.getInetAddress().getHostAddress() + ":"
                                 + serverSocket.getLocalPort() + " " + txid,
                         false);
+                logger.info("LOOKUP OK: {} as {}", keyString, txid);
                 return;
             } else {
                 response.send(RSP_LOOKUP_KO, false);
+                logger.info("LOOKUP KO: {}", keyString);
                 return;
             }
         }
+        logger.info("UNKNOWN COMMAND: {}", cmd);
         response.send("Unknown command", true);
     }
 }

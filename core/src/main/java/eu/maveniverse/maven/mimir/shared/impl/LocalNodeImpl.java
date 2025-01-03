@@ -44,7 +44,7 @@ public final class LocalNodeImpl implements LocalNode {
     public Optional<CacheEntry> locate(CacheKey key) {
         Path path = resolve(key);
         if (Files.isRegularFile(path)) {
-            return Optional.of(new LocalCacheEntryImpl(path));
+            return Optional.of(new LocalCacheEntryImpl(name, path));
         } else {
             return Optional.empty();
         }
@@ -62,7 +62,7 @@ public final class LocalNodeImpl implements LocalNode {
             Utils.copyOrLink(content, f.getPath());
             f.move();
         }
-        return new LocalCacheEntryImpl(path);
+        return new LocalCacheEntryImpl(name, path);
     }
 
     @Override
@@ -72,7 +72,7 @@ public final class LocalNodeImpl implements LocalNode {
             entry.transferTo(f.getPath());
             f.move();
         }
-        return new LocalCacheEntryImpl(path);
+        return new LocalCacheEntryImpl(entry.origin(), path);
     }
 
     @Override
@@ -83,10 +83,17 @@ public final class LocalNodeImpl implements LocalNode {
     }
 
     public static final class LocalCacheEntryImpl implements LocalCacheEntry {
+        private final String origin;
         private final Path cacheFile;
 
-        private LocalCacheEntryImpl(Path cacheFile) {
+        private LocalCacheEntryImpl(String origin, Path cacheFile) {
+            this.origin = origin;
             this.cacheFile = cacheFile;
+        }
+
+        @Override
+        public String origin() {
+            return origin;
         }
 
         @Override

@@ -31,7 +31,7 @@ public class JGroupsNode implements Node {
 
     @Override
     public String id() {
-        return "jgroups";
+        return JGroupsNodeFactory.NAME;
     }
 
     @Override
@@ -53,7 +53,7 @@ public class JGroupsNode implements Node {
                         int colon = parts[0].indexOf(':');
                         String host = parts[0].substring(0, colon);
                         int port = Integer.parseInt(parts[0].substring(colon + 1));
-                        return Optional.of(localNode.store(key, getFile(host, port, parts[1])));
+                        return Optional.of(localNode.store(key, new JGroupsCacheEntry(id(), host, port, parts[1])));
                     }
                 }
             }
@@ -69,14 +69,15 @@ public class JGroupsNode implements Node {
         channel.close();
     }
 
-    protected Path getFile(String host, int port, String txid) throws IOException {
-        Path tempFile = Files.createTempFile(txid, ".mimir");
-        try (Socket socket = new Socket(host, port)) {
-            OutputStream os = socket.getOutputStream();
-            os.write(txid.getBytes(StandardCharsets.UTF_8));
-            os.flush();
-            Files.copy(socket.getInputStream(), tempFile, StandardCopyOption.REPLACE_EXISTING);
+    private record JGroupsCacheEntry(String origin, String host, int port, String txid) implements CacheEntry {
+        @Override
+        public void transferTo(Path file) throws IOException {
+            try (Socket socket = new Socket(host, port)) {
+                OutputStream os = socket.getOutputStream();
+                os.write(txid.getBytes(StandardCharsets.UTF_8));
+                os.flush();
+                Files.copy(socket.getInputStream(), file, StandardCopyOption.REPLACE_EXISTING);
+            }
         }
-        return tempFile;
     }
 }

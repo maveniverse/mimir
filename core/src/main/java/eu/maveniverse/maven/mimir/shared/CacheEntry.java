@@ -12,6 +12,11 @@ import java.nio.file.Path;
 
 public interface CacheEntry {
     /**
+     * The origin of cache entry, a label.
+     */
+    String origin();
+
+    /**
      * Transfers cached entry to given file by best available means and atomically. The file will be overwritten,
      * if existed. It is caller duty to figure out what should happen with existing target file (as this method will
      * delete it).

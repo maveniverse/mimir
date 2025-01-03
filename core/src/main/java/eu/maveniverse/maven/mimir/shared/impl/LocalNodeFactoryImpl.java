@@ -24,10 +24,18 @@ public final class LocalNodeFactoryImpl implements LocalNodeFactory {
 
     @Override
     public LocalNode createLocalNode(Map<String, Object> config) throws IOException {
-        Path localBaseDir = Paths.get((String) config.getOrDefault("user.home", System.getProperty("user.home")))
-                .resolve(".mimir")
-                .resolve("local");
-        Files.createDirectories(localBaseDir);
-        return new LocalNodeImpl(NAME, 0, localBaseDir);
+        String name = NAME;
+        Path basedir;
+        if (config.containsKey("mimir.local.name")) {
+            name = (String) config.get("mimir.local.name");
+        }
+        if (config.containsKey("mimir.basedir")) {
+            basedir = Paths.get(config.get("mimir.basedir").toString());
+        } else {
+            basedir =
+                    Paths.get(System.getProperty("user.home")).resolve(".mimir").resolve("local");
+        }
+        Files.createDirectories(basedir);
+        return new LocalNodeImpl(name, 0, basedir);
     }
 }
