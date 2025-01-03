@@ -25,10 +25,12 @@
     <dependency>
       <groupId>eu.maveniverse.maven.mimir</groupId>
       <artifactId>core</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>eu.maveniverse.maven.mimir</groupId>
-      <artifactId>node-jgroups</artifactId>
+      <groupId>eu.maveniverse.maven.mimir.node</groupId>
+      <artifactId>jgroups</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>

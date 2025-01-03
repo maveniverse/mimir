@@ -36,7 +36,7 @@
 
   <modules>
     <module>core</module>
-    <module>node-jgroups</module>
+    <module>node</module>
     <module>extension3</module>
     <module>it</module>
   </modules>
@@ -78,18 +78,6 @@
 
   <dependencyManagement>
     <dependencies>
-      <!-- Internal -->
-      <dependency>
-        <groupId>eu.maveniverse.maven.mimir</groupId>
-        <artifactId>core</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>eu.maveniverse.maven.mimir</groupId>
-        <artifactId>node-jgroups</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
       <!-- Logging (except API, runtime only) -->
       <dependency>
         <groupId>org.slf4j</groupId>

@@ -12,12 +12,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>eu.maveniverse.maven.mimir</groupId>
-    <artifactId>mimir</artifactId>
+    <groupId>eu.maveniverse.maven.mimir.node</groupId>
+    <artifactId>node</artifactId>
     <version>0.1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>node-jgroups</artifactId>
+  <artifactId>jgroups</artifactId>
 
   <name>${project.groupId}:${project.artifactId}</name>
 
@@ -29,6 +29,7 @@
     <dependency>
       <groupId>eu.maveniverse.maven.mimir</groupId>
       <artifactId>core</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
