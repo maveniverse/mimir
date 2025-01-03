@@ -8,17 +8,13 @@
 package eu.maveniverse.maven.mimir.shared;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 
 public interface CacheEntry {
     /**
-     * Transfers cached entry to given file. The file will be overwritten, if existed.
+     * Transfers cached entry to given file by best available means and atomically. The file will be overwritten,
+     * if existed. It is caller duty to figure out what should happen with existing target file (as this method will
+     * delete it).
      */
     void transferTo(Path file) throws IOException;
-
-    /**
-     * Returns the buffered input stream to content.
-     */
-    InputStream getInputStream() throws IOException;
 }

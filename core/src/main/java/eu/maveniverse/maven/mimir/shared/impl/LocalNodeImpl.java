@@ -9,6 +9,7 @@ package eu.maveniverse.maven.mimir.shared.impl;
 
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.CacheKey;
+import eu.maveniverse.maven.mimir.shared.node.LocalCacheEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.util.FileUtils;
 import java.io.BufferedInputStream;
@@ -43,30 +44,30 @@ public final class LocalNodeImpl implements LocalNode {
     public Optional<CacheEntry> locate(CacheKey key) {
         Path path = resolve(key);
         if (Files.isRegularFile(path)) {
-            return Optional.of(new LocalCacheEntry(path));
+            return Optional.of(new LocalCacheEntryImpl(path));
         } else {
             return Optional.empty();
         }
     }
 
     @Override
-    public CacheEntry store(CacheKey key, Path content) throws IOException {
+    public LocalCacheEntry store(CacheKey key, Path content) throws IOException {
         Path path = resolve(key);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path, false)) {
             Utils.copyOrLink(content, f.getPath());
             f.move();
         }
-        return new LocalCacheEntry(path);
+        return new LocalCacheEntryImpl(path);
     }
 
     @Override
-    public CacheEntry store(CacheKey key, CacheEntry entry) throws IOException {
+    public LocalCacheEntry store(CacheKey key, CacheEntry entry) throws IOException {
         Path path = resolve(key);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path, false)) {
             entry.transferTo(f.getPath());
             f.move();
         }
-        return new LocalCacheEntry(path);
+        return new LocalCacheEntryImpl(path);
     }
 
     @Override
@@ -76,10 +77,10 @@ public final class LocalNodeImpl implements LocalNode {
         return basedir.resolve(key.container()).resolve(key.name());
     }
 
-    private static final class LocalCacheEntry implements CacheEntry {
+    public static final class LocalCacheEntryImpl implements LocalCacheEntry {
         private final Path cacheFile;
 
-        public LocalCacheEntry(Path cacheFile) {
+        private LocalCacheEntryImpl(Path cacheFile) {
             this.cacheFile = cacheFile;
         }
 

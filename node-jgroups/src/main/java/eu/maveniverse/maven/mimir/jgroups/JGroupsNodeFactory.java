@@ -18,7 +18,7 @@ public class JGroupsNodeFactory implements NodeFactory {
     @Override
     public Node createNode(Map<String, Object> config, LocalNode localNode) throws IOException {
         try {
-            return new JGroupsNode(createChannel(config), localNode);
+            return new JGroupsNode(localNode, createChannel(config));
         } catch (Exception e) {
             throw new IOException("Failed to create JChannel", e);
         }

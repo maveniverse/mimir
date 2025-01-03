@@ -2,6 +2,7 @@ package eu.maveniverse.maven.mimir.jgroups;
 
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.CacheKey;
+import eu.maveniverse.maven.mimir.shared.node.LocalCacheEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -33,7 +34,7 @@ public class JGroupsPublisher implements RequestHandler, AutoCloseable {
     private final JChannel channel;
     private final MessageDispatcher dispatcher;
     private final ServerSocket serverSocket;
-    private final ConcurrentHashMap<String, CacheEntry> tx;
+    private final ConcurrentHashMap<String, LocalCacheEntry> tx;
     private final ExecutorService executor;
 
     public JGroupsPublisher(LocalNode localNode, JChannel channel) throws IOException {
@@ -53,7 +54,7 @@ public class JGroupsPublisher implements RequestHandler, AutoCloseable {
                             byte[] buf = socket.getInputStream().readNBytes(36);
                             if (buf.length == 36) {
                                 String txid = new String(buf, StandardCharsets.UTF_8);
-                                CacheEntry cacheEntry = tx.get(txid);
+                                LocalCacheEntry cacheEntry = tx.get(txid);
                                 if (cacheEntry != null) {
                                     cacheEntry.getInputStream().transferTo(socket.getOutputStream());
                                 }
@@ -115,13 +116,15 @@ public class JGroupsPublisher implements RequestHandler, AutoCloseable {
             Optional<CacheEntry> entry = localNode.locate(key);
             if (entry.isPresent()) {
                 String txid = UUID.randomUUID().toString();
-                tx.put(txid, entry.orElseThrow());
+                tx.put(txid, (LocalCacheEntry) entry.orElseThrow());
                 response.send(
                         RSP_LOOKUP_OK + serverSocket.getInetAddress().getHostAddress() + ":"
                                 + serverSocket.getLocalPort() + " " + txid,
                         false);
+                return;
             } else {
                 response.send(RSP_LOOKUP_KO, false);
+                return;
             }
         }
         response.send("Unknown command", true);

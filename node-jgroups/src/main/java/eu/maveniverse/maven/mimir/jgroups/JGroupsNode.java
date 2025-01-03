@@ -10,6 +10,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 import org.jgroups.JChannel;
 import org.jgroups.ObjectMessage;
@@ -18,14 +19,14 @@ import org.jgroups.blocks.RequestOptions;
 import org.jgroups.util.RspList;
 
 public class JGroupsNode implements Node {
+    private final LocalNode localNode;
     private final JChannel channel;
     private final MessageDispatcher messageDispatcher;
-    private final LocalNode localNode;
 
-    public JGroupsNode(JChannel channel, LocalNode localNode) {
+    public JGroupsNode(LocalNode localNode, JChannel channel) {
+        this.localNode = localNode;
         this.channel = channel;
         this.messageDispatcher = new MessageDispatcher(channel);
-        this.localNode = localNode;
     }
 
     @Override
@@ -43,7 +44,7 @@ public class JGroupsNode implements Node {
         String cmd = JGroupsPublisher.CMD_LOOKUP + CacheKey.toKeyString(key);
         try {
             RspList<String> responses =
-                    messageDispatcher.sendMessage(new ObjectMessage(null, cmd), RequestOptions.SYNC());
+                    messageDispatcher.castMessage(null, new ObjectMessage(null, cmd), RequestOptions.SYNC());
             for (String response : responses.getResults()) {
                 if (response != null && response.startsWith(JGroupsPublisher.RSP_LOOKUP_OK)) {
                     String body = response.substring(JGroupsPublisher.RSP_LOOKUP_OK.length());
@@ -74,7 +75,7 @@ public class JGroupsNode implements Node {
             OutputStream os = socket.getOutputStream();
             os.write(txid.getBytes(StandardCharsets.UTF_8));
             os.flush();
-            Files.copy(socket.getInputStream(), tempFile);
+            Files.copy(socket.getInputStream(), tempFile, StandardCopyOption.REPLACE_EXISTING);
         }
         return tempFile;
     }
