@@ -88,7 +88,7 @@ public class JGroupsPublisher implements RequestHandler, AutoCloseable {
         this.localNode = localNode;
         this.channel = channel;
         this.dispatcher = new MessageDispatcher(channel, this);
-        this.serverSocket = new ServerSocket(0);
+        this.serverSocket = new ServerSocket(0, 50, InetAddress.getLocalHost());
         this.tx = new ConcurrentHashMap<>();
         this.executor = Executors.newFixedThreadPool(6);
 
