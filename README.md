@@ -39,7 +39,7 @@ Maven 4.
 
 To start publisher on LAN:
 ```
-$ java -jar node/jgroups/target/jgroups-0.1.0-SNAPSHOT-cli.jar [cache basedir] [node name]
+$ java -jar node/jgroups/target/jgroups-0.1.0-SNAPSHOT-cli.jar [cache basedir [node name]]
 ```
 By default, cache basedir is `~/.mimir/local` and node name is hostname. Use Ctrl+C to stop publisher.
 
