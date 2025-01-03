@@ -9,7 +9,7 @@ package eu.maveniverse.maven.mimir.shared.impl;
 
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
-import eu.maveniverse.maven.mimir.shared.naming.NameMapper;
+import eu.maveniverse.maven.mimir.shared.naming.NameMapperFactory;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.Node;
@@ -25,16 +25,16 @@ import javax.inject.Singleton;
 @Singleton
 @Named
 public class SessionFactoryImpl implements SessionFactory {
-    private final Map<String, NameMapper> nameMappers;
+    private final NameMapperFactory nameMapperFactory;
     private final LocalNodeFactory localNodeFactory;
     private final Map<String, NodeFactory> nodeFactories;
 
     @Inject
     public SessionFactoryImpl(
-            Map<String, NameMapper> nameMappers,
+            NameMapperFactory nameMapperFactory,
             LocalNodeFactory localNodeFactory,
             Map<String, NodeFactory> nodeFactories) {
-        this.nameMappers = nameMappers;
+        this.nameMapperFactory = nameMapperFactory;
         this.localNodeFactory = localNodeFactory;
         this.nodeFactories = nodeFactories;
     }
@@ -47,6 +47,6 @@ public class SessionFactoryImpl implements SessionFactory {
             nodes.add(nodeFactory.createNode(config, localNode));
         }
         nodes.sort(Comparator.comparing(Node::distance));
-        return new SessionImpl(nameMappers.get(SimpleNameMapper.NAME), localNode, nodes);
+        return new SessionImpl(nameMapperFactory.createNameMapper(config), localNode, nodes);
     }
 }
