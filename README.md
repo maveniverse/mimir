@@ -6,8 +6,11 @@ Goal: A system-wide cache for Maven. Will make you to love to nuke your local re
 cache between resolver and transport. This implies it works irrelevant of location of your local repository 
 and its kind (enhanced, split, whatever). You have one single "local" cache (by def in `~/.mimir/local) and it
 is consulted before Maven would go remote. For now, only HTTP-ish release remote repositories are supported.
+This local cache may be used by all Maven builds running on same workstation.
+
 Another goal is to introduce "cache sharing" across LAN, so make Mimir able to share caches across LAN from several
-workstations: basically if one workstation has the cache content, share it to neighbors if needed.
+workstations: basically if one workstation has the cache content, share it to neighbors if needed. For this a
+"cache publisher" needs to run on workstation, that will publish workstation "local cache" via LAN.
 
 Concept:
 * "wraps" the actual connector being used by Resolver, provides "extra cache layer" between connector and transport
