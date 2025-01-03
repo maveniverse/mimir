@@ -104,10 +104,10 @@ public class JGroupsPublisher implements RequestHandler, AutoCloseable {
                                 String txid = new String(buf, StandardCharsets.UTF_8);
                                 LocalCacheEntry cacheEntry = tx.remove(txid);
                                 if (cacheEntry != null) {
-                                    logger.info("SERVER HIT: {} to {}", txid, socket.getRemoteSocketAddress());
+                                    logger.debug("SERVER HIT: {} to {}", txid, socket.getRemoteSocketAddress());
                                     cacheEntry.getInputStream().transferTo(out);
                                 } else {
-                                    logger.info("SERVER MISS: {} to {}", txid, socket.getRemoteSocketAddress());
+                                    logger.warn("SERVER MISS: {} to {}", txid, socket.getRemoteSocketAddress());
                                 }
                             }
                             out.flush();
@@ -174,11 +174,11 @@ public class JGroupsPublisher implements RequestHandler, AutoCloseable {
                         RSP_LOOKUP_OK + serverSocket.getInetAddress().getHostAddress() + ":"
                                 + serverSocket.getLocalPort() + " " + txid,
                         false);
-                logger.info("LOOKUP OK: {} as {}", keyString, txid);
+                logger.info("LOOKUP OK: {} asked {}", msg.getSrc(), keyString);
                 return;
             } else {
                 response.send(RSP_LOOKUP_KO, false);
-                logger.info("LOOKUP KO: {}", keyString);
+                logger.info("LOOKUP KO: {} asked {}", msg.getSrc(), keyString);
                 return;
             }
         }
