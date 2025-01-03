@@ -4,7 +4,7 @@ Note: this code is Proof of Concept, with a lot of To-Be-Done parts (like config
 
 Goal: A system-wide cache for Maven. Will make you to love to nuke your local repository. It adds a layer of
 cache between resolver and transport. This implies it works irrelevant of location of your local repository 
-and its kind (enhanced, split, whatever). You have one single "local" cache (by def in `~/.mimir/local) and it
+and its kind (enhanced, split, whatever). You have one single "local" cache (by def in `~/.mimir/local`) and it
 is consulted before Maven would go remote. For now, only HTTP-ish release remote repositories are supported.
 This local cache may be used by all Maven builds running on same workstation.
 
