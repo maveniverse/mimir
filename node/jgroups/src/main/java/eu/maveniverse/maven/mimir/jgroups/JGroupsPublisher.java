@@ -12,7 +12,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,10 +36,9 @@ public class JGroupsPublisher implements RequestHandler, AutoCloseable {
         Path basedir;
         String nodeName;
         if (args.length > 0) {
-            basedir = Paths.get(args[0]).toAbsolutePath();
+            basedir = Path.of(args[0]).toAbsolutePath();
         } else {
-            basedir =
-                    Paths.get(System.getProperty("user.home")).resolve(".mimir").resolve("local");
+            basedir = Path.of(System.getProperty("user.home"), ".mimir", "local");
         }
         if (args.length > 1) {
             nodeName = args[1];

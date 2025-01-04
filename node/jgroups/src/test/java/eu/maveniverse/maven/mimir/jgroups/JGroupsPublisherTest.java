@@ -11,7 +11,6 @@ import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Optional;
 import org.jgroups.JChannel;
@@ -21,9 +20,9 @@ public class JGroupsPublisherTest {
 
     @Test
     void smoke() throws Exception {
-        Path one = Paths.get("target/local/one");
+        Path one = Path.of("target/local/one");
         Files.createDirectories(one);
-        Path two = Paths.get("target/local/two");
+        Path two = Path.of("target/local/two");
         Files.createDirectories(two);
 
         Path contentPath = one.resolve("container").resolve("file.txt");
