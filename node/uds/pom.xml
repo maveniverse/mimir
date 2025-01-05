@@ -17,7 +17,7 @@
     <version>0.1.1-SNAPSHOT</version>
   </parent>
 
-  <artifactId>uds-node</artifactId>
+  <artifactId>uds</artifactId>
 
   <name>${project.groupId}:${project.artifactId}</name>
 
