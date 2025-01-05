@@ -54,7 +54,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                     .userProperties(repoSession.getUserProperties())
                     .systemProperties(repoSession.getSystemProperties())
                     .build();
-            mayResolverDaemonArtifact(
+            mayResolveDaemonArtifact(
                     config,
                     repoSession,
                     Collections.singletonList(
@@ -76,7 +76,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
         }
     }
 
-    private void mayResolverDaemonArtifact(
+    private void mayResolveDaemonArtifact(
             Config config, RepositorySystemSession session, List<RemoteRepository> remoteRepositories)
             throws MavenExecutionException {
         Path daemonJarPath = config.basedir().resolve("daemon-" + config.mimirVersion() + ".jar");
@@ -90,7 +90,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                 ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, artifactRequest);
                 Utils.copyOrLink(artifactResult.getArtifact().getFile().toPath(), daemonJarPath);
             } catch (Exception e) {
-                throw new MavenExecutionException("Error resolving daemon jar", e);
+                throw new MavenExecutionException("Error resolving Mimir daemon", e);
             }
         }
     }
