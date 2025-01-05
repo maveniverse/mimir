@@ -60,8 +60,8 @@ public class UdsNodeFactory implements NodeFactory {
             try {
                 // not the nicest, but JGroups will also sleep 1s to discover cluster
                 Thread.sleep(1500);
-            } catch (InterruptedException ignore) {
-                // ignore
+            } catch (InterruptedException e) {
+                throw new IOException("Interrupted", e);
             }
             return true;
         }

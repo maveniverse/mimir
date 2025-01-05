@@ -33,7 +33,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.inject.Inject;
 import javax.inject.Named;
-import org.eclipse.sisu.EagerSingleton;
+import javax.inject.Singleton;
 import org.eclipse.sisu.space.BeanScanning;
 import org.eclipse.sisu.space.SpaceModule;
 import org.eclipse.sisu.space.URLClassSpace;
@@ -42,7 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Named
-@EagerSingleton
+@Singleton
 public class Daemon implements AutoCloseable {
     public static void main(String[] args) throws IOException {
         Config config =
