@@ -102,8 +102,10 @@ public class SessionImpl implements Session {
             exceptions.forEach(illegalStateException::addSuppressed);
             throw illegalStateException;
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug("Session stats: Q={}/{} S={}", stats.queries(), stats.queryHits(), stats.stores());
-        }
+        logger.info(
+                "Mimir session closed (LOCATE/HIT={}/{} STORED={})",
+                stats.queries(),
+                stats.queryHits(),
+                stats.stores());
     }
 }

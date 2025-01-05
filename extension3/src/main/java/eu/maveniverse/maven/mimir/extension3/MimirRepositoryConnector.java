@@ -47,11 +47,12 @@ public class MimirRepositoryConnector implements RepositoryConnector {
     public void get(
             Collection<? extends ArtifactDownload> artifactDownloads,
             Collection<? extends MetadataDownload> metadataDownloads) {
+        // 1st round: provide whatever we have cached
         List<ArtifactDownload> ads = new ArrayList<>();
         HashMap<Artifact, CacheKey> keys = new HashMap<>();
         if (artifactDownloads != null && !artifactDownloads.isEmpty()) {
             for (ArtifactDownload artifactDownload : artifactDownloads) {
-                if (!isSupported(artifactDownload)) {
+                if (artifactDownload.isExistenceCheck()) {
                     ads.add(artifactDownload);
                 } else {
                     Optional<CacheKey> cacheKey =
@@ -82,7 +83,11 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                 }
             }
         }
+
+        // unmatched ones are to be fetched by delegate
         delegate.get(ads, metadataDownloads);
+
+        // 2nd round: those fetched (and healthy) should be cached
         if (!ads.isEmpty()) {
             for (ArtifactDownload artifactDownload : ads) {
                 CacheKey cacheKey = keys.get(artifactDownload.getArtifact());
@@ -110,11 +115,5 @@ public class MimirRepositoryConnector implements RepositoryConnector {
     @Override
     public void close() {
         delegate.close();
-    }
-
-    private boolean isSupported(ArtifactDownload artifactDownload) {
-        return !artifactDownload.getArtifact().isSnapshot()
-                && !artifactDownload.isExistenceCheck()
-                && artifactDownload.getException() == null;
     }
 }

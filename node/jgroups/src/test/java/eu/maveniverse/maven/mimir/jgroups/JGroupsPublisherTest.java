@@ -26,6 +26,9 @@ public class JGroupsPublisherTest {
         Path two = Path.of("target/local/two");
         Files.createDirectories(two);
 
+        Config config = Config.defaults().build();
+        System.out.println(config.mimirVersion());
+
         Path contentPath = one.resolve("container").resolve("file.txt");
         String content = "Hello World!";
         Files.createDirectories(contentPath.getParent());

@@ -16,6 +16,8 @@ import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.execution.MavenSession;
 import org.eclipse.aether.RepositorySystemSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Lifecycle participant that creates Mimir session early, as it may be costly operation (spawning a new Java process,
@@ -24,6 +26,7 @@ import org.eclipse.aether.RepositorySystemSession;
 @Singleton
 @Named
 public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final SessionFactory sessionFactory;
 
     @Inject
@@ -35,12 +38,12 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
     public void afterSessionStart(MavenSession session) throws MavenExecutionException {
         try {
             RepositorySystemSession repoSession = session.getRepositorySession();
-            MimirUtils.seedSession(
-                    session.getRepositorySession(),
-                    sessionFactory.createSession(Config.defaults()
-                            .userProperties(repoSession.getUserProperties())
-                            .systemProperties(repoSession.getSystemProperties())
-                            .build()));
+            Config config = Config.defaults()
+                    .userProperties(repoSession.getUserProperties())
+                    .systemProperties(repoSession.getSystemProperties())
+                    .build();
+            MimirUtils.seedSession(session.getRepositorySession(), sessionFactory.createSession(config));
+            logger.info("Mimir {} session created", config.mimirVersion());
         } catch (Exception e) {
             throw new MavenExecutionException("Error creating Mimir session", e);
         }

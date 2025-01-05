@@ -59,7 +59,7 @@ public final class Utils {
             if (is != null) {
                 props.load(is);
             }
-            version = props.getProperty("version");
+            version = props.getProperty("version", defVersion);
         } catch (IOException e) {
             // fall through
         }

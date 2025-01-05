@@ -21,6 +21,8 @@ import java.util.Map;
  * Simple Mimir configuration.
  */
 public interface Config {
+    String UNKNOWN = "n/a";
+
     String mimirVersion();
 
     Path basedir();
@@ -47,7 +49,7 @@ public interface Config {
 
         private Builder() {
             this.mimirVersion = Utils.discoverArtifactVersion(
-                    Config.class.getClassLoader(), "eu.maveniverse.maven.mimir", "core", "n/a");
+                    Config.class.getClassLoader(), "eu.maveniverse.maven.mimir", "core", UNKNOWN);
             Path userHome = discoverUserHomeDirectory();
             this.basedir = userHome.resolve(".mimir");
             this.userProperties = new HashMap<>();
