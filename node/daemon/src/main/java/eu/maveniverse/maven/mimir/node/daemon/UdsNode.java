@@ -17,6 +17,8 @@ import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This node is delegating all the work to daemon via Unix Domain Sockets.
@@ -25,9 +27,11 @@ import java.util.Optional;
  * transfer to.
  */
 public class UdsNode implements Node {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final SocketChannel socketChannel;
     private final DataOutputStream dos;
     private final DataInputStream dis;
+    private final Object monitor = new Object();
 
     public UdsNode(SocketChannel socketChannel) {
         this.socketChannel = socketChannel;
@@ -47,15 +51,18 @@ public class UdsNode implements Node {
 
     @Override
     public Optional<CacheEntry> locate(CacheKey key) throws IOException {
-        String keyString = CacheKey.toKeyString(key);
-        dos.writeUTF("LOCATE");
-        dos.writeUTF(keyString);
-        dos.flush();
-        String response = dis.readUTF();
-        if (response.startsWith("OK")) {
-            return Optional.of(new UdsCacheEntry(keyString));
-        } else {
-            return Optional.empty();
+        synchronized (monitor) {
+            String keyString = CacheKey.toKeyString(key);
+            logger.debug("LOCATE '{}'", keyString);
+            dos.writeUTF("LOCATE");
+            dos.writeUTF(keyString);
+            dos.flush();
+            String response = dis.readUTF();
+            if (response.startsWith("OK")) {
+                return Optional.of(new UdsCacheEntry(keyString));
+            } else {
+                return Optional.empty();
+            }
         }
     }
 
@@ -80,13 +87,16 @@ public class UdsNode implements Node {
 
         @Override
         public void transferTo(Path file) throws IOException {
-            dos.writeUTF("TRANSFER");
-            dos.writeUTF(keyString);
-            dos.writeUTF(file.toString());
-            dos.flush();
-            String response = dis.readUTF();
-            if (!response.startsWith("OK")) {
-                throw new IOException(response);
+            synchronized (monitor) {
+                logger.debug("TRANSFER '{}'->'{}'", keyString, file);
+                dos.writeUTF("TRANSFER");
+                dos.writeUTF(keyString);
+                dos.writeUTF(file.toString());
+                dos.flush();
+                String response = dis.readUTF();
+                if (!response.startsWith("OK")) {
+                    throw new IOException(response);
+                }
             }
         }
     }

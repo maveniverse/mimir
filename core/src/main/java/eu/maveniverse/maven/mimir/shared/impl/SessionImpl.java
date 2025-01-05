@@ -59,7 +59,7 @@ public class SessionImpl implements Session {
     public Optional<CacheEntry> locate(CacheKey key) throws IOException {
         requireNonNull(key, "key");
         Optional<CacheEntry> result = localNode.locate(key);
-        if (!result.isPresent()) {
+        if (result.isEmpty()) {
             for (Node node : nodes) {
                 result = node.locate(key);
                 if (result.isPresent()) {

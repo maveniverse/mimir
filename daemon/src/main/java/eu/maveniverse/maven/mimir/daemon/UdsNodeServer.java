@@ -20,8 +20,11 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UdsNodeServer implements Callable<Void> {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final SocketChannel socketChannel;
     private final DataOutputStream dos;
     private final DataInputStream dis;
