@@ -12,11 +12,11 @@ import eu.maveniverse.maven.mimir.shared.CacheKey;
 import eu.maveniverse.maven.mimir.shared.node.LocalCacheEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.util.FileUtils;
-import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 
 public final class LocalNodeImpl implements LocalNode {
@@ -106,8 +106,8 @@ public final class LocalNodeImpl implements LocalNode {
         }
 
         @Override
-        public InputStream getInputStream() throws IOException {
-            return new BufferedInputStream(Files.newInputStream(cacheFile));
+        public FileChannel getReadFileChannel() throws IOException {
+            return FileChannel.open(cacheFile, StandardOpenOption.READ);
         }
     }
 }

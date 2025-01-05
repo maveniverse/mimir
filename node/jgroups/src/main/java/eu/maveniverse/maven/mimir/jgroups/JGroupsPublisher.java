@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -103,7 +104,8 @@ public class JGroupsPublisher implements RequestHandler, AutoCloseable {
                                 LocalCacheEntry cacheEntry = tx.remove(txid);
                                 if (cacheEntry != null) {
                                     logger.debug("SERVER HIT: {} to {}", txid, socket.getRemoteSocketAddress());
-                                    cacheEntry.getInputStream().transferTo(out);
+                                    Channels.newInputStream(cacheEntry.getReadFileChannel())
+                                            .transferTo(out);
                                 } else {
                                     logger.warn("SERVER MISS: {} to {}", txid, socket.getRemoteSocketAddress());
                                 }

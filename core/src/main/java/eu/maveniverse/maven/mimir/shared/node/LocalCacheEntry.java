@@ -9,11 +9,11 @@ package eu.maveniverse.maven.mimir.shared.node;
 
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.channels.FileChannel;
 
 public interface LocalCacheEntry extends CacheEntry {
     /**
-     * Provides cache entry content as stream.
+     * Provides cache entry content as file channel (readable only).
      */
-    InputStream getInputStream() throws IOException;
+    FileChannel getReadFileChannel() throws IOException;
 }
