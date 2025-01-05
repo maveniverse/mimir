@@ -25,7 +25,7 @@
 
   <modules>
     <module>jgroups</module>
-    <module>uds</module>
+    <module>daemon</module>
   </modules>
 
 </project>

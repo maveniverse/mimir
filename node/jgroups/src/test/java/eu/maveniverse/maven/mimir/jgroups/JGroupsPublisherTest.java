@@ -3,6 +3,8 @@ package eu.maveniverse.maven.mimir.jgroups;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import eu.maveniverse.maven.mimir.node.jgroups.JGroupsNode;
+import eu.maveniverse.maven.mimir.node.jgroups.JGroupsPublisher;
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.CacheKey;
 import eu.maveniverse.maven.mimir.shared.Config;

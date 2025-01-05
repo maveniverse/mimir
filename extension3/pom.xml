@@ -29,7 +29,7 @@
     </dependency>
     <dependency>
       <groupId>eu.maveniverse.maven.mimir.node</groupId>
-      <artifactId>uds</artifactId>
+      <artifactId>daemon</artifactId>
       <version>${project.version}</version>
     </dependency>
 
