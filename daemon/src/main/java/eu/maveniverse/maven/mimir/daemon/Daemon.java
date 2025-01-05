@@ -19,6 +19,7 @@ import eu.maveniverse.maven.mimir.shared.node.NodeFactory;
 import java.io.IOException;
 import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
+import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
@@ -47,21 +48,22 @@ public class Daemon implements AutoCloseable {
         Config config =
                 Config.defaults().propertiesPath(Path.of("daemon.properties")).build();
 
-        Guice.createInjector(new WireModule(
-                new AbstractModule() {
-                    @Override
-                    protected void configure() {
-                        bind(Config.class).toInstance(config);
-                    }
-                },
-                new SpaceModule(new URLClassSpace(Daemon.class.getClassLoader()), BeanScanning.INDEX, true)));
+        Daemon daemon = Guice.createInjector(new WireModule(
+                        new AbstractModule() {
+                            @Override
+                            protected void configure() {
+                                bind(Config.class).toInstance(config);
+                            }
+                        },
+                        new SpaceModule(new URLClassSpace(Daemon.class.getClassLoader()), BeanScanning.INDEX, true)))
+                .getInstance(Daemon.class);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(daemon::close));
     }
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ServerSocketChannel serverSocketChannel;
-
     private final ExecutorService executor;
-
     private final LocalNode localNode;
     private final List<Node> nodes;
 
@@ -77,9 +79,8 @@ public class Daemon implements AutoCloseable {
             node.ifPresent(nds::add);
         }
         nds.sort(Comparator.comparing(Node::distance));
-        this.nodes = nds;
-
-        this.executor = Executors.newFixedThreadPool(6);
+        this.nodes = List.copyOf(nds);
+        this.executor = Executors.newFixedThreadPool(15);
 
         DaemonConfig cfg = DaemonConfig.with(config);
         Path socketPath = cfg.socketPath();
@@ -106,38 +107,41 @@ public class Daemon implements AutoCloseable {
                     SocketChannel socketChannel = serverSocketChannel.accept();
                     executor.submit(new UdsNodeServer(socketChannel, localNode, nodes));
                 }
+            } catch (AsynchronousCloseException ignored) {
+                // we are done
             } catch (Exception e) {
                 logger.error("Error while accepting client connection", e);
-                try {
-                    close();
-                } catch (Exception ignore) {
-                }
             }
         });
     }
 
     @Override
-    public void close() throws IOException {
-        serverSocketChannel.close();
-
-        ArrayList<Exception> exceptions = new ArrayList<>();
-        for (Node node : this.nodes) {
-            try {
-                node.close();
-            } catch (Exception e) {
-                exceptions.add(e);
-            }
-        }
+    public void close() {
         try {
-            localNode.close();
-        } catch (Exception e) {
-            exceptions.add(e);
+            try {
+                serverSocketChannel.close();
+            } catch (Exception e) {
+                logger.warn("Error closing server socket channel", e);
+            }
+            try {
+                executor.shutdown();
+            } catch (Exception e) {
+                logger.warn("Error closing executor", e);
+            }
+            for (Node node : this.nodes) {
+                try {
+                    node.close();
+                } catch (Exception e) {
+                    logger.warn("Error closing node", e);
+                }
+            }
+            try {
+                localNode.close();
+            } catch (Exception e) {
+                logger.warn("Error closing local node", e);
+            }
+        } finally {
+            logger.info("Daemon stopped");
         }
-        if (!exceptions.isEmpty()) {
-            IllegalStateException illegalStateException = new IllegalStateException("Could not close session");
-            exceptions.forEach(illegalStateException::addSuppressed);
-            throw illegalStateException;
-        }
-        logger.info("Daemon stopped");
     }
 }
