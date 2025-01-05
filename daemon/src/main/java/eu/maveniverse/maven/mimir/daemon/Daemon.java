@@ -101,9 +101,10 @@ public class Daemon implements AutoCloseable {
         this.serverSocketChannel = serverSocketChannel;
         logger.info("Daemon started");
         logger.info(" * socket: {}", socketAddress);
-        logger.info(" * localNode: {}", localNode.basedir());
+        logger.info(" * localNode: {} (d={})", localNode.basedir(), localNode.distance());
+        logger.info(" * {} nodes:", nodes.size());
         for (Node node : this.nodes) {
-            logger.info(" * node: {} ({})", node.name(), node.distance());
+            logger.info("   - {} (d={})", node.name(), node.distance());
         }
 
         executor.submit(() -> {
