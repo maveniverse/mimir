@@ -6,6 +6,7 @@ import eu.maveniverse.maven.mimir.shared.node.NodeFactory;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Map;
+import java.util.Optional;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.jgroups.JChannel;
@@ -16,9 +17,9 @@ public class JGroupsNodeFactory implements NodeFactory {
     public static final String NAME = "jgroups";
 
     @Override
-    public Node createNode(Map<String, Object> config, LocalNode localNode) throws IOException {
+    public Optional<Node> createNode(Map<String, Object> config, LocalNode localNode) throws IOException {
         try {
-            return new JGroupsNode(localNode, createChannel(config));
+            return Optional.of(new JGroupsNode(localNode, createChannel(config)));
         } catch (Exception e) {
             throw new IOException("Failed to create JChannel", e);
         }

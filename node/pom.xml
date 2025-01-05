@@ -25,6 +25,7 @@
 
   <modules>
     <module>jgroups</module>
+    <module>uds-node</module>
   </modules>
 
 </project>

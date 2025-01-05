@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -44,7 +45,8 @@ public class SessionFactoryImpl implements SessionFactory {
         LocalNode localNode = localNodeFactory.createLocalNode(config);
         ArrayList<Node> nodes = new ArrayList<>();
         for (NodeFactory nodeFactory : this.nodeFactories.values()) {
-            nodes.add(nodeFactory.createNode(config, localNode));
+            Optional<Node> node = nodeFactory.createNode(config, localNode);
+            node.ifPresent(nodes::add);
         }
         nodes.sort(Comparator.comparing(Node::distance));
         return new SessionImpl(nameMapperFactory.createNameMapper(config), localNode, nodes);

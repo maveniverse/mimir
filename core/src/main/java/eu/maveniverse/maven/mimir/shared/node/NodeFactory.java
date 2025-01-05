@@ -9,10 +9,12 @@ package eu.maveniverse.maven.mimir.shared.node;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 
 public interface NodeFactory {
     /**
-     * Creates a {@link Node} instance.
+     * Creates a {@link Node} instance, or returns empty optional if for any reason cannot
+     * contribute a node.
      */
-    Node createNode(Map<String, Object> config, LocalNode localNode) throws IOException;
+    Optional<Node> createNode(Map<String, Object> config, LocalNode localNode) throws IOException;
 }
