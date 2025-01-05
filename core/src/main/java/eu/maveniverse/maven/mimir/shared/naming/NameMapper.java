@@ -8,12 +8,13 @@
 package eu.maveniverse.maven.mimir.shared.naming;
 
 import eu.maveniverse.maven.mimir.shared.CacheKey;
+import java.util.Optional;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
 
 public interface NameMapper {
     /**
-     * Creates a cache key according to naming strategy.
+     * Creates a cache key according to naming strategy, if supported.
      */
-    CacheKey cacheKey(RemoteRepository remoteRepository, Artifact artifact);
+    Optional<CacheKey> cacheKey(RemoteRepository remoteRepository, Artifact artifact);
 }

@@ -7,44 +7,43 @@
  */
 package eu.maveniverse.maven.mimir.shared.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.CacheKey;
 import eu.maveniverse.maven.mimir.shared.node.LocalCacheEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
-import eu.maveniverse.maven.mimir.shared.util.FileUtils;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Optional;
+import org.eclipse.aether.util.FileUtils;
 
 public final class LocalNodeImpl implements LocalNode {
-    private final String name;
-    private final int distance;
-    private final Path basedir;
+    private final LocalNodeConfig config;
 
-    public LocalNodeImpl(String name, int distance, Path basedir) {
-        this.name = name;
-        this.distance = distance;
-        this.basedir = basedir;
+    public LocalNodeImpl(LocalNodeConfig config) throws IOException {
+        this.config = requireNonNull(config, "config");
+        Files.createDirectories(config.basedir());
     }
 
     @Override
-    public String id() {
-        return name;
+    public String name() {
+        return config.name();
     }
 
     @Override
     public int distance() {
-        return distance;
+        return config.distance();
     }
 
     @Override
     public Optional<CacheEntry> locate(CacheKey key) {
         Path path = resolve(key);
         if (Files.isRegularFile(path)) {
-            return Optional.of(new LocalCacheEntryImpl(name, path));
+            return Optional.of(new LocalCacheEntryImpl(config.name(), path));
         } else {
             return Optional.empty();
         }
@@ -52,23 +51,23 @@ public final class LocalNodeImpl implements LocalNode {
 
     @Override
     public Path basedir() {
-        return basedir;
+        return config.basedir();
     }
 
     @Override
     public LocalCacheEntry store(CacheKey key, Path content) throws IOException {
         Path path = resolve(key);
-        try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path, false)) {
+        try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
             Utils.copyOrLink(content, f.getPath());
             f.move();
         }
-        return new LocalCacheEntryImpl(name, path);
+        return new LocalCacheEntryImpl(config.name(), path);
     }
 
     @Override
     public LocalCacheEntry store(CacheKey key, CacheEntry entry) throws IOException {
         Path path = resolve(key);
-        try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path, false)) {
+        try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
             entry.transferTo(f.getPath());
             f.move();
         }
@@ -79,10 +78,10 @@ public final class LocalNodeImpl implements LocalNode {
     public void close() {}
 
     private Path resolve(CacheKey key) {
-        return basedir.resolve(key.container()).resolve(key.name());
+        return config.basedir().resolve(key.container()).resolve(key.name());
     }
 
-    public static final class LocalCacheEntryImpl implements LocalCacheEntry {
+    private static final class LocalCacheEntryImpl implements LocalCacheEntry {
         private final String origin;
         private final Path cacheFile;
 
@@ -99,7 +98,7 @@ public final class LocalNodeImpl implements LocalNode {
         @Override
         public void transferTo(Path file) throws IOException {
             Files.deleteIfExists(file);
-            try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(file, false)) {
+            try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(file)) {
                 Utils.copyOrLink(cacheFile, f.getPath());
                 f.move();
             }

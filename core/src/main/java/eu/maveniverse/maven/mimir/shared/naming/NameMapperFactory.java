@@ -7,12 +7,12 @@
  */
 package eu.maveniverse.maven.mimir.shared.naming;
 
+import eu.maveniverse.maven.mimir.shared.Config;
 import java.io.IOException;
-import java.util.Map;
 
 public interface NameMapperFactory {
     /**
      * Creates a {@link NameMapper} instance.
      */
-    NameMapper createNameMapper(Map<String, Object> config) throws IOException;
+    NameMapper createNameMapper(Config config) throws IOException;
 }

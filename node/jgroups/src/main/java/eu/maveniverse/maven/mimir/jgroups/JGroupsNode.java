@@ -30,7 +30,7 @@ public class JGroupsNode implements Node {
     }
 
     @Override
-    public String id() {
+    public String name() {
         return JGroupsNodeFactory.NAME;
     }
 
@@ -53,7 +53,7 @@ public class JGroupsNode implements Node {
                         int colon = parts[0].indexOf(':');
                         String host = parts[0].substring(0, colon);
                         int port = Integer.parseInt(parts[0].substring(colon + 1));
-                        return Optional.of(localNode.store(key, new JGroupsCacheEntry(id(), host, port, parts[1])));
+                        return Optional.of(localNode.store(key, new JGroupsCacheEntry(name(), host, port, parts[1])));
                     }
                 }
             }

@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -43,12 +44,11 @@ public class SessionImpl implements Session {
     @Override
     public boolean supports(RemoteRepository repository) {
         // for now, we do only "real remote" artifact caching, those coming over HTTP only (but this includes S3/minio)
-        String protocol = repository.getProtocol();
-        return protocol != null && protocol.contains("http");
+        return repository.getProtocol().toLowerCase(Locale.ROOT).contains("http");
     }
 
     @Override
-    public CacheKey cacheKey(RemoteRepository remoteRepository, Artifact artifact) {
+    public Optional<CacheKey> cacheKey(RemoteRepository remoteRepository, Artifact artifact) {
         if (!supports(remoteRepository)) {
             throw new IllegalArgumentException("Unsupported remote repository: " + remoteRepository);
         }

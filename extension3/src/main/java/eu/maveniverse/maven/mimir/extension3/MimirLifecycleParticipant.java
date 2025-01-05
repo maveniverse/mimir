@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.mimir.extension3;
 
+import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -14,6 +15,7 @@ import javax.inject.Singleton;
 import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.execution.MavenSession;
+import org.eclipse.aether.RepositorySystemSession;
 
 /**
  * Lifecycle participant that creates Mimir session early, as it may be costly operation (spawning a new Java process,
@@ -32,9 +34,13 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
     @Override
     public void afterSessionStart(MavenSession session) throws MavenExecutionException {
         try {
+            RepositorySystemSession repoSession = session.getRepositorySession();
             MimirUtils.seedSession(
                     session.getRepositorySession(),
-                    sessionFactory.createSession(session.getRepositorySession().getConfigProperties()));
+                    sessionFactory.createSession(Config.defaults()
+                            .userProperties(repoSession.getUserProperties())
+                            .systemProperties(repoSession.getSystemProperties())
+                            .build()));
         } catch (Exception e) {
             throw new MavenExecutionException("Error creating Mimir session", e);
         }

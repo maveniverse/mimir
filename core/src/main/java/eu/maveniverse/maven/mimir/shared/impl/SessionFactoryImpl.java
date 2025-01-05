@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.mimir.shared.impl;
 
+import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
 import eu.maveniverse.maven.mimir.shared.naming.NameMapperFactory;
@@ -41,7 +42,7 @@ public class SessionFactoryImpl implements SessionFactory {
     }
 
     @Override
-    public Session createSession(Map<String, Object> config) throws IOException {
+    public Session createSession(Config config) throws IOException {
         LocalNode localNode = localNodeFactory.createLocalNode(config);
         ArrayList<Node> nodes = new ArrayList<>();
         for (NodeFactory nodeFactory : this.nodeFactories.values()) {

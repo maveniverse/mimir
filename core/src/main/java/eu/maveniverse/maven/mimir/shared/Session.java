@@ -20,9 +20,9 @@ public interface Session extends AutoCloseable {
     boolean supports(RemoteRepository remoteRepository);
 
     /**
-     * Creates cache key out of remote repository and artifact.
+     * Creates cache key out of remote repository and artifact, if supported.
      */
-    CacheKey cacheKey(RemoteRepository remoteRepository, Artifact artifact);
+    Optional<CacheKey> cacheKey(RemoteRepository remoteRepository, Artifact artifact);
 
     /**
      * Locates cache entry by key.

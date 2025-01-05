@@ -2,6 +2,7 @@ package eu.maveniverse.maven.mimir.jgroups;
 
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.CacheKey;
+import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.impl.LocalNodeFactoryImpl;
 import eu.maveniverse.maven.mimir.shared.node.LocalCacheEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
@@ -34,23 +35,24 @@ public class JGroupsPublisher implements RequestHandler, AutoCloseable {
     public static void main(String... args) throws Exception {
         Logger logger = LoggerFactory.getLogger(JGroupsPublisher.class);
 
-        Path basedir;
-        String nodeName;
+        Path basedir = null;
+        String nodeName = null;
         if (args.length > 0) {
-            basedir = Path.of(args[0]).toAbsolutePath();
-        } else {
-            basedir = Path.of(System.getProperty("user.home"), ".mimir", "local");
+            basedir = Path.of(args[0]);
         }
         if (args.length > 1) {
             nodeName = args[1];
-        } else {
-            nodeName = InetAddress.getLocalHost().getHostName();
         }
 
-        HashMap<String, Object> config = new HashMap<>();
-        config.put("mimir.basedir", basedir.toString());
-        config.put("mimir.local.name", nodeName);
-        LocalNode localNode = new LocalNodeFactoryImpl().createLocalNode(config);
+        HashMap<String, String> config = new HashMap<>();
+        if (basedir != null) {
+            config.put("mimir.local.basedir", basedir.toString());
+        }
+        if (nodeName != null) {
+            config.put("mimir.local.name", nodeName);
+        }
+        LocalNode localNode = new LocalNodeFactoryImpl()
+                .createLocalNode(Config.defaults().userProperties(config).build());
         JGroupsPublisher publisher = new JGroupsPublisher(
                 localNode,
                 new JChannel("udp-new.xml")
@@ -61,7 +63,7 @@ public class JGroupsPublisher implements RequestHandler, AutoCloseable {
         logger.info("");
         logger.info("JGroupsPublisher started (Ctrl+C to exit)");
         logger.info("Publishing:");
-        logger.info("* {} ({})", localNode.id(), localNode.basedir());
+        logger.info("* {} ({})", localNode.name(), localNode.basedir());
         try {
             new CountDownLatch(1).await(); // this is merely to get interrupt
         } catch (InterruptedException e) {

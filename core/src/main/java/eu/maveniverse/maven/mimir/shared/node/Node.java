@@ -14,9 +14,9 @@ import java.util.Optional;
 
 public interface Node extends AutoCloseable {
     /**
-     * Node ID.
+     * Node name, a label.
      */
-    String id();
+    String name();
 
     /**
      * The "distance" of node. Distance of 0 (zero) is "closest", and positive integers are "further away".

@@ -5,13 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.CacheKey;
+import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.impl.LocalNodeConfig;
 import eu.maveniverse.maven.mimir.shared.impl.LocalNodeFactoryImpl;
 import eu.maveniverse.maven.mimir.shared.impl.LocalNodeImpl;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.Optional;
 import org.jgroups.JChannel;
 import org.junit.jupiter.api.Test;
@@ -30,8 +31,8 @@ public class JGroupsPublisherTest {
         Files.createDirectories(contentPath.getParent());
         Files.writeString(contentPath, content);
 
-        LocalNode nodeOne = new LocalNodeImpl("one", 0, one);
-        LocalNode nodeTwo = new LocalNodeImpl("two", 0, two);
+        LocalNode nodeOne = new LocalNodeImpl(LocalNodeConfig.of("one", 0, one));
+        LocalNode nodeTwo = new LocalNodeImpl(LocalNodeConfig.of("two", 0, two));
 
         JChannel channelOne = new JChannel("udp-new.xml")
                 .name(InetAddress.getLocalHost().getHostName() + "-one")
@@ -58,7 +59,7 @@ public class JGroupsPublisherTest {
 
     public static void main(String... args) throws Exception {
         new JGroupsPublisher(
-                new LocalNodeFactoryImpl().createLocalNode(Collections.emptyMap()),
+                new LocalNodeFactoryImpl().createLocalNode(Config.defaults().build()),
                 new JChannel("udp-new.xml")
                         .name(InetAddress.getLocalHost().getHostName())
                         .setDiscardOwnMessages(true)

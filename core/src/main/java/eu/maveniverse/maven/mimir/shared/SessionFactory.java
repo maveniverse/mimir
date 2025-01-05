@@ -8,11 +8,10 @@
 package eu.maveniverse.maven.mimir.shared;
 
 import java.io.IOException;
-import java.util.Map;
 
 public interface SessionFactory {
     /**
      * Creates a session. Session once unused should be closed.
      */
-    Session createSession(Map<String, Object> config) throws IOException;
+    Session createSession(Config config) throws IOException;
 }

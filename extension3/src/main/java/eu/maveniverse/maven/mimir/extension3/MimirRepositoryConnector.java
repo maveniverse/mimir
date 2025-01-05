@@ -54,21 +54,30 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                 if (!isSupported(artifactDownload)) {
                     ads.add(artifactDownload);
                 } else {
-                    try {
-                        CacheKey cacheKey = mimirSession.cacheKey(remoteRepository, artifactDownload.getArtifact());
-                        Optional<CacheEntry> entry = mimirSession.locate(cacheKey);
-                        if (entry.isPresent()) {
-                            CacheEntry ce = entry.orElseThrow(() -> new IllegalStateException("Cache entry not found"));
-                            logger.debug(
-                                    "Fetched {} from Mimir '{}' cache", artifactDownload.getArtifact(), ce.origin());
-                            ce.transferTo(artifactDownload.getFile().toPath());
-                        } else {
-                            ads.add(artifactDownload);
-                            keys.put(artifactDownload.getArtifact(), cacheKey);
+                    Optional<CacheKey> cacheKey =
+                            mimirSession.cacheKey(remoteRepository, artifactDownload.getArtifact());
+                    if (cacheKey.isPresent()) {
+                        try {
+                            CacheKey key = cacheKey.orElseThrow(() -> new IllegalStateException("Cache key not found"));
+                            Optional<CacheEntry> entry = mimirSession.locate(key);
+                            if (entry.isPresent()) {
+                                CacheEntry ce =
+                                        entry.orElseThrow(() -> new IllegalStateException("Cache entry not found"));
+                                logger.debug(
+                                        "Fetched {} from Mimir '{}' cache",
+                                        artifactDownload.getArtifact(),
+                                        ce.origin());
+                                ce.transferTo(artifactDownload.getFile().toPath());
+                            } else {
+                                ads.add(artifactDownload);
+                                keys.put(artifactDownload.getArtifact(), key);
+                            }
+                        } catch (IOException e) {
+                            artifactDownload.setException(
+                                    new ArtifactTransferException(artifactDownload.getArtifact(), remoteRepository, e));
                         }
-                    } catch (IOException e) {
-                        artifactDownload.setException(
-                                new ArtifactTransferException(artifactDownload.getArtifact(), remoteRepository, e));
+                    } else {
+                        ads.add(artifactDownload);
                     }
                 }
             }

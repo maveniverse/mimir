@@ -29,8 +29,8 @@ public class UdsNode implements Node {
     }
 
     @Override
-    public String id() {
-        return UdsNodeFactory.NAME;
+    public String name() {
+        return UdsNodeConfig.NAME;
     }
 
     @Override
@@ -54,6 +54,8 @@ public class UdsNode implements Node {
 
     @Override
     public void close() throws Exception {
+        dos.writeUTF("BYE");
+        dos.flush();
         socketChannel.close();
     }
 
@@ -66,7 +68,7 @@ public class UdsNode implements Node {
 
         @Override
         public String origin() {
-            return id();
+            return name();
         }
 
         @Override

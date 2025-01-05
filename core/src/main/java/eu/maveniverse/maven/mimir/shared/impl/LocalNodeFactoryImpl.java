@@ -7,35 +7,21 @@
  */
 package eu.maveniverse.maven.mimir.shared.impl;
 
+import static java.util.Objects.requireNonNull;
+
+import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Map;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 @Singleton
-@Named(LocalNodeFactoryImpl.NAME)
+@Named
 public final class LocalNodeFactoryImpl implements LocalNodeFactory {
-    public static final String NAME = "local";
-
     @Override
-    public LocalNode createLocalNode(Map<String, Object> config) throws IOException {
-        String name = NAME;
-        Path basedir;
-        if (config.containsKey("mimir.local.name")) {
-            name = (String) config.get("mimir.local.name");
-        }
-        if (config.containsKey("mimir.basedir")) {
-            basedir = Paths.get(config.get("mimir.basedir").toString());
-        } else {
-            basedir =
-                    Paths.get(System.getProperty("user.home")).resolve(".mimir").resolve("local");
-        }
-        Files.createDirectories(basedir);
-        return new LocalNodeImpl(name, 0, basedir);
+    public LocalNode createLocalNode(Config config) throws IOException {
+        requireNonNull(config, "config");
+        return new LocalNodeImpl(LocalNodeConfig.with(config));
     }
 }
