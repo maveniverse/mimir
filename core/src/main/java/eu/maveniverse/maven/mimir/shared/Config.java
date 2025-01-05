@@ -7,15 +7,20 @@
  */
 package eu.maveniverse.maven.mimir.shared;
 
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.toMap;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.Utils;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Simple Mimir configuration.
@@ -53,7 +58,7 @@ public interface Config {
             Path userHome = discoverUserHomeDirectory();
             this.basedir = userHome.resolve(".mimir");
             this.userProperties = new HashMap<>();
-            this.systemProperties = Utils.toMap(System.getProperties());
+            this.systemProperties = toMap(System.getProperties());
         }
 
         private Builder(
@@ -100,11 +105,23 @@ public interface Config {
                     Map<String, String> systemProperties) {
                 this.mimirVersion = requireNonNull(mimirVersion, "mimirVersion");
                 this.basedir = requireNonNull(basedir, "basedir");
+
+                Properties mimirProperties = new Properties();
+                Path mimirPropertiesPath = basedir.resolve("mimir.properties");
+                if (Files.isRegularFile(mimirPropertiesPath)) {
+                    try (InputStream inputStream = Files.newInputStream(mimirPropertiesPath)) {
+                        mimirProperties.load(inputStream);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                }
+
                 this.userProperties = Collections.unmodifiableMap(requireNonNull(userProperties, "userProperties"));
                 this.systemProperties =
                         Collections.unmodifiableMap(requireNonNull(systemProperties, "systemProperties"));
                 HashMap<String, String> eff = new HashMap<>();
                 eff.putAll(systemProperties);
+                eff.putAll(toMap(mimirProperties));
                 eff.putAll(userProperties);
                 this.effectiveProperties = Collections.unmodifiableMap(eff);
             }
