@@ -102,7 +102,7 @@ public class Daemon implements AutoCloseable {
         logger.info("Daemon started");
         logger.info(" * socket: {}", socketAddress);
         logger.info(" * localNode: {} (d={})", localNode.basedir(), localNode.distance());
-        logger.info(" * {} nodes:", nodes.size());
+        logger.info(" * {} node(s):", nodes.size());
         for (Node node : this.nodes) {
             logger.info("   - {} (d={})", node.name(), node.distance());
         }

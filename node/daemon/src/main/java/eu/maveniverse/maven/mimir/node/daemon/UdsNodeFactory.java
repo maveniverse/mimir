@@ -39,13 +39,32 @@ public class UdsNodeFactory implements NodeFactory {
         }
         if (!Files.exists(cfg.socketPath())) {
             if (cfg.autostart()) {
-                startDaemon(cfg.socketPath(), config);
+                if (!startDaemon(config)) {
+                    return null;
+                }
             }
         }
         return SocketChannel.open(UnixDomainSocketAddress.of(cfg.socketPath()));
     }
 
-    private void startDaemon(Path socketPath, Config config) throws IOException {
-        throw new IOException("Could not start UDS Daemon");
+    private boolean startDaemon(Config config) throws IOException {
+        String daemonJarName = "daemon-" + config.mimirVersion() + ".jar";
+        if (Files.isRegularFile(config.basedir().resolve(daemonJarName))) {
+            Path log = config.basedir().resolve("daemon-" + config.mimirVersion() + ".log");
+            ProcessBuilder pb = new ProcessBuilder()
+                    .directory(config.basedir().toFile())
+                    .redirectError(log.toFile())
+                    .redirectOutput(log.toFile())
+                    .command("java", "-jar", daemonJarName);
+            pb.start();
+            try {
+                // not the nicest, but JGroups will also sleep 1s to discover cluster
+                Thread.sleep(1500);
+            } catch (InterruptedException ignore) {
+                // ignore
+            }
+            return true;
+        }
+        return false;
     }
 }
