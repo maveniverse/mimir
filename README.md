@@ -47,10 +47,6 @@ Build requirements:
 * Java 21
 * Maven 3.9.9+
 
-Runtime requirement for Core:
-* Java 8+
-* Maven 3.6.3+
-
-Runtime requirement for jgroups and UDS:
+Runtime requirements:
 * Java 17+
 * Maven 3.6.3+

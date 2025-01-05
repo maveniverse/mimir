@@ -38,6 +38,7 @@
     <module>core</module>
     <module>node</module>
     <module>extension3</module>
+    <module>daemon</module>
     <module>it</module>
   </modules>
 
@@ -65,7 +66,7 @@
     Build time: latest stable Maven and latest Java LTS.
     Run time: "not so old" Maven (3.6.3+) and latest Java LTS.
     -->
-    <maven.compiler.release>8</maven.compiler.release>
+    <maven.compiler.release>17</maven.compiler.release>
     <requireBuildtimeJavaVersion.version>[21.0.3,)</requireBuildtimeJavaVersion.version>
     <requireBuildtimeMavenVersion.version>[3.9.9,)</requireBuildtimeMavenVersion.version>
     <requireRuntimeMavenVersion.version>[3.6.3,)</requireRuntimeMavenVersion.version>
@@ -98,6 +99,22 @@
         <groupId>javax.inject</groupId>
         <artifactId>javax.inject</artifactId>
         <version>1</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.eclipse.sisu</groupId>
+        <artifactId>org.eclipse.sisu.inject</artifactId>
+        <version>0.9.0.M3</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.inject</groupId>
+        <artifactId>guice</artifactId>
+        <version>5.1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>33.4.0-jre</version>
       </dependency>
 
       <!-- Resolver + Maven -->

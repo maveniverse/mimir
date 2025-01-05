@@ -36,7 +36,7 @@ public class JGroupsNode implements Node {
 
     @Override
     public int distance() {
-        return 100;
+        return 500;
     }
 
     @Override

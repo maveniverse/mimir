@@ -96,7 +96,7 @@ public class JGroupsPublisher implements RequestHandler, AutoCloseable {
         this.serverThread = new Thread(() -> {
             try {
                 while (true) {
-                    final Socket accepted = serverSocket.accept();
+                    Socket accepted = serverSocket.accept();
                     executor.submit(() -> {
                         try (Socket socket = accepted) {
                             byte[] buf = socket.getInputStream().readNBytes(36);

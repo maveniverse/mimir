@@ -12,12 +12,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>eu.maveniverse.maven.mimir.node</groupId>
-    <artifactId>node</artifactId>
+    <groupId>eu.maveniverse.maven.mimir</groupId>
+    <artifactId>mimir</artifactId>
     <version>0.1.1-SNAPSHOT</version>
   </parent>
 
-  <artifactId>jgroups</artifactId>
+  <artifactId>daemon</artifactId>
 
   <name>${project.groupId}:${project.artifactId}</name>
 
@@ -27,48 +27,55 @@
       <artifactId>core</artifactId>
       <version>${project.version}</version>
     </dependency>
-
     <dependency>
-      <groupId>org.jgroups</groupId>
+      <groupId>eu.maveniverse.maven.mimir.node</groupId>
       <artifactId>jgroups</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
     </dependency>
     <dependency>
       <groupId>javax.inject</groupId>
       <artifactId>javax.inject</artifactId>
-      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.sisu</groupId>
+      <artifactId>org.eclipse.sisu.inject</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.inject</groupId>
+      <artifactId>guice</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <scope>runtime</scope>
     </dependency>
 
     <!-- Resolver -->
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-api</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-spi</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-util</artifactId>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -85,7 +92,7 @@
         <artifactId>maven-shade-plugin</artifactId>
         <executions>
           <execution>
-            <id>cli</id>
+            <id>daemon</id>
             <goals>
               <goal>shade</goal>
             </goals>
@@ -93,17 +100,13 @@
             <configuration>
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <shadedArtifactAttached>true</shadedArtifactAttached>
-              <shadedClassifierName>cli</shadedClassifierName>
-              <extraArtifacts>
-                <extraArtifact>org.slf4j:slf4j-api:${version.slf4j}</extraArtifact>
-                <extraArtifact>org.slf4j:slf4j-simple:${version.slf4j}</extraArtifact>
-              </extraArtifacts>
+              <shadedClassifierName>daemon</shadedClassifierName>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                 <transformer implementation="org.apache.maven.plugins.shade.resource.SisuIndexResourceTransformer" />
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <manifestEntries>
-                    <Main-Class>eu.maveniverse.maven.mimir.jgroups.JGroupsPublisher</Main-Class>
+                    <Main-Class>eu.maveniverse.maven.mimir.daemon.Daemon</Main-Class>
                     <Specification-Title>${project.artifactId}</Specification-Title>
                     <Specification-Version>${project.version}</Specification-Version>
                     <Implementation-Title>${project.artifactId}</Implementation-Title>

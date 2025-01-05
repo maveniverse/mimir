@@ -1,0 +1,136 @@
+package eu.maveniverse.maven.mimir.daemon;
+
+import static java.util.Objects.requireNonNull;
+
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.node.LocalNode;
+import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
+import eu.maveniverse.maven.mimir.shared.node.Node;
+import eu.maveniverse.maven.mimir.shared.node.NodeFactory;
+import java.io.IOException;
+import java.net.StandardProtocolFamily;
+import java.net.UnixDomainSocketAddress;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import javax.inject.Inject;
+import javax.inject.Named;
+import org.eclipse.sisu.EagerSingleton;
+import org.eclipse.sisu.space.BeanScanning;
+import org.eclipse.sisu.space.SpaceModule;
+import org.eclipse.sisu.space.URLClassSpace;
+import org.eclipse.sisu.wire.WireModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@Named
+@EagerSingleton
+public class Daemon implements AutoCloseable {
+    public static void main(String[] args) throws IOException {
+        Config config =
+                Config.defaults().propertiesPath(Path.of("daemon.properties")).build();
+
+        Guice.createInjector(new WireModule(
+                new AbstractModule() {
+                    @Override
+                    protected void configure() {
+                        bind(Config.class).toInstance(config);
+                    }
+                },
+                new SpaceModule(new URLClassSpace(Daemon.class.getClassLoader()), BeanScanning.INDEX, true)));
+    }
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final ServerSocketChannel serverSocketChannel;
+
+    private final ExecutorService executor;
+
+    private final LocalNode localNode;
+    private final List<Node> nodes;
+
+    @Inject
+    public Daemon(Config config, LocalNodeFactory localNodeFactory, Map<String, NodeFactory> nodeFactories)
+            throws IOException {
+        requireNonNull(config, "config");
+
+        this.localNode = localNodeFactory.createLocalNode(config);
+        ArrayList<Node> nds = new ArrayList<>();
+        for (NodeFactory nodeFactory : nodeFactories.values()) {
+            Optional<Node> node = nodeFactory.createNode(config, localNode);
+            node.ifPresent(nds::add);
+        }
+        nds.sort(Comparator.comparing(Node::distance));
+        this.nodes = nds;
+
+        this.executor = Executors.newFixedThreadPool(6);
+
+        DaemonConfig cfg = DaemonConfig.with(config);
+        Path socketPath = cfg.socketPath();
+        // make sure socket is deleted once daemon exits
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                Files.deleteIfExists(socketPath);
+            } catch (IOException e) {
+                logger.warn("Failed to delete socket path: {}", socketPath, e);
+            }
+        }));
+
+        UnixDomainSocketAddress socketAddress = UnixDomainSocketAddress.of(socketPath);
+        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
+        serverSocketChannel.configureBlocking(true);
+        serverSocketChannel.bind(socketAddress);
+
+        this.serverSocketChannel = serverSocketChannel;
+        logger.info("Daemon started (socket: {})", socketAddress);
+
+        executor.submit(() -> {
+            try {
+                while (true) {
+                    SocketChannel socketChannel = serverSocketChannel.accept();
+                    executor.submit(new UdsNodeServer(socketChannel, localNode, nodes));
+                }
+            } catch (Exception e) {
+                logger.error("Error while accepting client connection", e);
+                try {
+                    close();
+                } catch (Exception ignore) {
+                }
+            }
+        });
+    }
+
+    @Override
+    public void close() throws IOException {
+        serverSocketChannel.close();
+
+        ArrayList<Exception> exceptions = new ArrayList<>();
+        for (Node node : this.nodes) {
+            try {
+                node.close();
+            } catch (Exception e) {
+                exceptions.add(e);
+            }
+        }
+        try {
+            localNode.close();
+        } catch (Exception e) {
+            exceptions.add(e);
+        }
+        if (!exceptions.isEmpty()) {
+            IllegalStateException illegalStateException = new IllegalStateException("Could not close session");
+            exceptions.forEach(illegalStateException::addSuppressed);
+            throw illegalStateException;
+        }
+        logger.info("Daemon stopped");
+    }
+}

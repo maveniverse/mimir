@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.UnixDomainSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -31,13 +32,13 @@ public class UdsNodeFactory implements NodeFactory {
         }
         if (!Files.exists(cfg.socketPath())) {
             if (cfg.autostart()) {
-                startDaemon(config);
+                startDaemon(cfg.socketPath(), config);
             }
         }
         return SocketChannel.open(UnixDomainSocketAddress.of(cfg.socketPath()));
     }
 
-    private void startDaemon(Config config) throws IOException {
+    private void startDaemon(Path socketPath, Config config) throws IOException {
         throw new IOException("Could not start UDS Daemon");
     }
 }

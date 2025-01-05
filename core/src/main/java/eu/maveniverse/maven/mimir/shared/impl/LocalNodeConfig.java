@@ -11,7 +11,6 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public final class LocalNodeConfig {
     public static LocalNodeConfig with(Config config) {
@@ -26,8 +25,8 @@ public final class LocalNodeConfig {
         }
         Path basedir = config.basedir().resolve(name);
         if (config.effectiveProperties().containsKey("mimir.local.basedir")) {
-            basedir = Config.getCanonicalPath(
-                    Paths.get(config.effectiveProperties().get("mimir.local.basedir")));
+            basedir =
+                    Config.getCanonicalPath(Path.of(config.effectiveProperties().get("mimir.local.basedir")));
         }
         return new LocalNodeConfig(name, distance, basedir);
     }

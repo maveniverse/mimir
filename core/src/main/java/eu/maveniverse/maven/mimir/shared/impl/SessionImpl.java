@@ -60,7 +60,7 @@ public class SessionImpl implements Session {
         requireNonNull(key, "key");
         Optional<CacheEntry> result = localNode.locate(key);
         if (!result.isPresent()) {
-            for (Node node : this.nodes) {
+            for (Node node : nodes) {
                 result = node.locate(key);
                 if (result.isPresent()) {
                     result = Optional.of(localNode.store(

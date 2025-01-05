@@ -16,7 +16,6 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +31,8 @@ public interface Config {
 
     Path basedir();
 
+    Path propertiesPath();
+
     Map<String, String> userProperties();
 
     Map<String, String> systemProperties();
@@ -39,7 +40,7 @@ public interface Config {
     Map<String, String> effectiveProperties();
 
     default Builder toBuilder() {
-        return new Builder(mimirVersion(), basedir(), userProperties(), systemProperties());
+        return new Builder(mimirVersion(), basedir(), propertiesPath(), userProperties(), systemProperties());
     }
 
     static Builder defaults() {
@@ -49,6 +50,7 @@ public interface Config {
     class Builder {
         private final String mimirVersion;
         private Path basedir;
+        private Path propertiesPath;
         private Map<String, String> userProperties;
         private Map<String, String> systemProperties;
 
@@ -57,6 +59,7 @@ public interface Config {
                     Config.class.getClassLoader(), "eu.maveniverse.maven.mimir", "core", UNKNOWN);
             Path userHome = discoverUserHomeDirectory();
             this.basedir = userHome.resolve(".mimir");
+            this.propertiesPath = Path.of("mimir.properties");
             this.userProperties = new HashMap<>();
             this.systemProperties = toMap(System.getProperties());
         }
@@ -64,16 +67,23 @@ public interface Config {
         private Builder(
                 String mimirVersion,
                 Path basedir,
+                Path propertiesPath,
                 Map<String, String> userProperties,
                 Map<String, String> systemProperties) {
             this.mimirVersion = mimirVersion;
             this.basedir = basedir;
+            this.propertiesPath = propertiesPath;
             this.userProperties = userProperties;
             this.systemProperties = systemProperties;
         }
 
         public Builder basedir(Path basedir) {
             this.basedir = getCanonicalPath(basedir);
+            return this;
+        }
+
+        public Builder propertiesPath(Path propertiesPath) {
+            this.propertiesPath = requireNonNull(propertiesPath, "propertiesPath");
             return this;
         }
 
@@ -88,12 +98,13 @@ public interface Config {
         }
 
         public Config build() {
-            return new Impl(mimirVersion, basedir, userProperties, systemProperties);
+            return new Impl(mimirVersion, basedir, propertiesPath, userProperties, systemProperties);
         }
 
         private static class Impl implements Config {
             private final String mimirVersion;
             private final Path basedir;
+            private final Path propertiesPath;
             private final Map<String, String> userProperties;
             private final Map<String, String> systemProperties;
             private final Map<String, String> effectiveProperties;
@@ -101,13 +112,15 @@ public interface Config {
             private Impl(
                     String mimirVersion,
                     Path basedir,
+                    Path propertiesPath,
                     Map<String, String> userProperties,
                     Map<String, String> systemProperties) {
                 this.mimirVersion = requireNonNull(mimirVersion, "mimirVersion");
                 this.basedir = requireNonNull(basedir, "basedir");
+                this.propertiesPath = requireNonNull(propertiesPath, "propertiesPath");
 
                 Properties mimirProperties = new Properties();
-                Path mimirPropertiesPath = basedir.resolve("mimir.properties");
+                Path mimirPropertiesPath = basedir.resolve(propertiesPath);
                 if (Files.isRegularFile(mimirPropertiesPath)) {
                     try (InputStream inputStream = Files.newInputStream(mimirPropertiesPath)) {
                         mimirProperties.load(inputStream);
@@ -137,6 +150,11 @@ public interface Config {
             }
 
             @Override
+            public Path propertiesPath() {
+                return propertiesPath;
+            }
+
+            @Override
             public Map<String, String> userProperties() {
                 return userProperties;
             }
@@ -158,7 +176,7 @@ public interface Config {
         if (userHome == null) {
             throw new IllegalStateException("requires user.home Java System Property set");
         }
-        return getCanonicalPath(Paths.get(userHome));
+        return getCanonicalPath(Path.of(userHome));
     }
 
     static Path getCanonicalPath(Path path) {
