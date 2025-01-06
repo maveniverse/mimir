@@ -1,16 +1,16 @@
 # Mímir
 
-Note: this code is Proof of Concept, with a lot of To-Be-Done parts (like config).
+Note: this code is Proof of Concept, with a lot of To-Be-Done parts and intentionally simple as possible. For now
+only "central" repository released artifacts are supported.
 
 Goal: A system-wide cache for Maven. Will make you to love to nuke your local repository. It adds a layer of
 cache between resolver and transport. This implies it works irrelevant of location of your local repository 
-and its kind (enhanced, split, whatever). You have one single "local" cache (by def in `~/.mimir/local`) and it
-is consulted before Maven would go remote. For now, only HTTP-ish release remote repositories are supported.
-This local cache may be used by all Maven builds running on same workstation.
+and its kind (enhanced, split, whatever). You have one single "local" system-wide cache (by def in `~/.mimir/local`) and it
+is consulted before Maven would go remote. For now, only "central" release remote repository is supported.
+This local cache can be used by all Maven builds running on same workstation.
 
-Another goal is to introduce "cache sharing" across LAN, so make Mimir able to share caches across LAN from several
-workstations: basically if one workstation has the cache content, share it to neighbors if needed. For this a
-"cache publisher" needs to run on workstation, that will publish workstation "local cache" via LAN.
+Another goal is to introduce "local cache sharing" across LAN, so make Mimir able to share caches across LAN from several
+workstations: basically if one workstation has the cache content, share it to neighbors. Daemon does this by default.
 
 Concept:
 * "wraps" the actual connector being used by Resolver, provides "extra cache layer" between connector and transport
@@ -20,8 +20,7 @@ Concept:
 * the node could offer locally and also remotely cached contents
 * on local caching, "hard linking" should be used whenever possible (otherwise fallback to plain "copy") to avoid content duplication
 * is irrelevant is project using it sits on "classic" or "split" or whatever local repository (as it is cache layer "above" local repository)
-* current "simple proof of concept" is trivial, but later on, "local node" could spawn a daemon (a la mvnd) offering
-  its cache content not only locally but also for remote nodes
+* RemoteRepository handling has a huge deal of TBDs, right now is almost trivial.
 
 To use it (you can make it user-wide extension with Maven4):
 ```xml
@@ -30,18 +29,35 @@ To use it (you can make it user-wide extension with Maven4):
     <extension>
         <groupId>eu.maveniverse.maven.mimir</groupId>
         <artifactId>extension3</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>0.2.1</version>
     </extension>
 </extensions>
 ```
-Note: currently `extension3` works with Maven 3 and Maven 4. Later we may introduce `extension4` specifically for
+Note: currently `extension3` works with both Maven 3 and Maven 4. Later we may introduce `extension4` specifically for
 Maven 4.
 
-To start publisher on LAN:
+## To use it
+
+With Maven 4 (latest master) create user-wide `~/.m2/extensions.xml` like this:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<extensions>
+    <extension>
+        <groupId>eu.maveniverse.maven.mimir</groupId>
+        <artifactId>extension3</artifactId>
+        <version>0.2.1</version>
+    </extension>
+</extensions>
 ```
-$ java -jar node/jgroups/target/jgroups-0.1.0-SNAPSHOT-cli.jar [cache basedir [node name]]
+Works with latest Maven 3 as well, but it does not support user-wide extensions, so file above should be placed under some project `.mvn/extensions.xml` file instead.
+
+IF you have docker, tailscale (or just non-trivial networking setup), help JGroups to select your LAN interface: create `~/.mimir/daemon.properties` file like this:
+```properties
+mimir.jgroups.interface=match-address\:192.168.1.*
 ```
-By default, cache basedir is `~/.mimir/local` and node name is hostname. Use Ctrl+C to stop publisher.
+(use yor LAN IP address).
+
+And just build with Maven...
 
 Build requirements:
 * Java 21
