@@ -12,6 +12,7 @@ import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.Node;
 import eu.maveniverse.maven.mimir.shared.node.NodeFactory;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.UnixDomainSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
@@ -29,30 +30,28 @@ public class UdsNodeFactory implements NodeFactory {
 
     @Override
     public Optional<Node> createNode(Config config, LocalNode localNode) throws IOException {
-        SocketChannel socketChannel = createSocketChannel(config);
-        if (socketChannel == null) {
-            return Optional.empty();
-        }
-        return Optional.of(new UdsNode(socketChannel));
-    }
-
-    private SocketChannel createSocketChannel(Config config) throws IOException {
         UdsNodeConfig cfg = UdsNodeConfig.with(config);
         if (!cfg.enabled()) {
             logger.debug("Mimir daemon not enabled");
-            return null;
+            return Optional.empty();
         }
         if (!Files.exists(cfg.socketPath())) {
             if (cfg.autostart()) {
                 logger.debug("Mimir daemon is not running, starting it");
                 Process daemon = startDaemon(config.basedir(), cfg);
                 if (daemon == null) {
-                    return null;
+                    return Optional.empty();
                 }
                 logger.info("Mimir daemon started (pid={})", daemon.pid());
             }
         }
-        return SocketChannel.open(UnixDomainSocketAddress.of(cfg.socketPath()));
+        return Optional.of(new UdsNode(() -> {
+            try {
+                return new UdsNode.Handle(SocketChannel.open(UnixDomainSocketAddress.of(cfg.socketPath())));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }));
     }
 
     private Process startDaemon(Path basedir, UdsNodeConfig config) throws IOException {

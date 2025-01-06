@@ -7,10 +7,11 @@
  */
 package eu.maveniverse.maven.mimir.shared;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 
-public interface CacheEntry {
+public interface CacheEntry extends Closeable {
     /**
      * The origin of cache entry, a label.
      */

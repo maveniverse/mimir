@@ -62,13 +62,14 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                             CacheKey key = cacheKey.orElseThrow(() -> new IllegalStateException("Cache key not found"));
                             Optional<CacheEntry> entry = mimirSession.locate(key);
                             if (entry.isPresent()) {
-                                CacheEntry ce =
-                                        entry.orElseThrow(() -> new IllegalStateException("Cache entry not found"));
-                                logger.debug(
-                                        "Fetched {} from Mimir '{}' cache",
-                                        artifactDownload.getArtifact(),
-                                        ce.origin());
-                                ce.transferTo(artifactDownload.getFile().toPath());
+                                try (CacheEntry ce =
+                                        entry.orElseThrow(() -> new IllegalStateException("Cache entry not found"))) {
+                                    logger.debug(
+                                            "Fetched {} from Mimir '{}' cache",
+                                            artifactDownload.getArtifact(),
+                                            ce.origin());
+                                    ce.transferTo(artifactDownload.getFile().toPath());
+                                }
                             } else {
                                 ads.add(artifactDownload);
                                 keys.put(artifactDownload.getArtifact(), key);

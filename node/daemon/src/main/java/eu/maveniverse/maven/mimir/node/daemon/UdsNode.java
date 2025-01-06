@@ -10,6 +10,9 @@ package eu.maveniverse.maven.mimir.node.daemon;
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.CacheKey;
 import eu.maveniverse.maven.mimir.shared.node.Node;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -17,6 +20,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,16 +31,43 @@ import org.slf4j.LoggerFactory;
  * transfer to.
  */
 public class UdsNode implements Node {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final SocketChannel socketChannel;
-    private final DataOutputStream dos;
-    private final DataInputStream dis;
-    private final Object monitor = new Object();
+    public static final class Handle implements Closeable {
+        private final SocketChannel socketChannel;
+        private final DataOutputStream dos;
+        private final DataInputStream dis;
 
-    public UdsNode(SocketChannel socketChannel) {
-        this.socketChannel = socketChannel;
-        this.dos = new DataOutputStream(Channels.newOutputStream(socketChannel));
-        this.dis = new DataInputStream(Channels.newInputStream(socketChannel));
+        public Handle(SocketChannel socketChannel) {
+            this.socketChannel = socketChannel;
+            this.dos = new DataOutputStream(new BufferedOutputStream(Channels.newOutputStream(socketChannel)));
+            this.dis = new DataInputStream(new BufferedInputStream(Channels.newInputStream(socketChannel)));
+        }
+
+        public String locate(String cacheKey) throws IOException {
+            dos.writeUTF("LOCATE");
+            dos.writeUTF(cacheKey);
+            dos.flush();
+            return dis.readUTF();
+        }
+
+        public String transferTo(String cacheKey, String path) throws IOException {
+            dos.writeUTF("TRANSFER");
+            dos.writeUTF(cacheKey);
+            dos.writeUTF(path);
+            dos.flush();
+            return dis.readUTF();
+        }
+
+        @Override
+        public void close() throws IOException {
+            socketChannel.close();
+        }
+    }
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Supplier<Handle> commSupplier;
+
+    public UdsNode(Supplier<Handle> commSupplier) {
+        this.commSupplier = commSupplier;
     }
 
     @Override
@@ -51,32 +82,27 @@ public class UdsNode implements Node {
 
     @Override
     public Optional<CacheEntry> locate(CacheKey key) throws IOException {
-        synchronized (monitor) {
-            String keyString = CacheKey.toKeyString(key);
-            logger.debug("LOCATE '{}'", keyString);
-            dos.writeUTF("LOCATE");
-            dos.writeUTF(keyString);
-            dos.flush();
-            String response = dis.readUTF();
-            if (response.startsWith("OK")) {
-                return Optional.of(new UdsCacheEntry(keyString));
-            } else {
-                return Optional.empty();
-            }
+        String keyString = CacheKey.toKeyString(key);
+        logger.debug("LOCATE '{}'", keyString);
+        Handle handle = commSupplier.get();
+        String response = handle.locate(keyString);
+        if (response.startsWith("OK")) {
+            return Optional.of(new UdsCacheEntry(handle, keyString));
+        } else {
+            handle.close();
+            return Optional.empty();
         }
     }
 
     @Override
-    public void close() throws Exception {
-        dos.writeUTF("BYE");
-        dos.flush();
-        socketChannel.close();
-    }
+    public void close() throws Exception {}
 
     private class UdsCacheEntry implements CacheEntry {
+        private final Handle handle;
         private final String keyString;
 
-        private UdsCacheEntry(String keyString) {
+        private UdsCacheEntry(Handle handle, String keyString) {
+            this.handle = handle;
             this.keyString = keyString;
         }
 
@@ -87,17 +113,16 @@ public class UdsNode implements Node {
 
         @Override
         public void transferTo(Path file) throws IOException {
-            synchronized (monitor) {
-                logger.debug("TRANSFER '{}'->'{}'", keyString, file);
-                dos.writeUTF("TRANSFER");
-                dos.writeUTF(keyString);
-                dos.writeUTF(file.toString());
-                dos.flush();
-                String response = dis.readUTF();
-                if (!response.startsWith("OK")) {
-                    throw new IOException(response);
-                }
+            logger.debug("TRANSFER '{}'->'{}'", keyString, file);
+            String response = handle.transferTo(keyString, file.toString());
+            if (!response.startsWith("OK")) {
+                throw new IOException(response);
             }
+        }
+
+        @Override
+        public void close() throws IOException {
+            handle.close();
         }
     }
 }
