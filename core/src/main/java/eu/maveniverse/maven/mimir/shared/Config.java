@@ -57,8 +57,7 @@ public interface Config {
         private Builder() {
             this.mimirVersion = Utils.discoverArtifactVersion(
                     Config.class.getClassLoader(), "eu.maveniverse.maven.mimir", "core", UNKNOWN);
-            Path userHome = discoverUserHomeDirectory();
-            this.basedir = userHome.resolve(".mimir");
+            this.basedir = discoverBaseDirectory();
             this.propertiesPath = Path.of("mimir.properties");
             this.userProperties = new HashMap<>();
             this.systemProperties = toMap(System.getProperties());
@@ -92,8 +91,22 @@ public interface Config {
             return this;
         }
 
+        public Builder setUserProperty(String key, String value) {
+            requireNonNull(key, "key");
+            requireNonNull(value, "value");
+            this.userProperties.put(key, value);
+            return this;
+        }
+
         public Builder systemProperties(Map<String, String> systemProperties) {
             this.systemProperties = new HashMap<>(systemProperties);
+            return this;
+        }
+
+        public Builder setSystemProperty(String key, String value) {
+            requireNonNull(key, "key");
+            requireNonNull(value, "value");
+            this.systemProperties.put(key, value);
             return this;
         }
 
@@ -117,12 +130,12 @@ public interface Config {
                     Map<String, String> systemProperties) {
                 this.mimirVersion = requireNonNull(mimirVersion, "mimirVersion");
                 this.basedir = requireNonNull(basedir, "basedir");
-                this.propertiesPath = requireNonNull(propertiesPath, "propertiesPath");
+                requireNonNull(propertiesPath, "propertiesPath");
+                this.propertiesPath = getCanonicalPath(basedir.resolve(propertiesPath));
 
                 Properties mimirProperties = new Properties();
-                Path mimirPropertiesPath = basedir.resolve(propertiesPath);
-                if (Files.isRegularFile(mimirPropertiesPath)) {
-                    try (InputStream inputStream = Files.newInputStream(mimirPropertiesPath)) {
+                if (Files.isRegularFile(this.propertiesPath)) {
+                    try (InputStream inputStream = Files.newInputStream(this.propertiesPath)) {
                         mimirProperties.load(inputStream);
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
@@ -169,6 +182,14 @@ public interface Config {
                 return effectiveProperties;
             }
         }
+    }
+
+    static Path discoverBaseDirectory() {
+        String basedir = System.getProperty("mimir.basedir");
+        if (basedir == null) {
+            return getCanonicalPath(discoverUserHomeDirectory().resolve(".mimir"));
+        }
+        return getCanonicalPath(Path.of(basedir));
     }
 
     static Path discoverUserHomeDirectory() {

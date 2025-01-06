@@ -13,7 +13,6 @@ import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.Node;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
@@ -41,7 +40,7 @@ public class UdsNodeServer implements Callable<Void> {
     }
 
     @Override
-    public Void call() throws IOException {
+    public Void call() throws Exception {
         try (socketChannel) {
             while (true) {
                 String cmd = dis.readUTF();
@@ -89,6 +88,9 @@ public class UdsNodeServer implements Callable<Void> {
                     }
                 }
             }
+        } catch (Exception e) {
+            logger.warn("Server error", e);
+            throw e;
         }
     }
 }

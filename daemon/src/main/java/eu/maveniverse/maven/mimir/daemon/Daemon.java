@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
 @Named
 @Singleton
 public class Daemon implements AutoCloseable {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         Config config =
                 Config.defaults().propertiesPath(Path.of("daemon.properties")).build();
 
@@ -99,12 +99,12 @@ public class Daemon implements AutoCloseable {
         serverSocketChannel.bind(socketAddress);
 
         this.serverSocketChannel = serverSocketChannel;
-        logger.info("Daemon started");
-        logger.info(" * socket: {}", socketAddress);
-        logger.info(" * localNode: {} (d={})", localNode.basedir(), localNode.distance());
-        logger.info(" * {} node(s):", nodes.size());
+        logger.info("Mimir Daemon {} started", config.mimirVersion());
+        logger.info("  Socket: {}", socketAddress);
+        logger.info("  Local Node: {} (d={})", localNode.basedir(), localNode.distance());
+        logger.info("  {} node(s):", nodes.size());
         for (Node node : this.nodes) {
-            logger.info("   - {} (d={})", node.name(), node.distance());
+            logger.info("    {} (d={})", node.name(), node.distance());
         }
 
         executor.submit(() -> {

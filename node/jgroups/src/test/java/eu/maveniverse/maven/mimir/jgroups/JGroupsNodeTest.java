@@ -4,12 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.maveniverse.maven.mimir.node.jgroups.JGroupsNode;
-import eu.maveniverse.maven.mimir.node.jgroups.JGroupsPublisher;
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.CacheKey;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.impl.LocalNodeConfig;
-import eu.maveniverse.maven.mimir.shared.impl.LocalNodeFactoryImpl;
 import eu.maveniverse.maven.mimir.shared.impl.LocalNodeImpl;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.net.InetAddress;
@@ -19,7 +17,7 @@ import java.util.Optional;
 import org.jgroups.JChannel;
 import org.junit.jupiter.api.Test;
 
-public class JGroupsPublisherTest {
+public class JGroupsNodeTest {
 
     @Test
     void smoke() throws Exception {
@@ -49,8 +47,8 @@ public class JGroupsPublisherTest {
                 .connect("mimir-jgroups");
         Thread.sleep(1000);
 
-        try (JGroupsPublisher publisher = new JGroupsPublisher(nodeOne, channelOne);
-                JGroupsNode consumer = new JGroupsNode(nodeTwo, channelTwo); ) {
+        try (JGroupsNode publisher = new JGroupsNode(nodeOne, channelOne, true);
+                JGroupsNode consumer = new JGroupsNode(nodeTwo, channelTwo, false); ) {
             CacheKey key = CacheKey.of("container", "file.txt");
             Optional<CacheEntry> entry = consumer.locate(key);
             assertTrue(entry.isPresent());
@@ -60,14 +58,5 @@ public class JGroupsPublisherTest {
 
             assertEquals(content, Files.readString(tmpTarget));
         }
-    }
-
-    public static void main(String... args) throws Exception {
-        new JGroupsPublisher(
-                new LocalNodeFactoryImpl().createLocalNode(Config.defaults().build()),
-                new JChannel("udp-new.xml")
-                        .name(InetAddress.getLocalHost().getHostName())
-                        .setDiscardOwnMessages(true)
-                        .connect("mimir-jgroups"));
     }
 }

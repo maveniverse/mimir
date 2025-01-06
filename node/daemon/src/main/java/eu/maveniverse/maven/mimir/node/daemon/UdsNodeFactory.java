@@ -39,43 +39,47 @@ public class UdsNodeFactory implements NodeFactory {
     private SocketChannel createSocketChannel(Config config) throws IOException {
         UdsNodeConfig cfg = UdsNodeConfig.with(config);
         if (!cfg.enabled()) {
-            logger.info("Mimir daemon not enabled");
+            logger.debug("Mimir daemon not enabled");
             return null;
         }
         if (!Files.exists(cfg.socketPath())) {
             if (cfg.autostart()) {
-                logger.info("Mimir daemon is not running, starting it");
-                if (!startDaemon(config)) {
+                logger.debug("Mimir daemon is not running, starting it");
+                Process daemon = startDaemon(config.basedir(), cfg);
+                if (daemon == null) {
                     return null;
                 }
+                logger.info("Mimir daemon started (pid={})", daemon.pid());
             }
         }
         return SocketChannel.open(UnixDomainSocketAddress.of(cfg.socketPath()));
     }
 
-    private boolean startDaemon(Config config) throws IOException {
-        String daemonJarName = "daemon-" + config.mimirVersion() + ".jar";
-        if (Files.isRegularFile(config.basedir().resolve(daemonJarName))) {
+    private Process startDaemon(Path basedir, UdsNodeConfig config) throws IOException {
+        String daemonJarName = config.daemonJarName();
+        String daemonLogName = config.daemonLogName();
+        Path daemonJar = basedir.resolve(daemonJarName);
+        Path daemonLog = basedir.resolve(daemonLogName);
+        if (Files.isRegularFile(daemonJar)) {
             String java = Path.of(System.getProperty("java.home"))
                     .resolve("bin")
                     .resolve(System.getProperty("os.name", "unknown").startsWith("Windows") ? "java.exe" : "java")
                     .toString();
-            Path log = config.basedir().resolve("daemon-" + config.mimirVersion() + ".log");
             ProcessBuilder pb = new ProcessBuilder()
-                    .directory(config.basedir().toFile())
-                    .redirectError(log.toFile())
-                    .redirectOutput(log.toFile())
+                    .directory(basedir.toFile())
+                    .redirectError(daemonLog.toFile())
+                    .redirectOutput(daemonLog.toFile())
                     .command(java, "-jar", daemonJarName);
-            pb.start();
+            Process p = pb.start();
             try {
                 // not the nicest, but JGroups will also sleep 1s to discover cluster
                 Thread.sleep(1500);
             } catch (InterruptedException e) {
                 throw new IOException("Interrupted", e);
             }
-            return true;
+            return p;
         }
-        logger.info("Mimir daemon is not present; cannot start it");
-        return false;
+        logger.warn("Mimir daemon is not present; cannot start it");
+        return null;
     }
 }

@@ -7,18 +7,19 @@
  */
 package eu.maveniverse.maven.mimir.extension3;
 
+import eu.maveniverse.maven.mimir.node.daemon.UdsNodeConfig;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
 import eu.maveniverse.maven.mimir.shared.impl.Utils;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.MavenExecutionException;
+import org.apache.maven.RepositoryUtils;
 import org.apache.maven.execution.MavenSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -57,11 +58,8 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
             mayResolveDaemonArtifact(
                     config,
                     repoSession,
-                    Collections.singletonList(
-                            new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/")
-                                    .build()));
+                    RepositoryUtils.toRepos(session.getProjectBuildingRequest().getRemoteRepositories()));
             MimirUtils.seedSession(session.getRepositorySession(), sessionFactory.createSession(config));
-            logger.info("Mimir {} session created", config.mimirVersion());
         } catch (Exception e) {
             throw new MavenExecutionException("Error creating Mimir session", e);
         }
@@ -77,20 +75,22 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
     }
 
     private void mayResolveDaemonArtifact(
-            Config config, RepositorySystemSession session, List<RemoteRepository> remoteRepositories)
-            throws MavenExecutionException {
-        Path daemonJarPath = config.basedir().resolve("daemon-" + config.mimirVersion() + ".jar");
+            Config config, RepositorySystemSession session, List<RemoteRepository> remoteRepositories) {
+        UdsNodeConfig udsConfig = UdsNodeConfig.with(config);
+        Path daemonJarPath = config.basedir().resolve(udsConfig.daemonJarName());
         if (!Files.exists(daemonJarPath)) {
+            if (!udsConfig.enabled()) {
+                logger.debug("Not resolving Mimir daemon; not enabled");
+                return;
+            }
             try {
                 logger.info("Resolving Mimir daemon version {}", config.mimirVersion());
-                ArtifactRequest artifactRequest = new ArtifactRequest(
-                        new DefaultArtifact("eu.maveniverse.maven.mimir:daemon:jar:daemon:" + config.mimirVersion()),
-                        remoteRepositories,
-                        "mimir");
+                ArtifactRequest artifactRequest =
+                        new ArtifactRequest(new DefaultArtifact(udsConfig.daemonGav()), remoteRepositories, "mimir");
                 ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, artifactRequest);
                 Utils.copyOrLink(artifactResult.getArtifact().getFile().toPath(), daemonJarPath);
             } catch (Exception e) {
-                throw new MavenExecutionException("Error resolving Mimir daemon", e);
+                logger.warn("Failed to resolve daemon version: {}", e.getMessage());
             }
         }
     }

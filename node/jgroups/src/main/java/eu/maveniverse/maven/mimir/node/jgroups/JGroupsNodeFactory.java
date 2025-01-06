@@ -12,7 +12,6 @@ import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.Node;
 import eu.maveniverse.maven.mimir.shared.node.NodeFactory;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.util.Optional;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -26,16 +25,24 @@ public class JGroupsNodeFactory implements NodeFactory {
     @Override
     public Optional<Node> createNode(Config config, LocalNode localNode) throws IOException {
         try {
-            return Optional.of(new JGroupsNode(localNode, createChannel(config)));
+            JGroupsNodeConfig cfg = JGroupsNodeConfig.with(config);
+            if (!cfg.enabled()) {
+                return Optional.empty();
+            }
+            return Optional.of(new JGroupsNode(localNode, createChannel(cfg), cfg.publisherEnabled()));
         } catch (Exception e) {
             throw new IOException("Failed to create JChannel", e);
         }
     }
 
-    private JChannel createChannel(Config config) throws Exception {
-        return new JChannel("udp-new.xml")
-                .name(InetAddress.getLocalHost().getHostName())
+    private JChannel createChannel(JGroupsNodeConfig cfg) throws Exception {
+        if (cfg.jgroupsInterface() != null && System.getProperty("jgroups.bind_addr") == null) {
+            // hack, find better way
+            System.setProperty("jgroups.bind_addr", cfg.jgroupsInterface());
+        }
+        return new JChannel(cfg.jgroupsProps())
+                .name(cfg.jgroupsNodeName())
                 .setDiscardOwnMessages(true)
-                .connect("mimir-jgroups");
+                .connect(cfg.jgroupsClusterName());
     }
 }

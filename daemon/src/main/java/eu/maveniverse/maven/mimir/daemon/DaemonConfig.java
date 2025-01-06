@@ -24,10 +24,6 @@ public class DaemonConfig {
         return new DaemonConfig(socketPath);
     }
 
-    public static DaemonConfig of(Path socketPath) {
-        return new DaemonConfig(Config.getCanonicalPath(socketPath));
-    }
-
     public static final String NAME = "daemon";
 
     private final Path socketPath;

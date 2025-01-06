@@ -19,6 +19,9 @@ public class UdsNodeConfig {
         boolean enabled = true;
         Path socketPath = config.basedir().resolve("uds-socket");
         boolean autostart = true;
+        String daemonJarName = "daemon-" + config.mimirVersion() + ".jar";
+        String daemonLogName = "daemon-" + config.mimirVersion() + ".log";
+        String daemonGav = "eu.maveniverse.maven.mimir:daemon:jar:daemon:" + config.mimirVersion();
         if (config.effectiveProperties().containsKey("mimir.uds.enabled")) {
             enabled = Boolean.parseBoolean(config.effectiveProperties().get("mimir.uds.enabled"));
         }
@@ -29,11 +32,16 @@ public class UdsNodeConfig {
         if (config.effectiveProperties().containsKey("mimir.uds.autostart")) {
             autostart = Boolean.parseBoolean(config.effectiveProperties().get("mimir.uds.autostart"));
         }
-        return new UdsNodeConfig(enabled, socketPath, autostart);
-    }
-
-    public static UdsNodeConfig of(boolean enabled, Path socketPath, boolean autostart) {
-        return new UdsNodeConfig(enabled, Config.getCanonicalPath(socketPath), autostart);
+        if (config.effectiveProperties().containsKey("mimir.uds.daemonJarName")) {
+            daemonJarName = config.effectiveProperties().get("mimir.uds.daemonJarName");
+        }
+        if (config.effectiveProperties().containsKey("mimir.uds.daemonLogName")) {
+            daemonLogName = config.effectiveProperties().get("mimir.uds.daemonLogName");
+        }
+        if (config.effectiveProperties().containsKey("mimir.uds.daemonGav")) {
+            daemonGav = config.effectiveProperties().get("mimir.uds.daemonGav");
+        }
+        return new UdsNodeConfig(enabled, socketPath, autostart, daemonJarName, daemonLogName, daemonGav);
     }
 
     public static final String NAME = "uds";
@@ -41,11 +49,23 @@ public class UdsNodeConfig {
     private final boolean enabled;
     private final Path socketPath;
     private final boolean autostart;
+    private final String daemonJarName;
+    private final String daemonLogName;
+    private final String daemonGav;
 
-    private UdsNodeConfig(boolean enabled, Path socketPath, boolean autostart) {
+    private UdsNodeConfig(
+            boolean enabled,
+            Path socketPath,
+            boolean autostart,
+            String daemonJarName,
+            String daemonLogName,
+            String daemonGav) {
         this.enabled = enabled;
         this.socketPath = socketPath;
         this.autostart = autostart;
+        this.daemonJarName = daemonJarName;
+        this.daemonLogName = daemonLogName;
+        this.daemonGav = daemonGav;
     }
 
     public boolean enabled() {
@@ -58,5 +78,17 @@ public class UdsNodeConfig {
 
     public boolean autostart() {
         return autostart;
+    }
+
+    public String daemonJarName() {
+        return daemonJarName;
+    }
+
+    public String daemonLogName() {
+        return daemonLogName;
+    }
+
+    public String daemonGav() {
+        return daemonGav;
     }
 }
