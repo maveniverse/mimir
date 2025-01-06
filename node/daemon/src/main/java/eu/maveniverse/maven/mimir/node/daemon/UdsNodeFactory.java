@@ -50,19 +50,22 @@ public class UdsNodeFactory implements NodeFactory {
                 }
             }
         }
-        logger.info("Connecting to Mimir daemon");
         return SocketChannel.open(UnixDomainSocketAddress.of(cfg.socketPath()));
     }
 
     private boolean startDaemon(Config config) throws IOException {
         String daemonJarName = "daemon-" + config.mimirVersion() + ".jar";
         if (Files.isRegularFile(config.basedir().resolve(daemonJarName))) {
+            String java = Path.of(System.getProperty("java.home"))
+                    .resolve("bin")
+                    .resolve(System.getProperty("os.name", "unknown").startsWith("Windows") ? "java.exe" : "java")
+                    .toString();
             Path log = config.basedir().resolve("daemon-" + config.mimirVersion() + ".log");
             ProcessBuilder pb = new ProcessBuilder()
                     .directory(config.basedir().toFile())
                     .redirectError(log.toFile())
                     .redirectOutput(log.toFile())
-                    .command("java", "-jar", daemonJarName);
+                    .command(java, "-jar", daemonJarName);
             pb.start();
             try {
                 // not the nicest, but JGroups will also sleep 1s to discover cluster
