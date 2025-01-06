@@ -59,6 +59,8 @@ public class UdsNode implements Node {
 
         @Override
         public void close() throws IOException {
+            dos.writeUTF("BYE");
+            dos.flush();
             socketChannel.close();
         }
     }
@@ -95,7 +97,7 @@ public class UdsNode implements Node {
     }
 
     @Override
-    public void close() throws Exception {}
+    public void close() {}
 
     private class UdsCacheEntry implements CacheEntry {
         private final Handle handle;
