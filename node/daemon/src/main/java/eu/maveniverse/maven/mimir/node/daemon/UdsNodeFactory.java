@@ -19,10 +19,14 @@ import java.nio.file.Path;
 import java.util.Optional;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 @Named(UdsNodeConfig.NAME)
 public class UdsNodeFactory implements NodeFactory {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     @Override
     public Optional<Node> createNode(Config config, LocalNode localNode) throws IOException {
         SocketChannel socketChannel = createSocketChannel(config);
@@ -35,15 +39,18 @@ public class UdsNodeFactory implements NodeFactory {
     private SocketChannel createSocketChannel(Config config) throws IOException {
         UdsNodeConfig cfg = UdsNodeConfig.with(config);
         if (!cfg.enabled()) {
+            logger.info("Mimir daemon not enabled");
             return null;
         }
         if (!Files.exists(cfg.socketPath())) {
             if (cfg.autostart()) {
+                logger.info("Mimir daemon is not running, starting it");
                 if (!startDaemon(config)) {
                     return null;
                 }
             }
         }
+        logger.info("Connecting to Mimir daemon");
         return SocketChannel.open(UnixDomainSocketAddress.of(cfg.socketPath()));
     }
 
@@ -65,6 +72,7 @@ public class UdsNodeFactory implements NodeFactory {
             }
             return true;
         }
+        logger.info("Mimir daemon is not present; cannot start it");
         return false;
     }
 }
