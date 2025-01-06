@@ -10,6 +10,7 @@ package eu.maveniverse.maven.mimir.extension3;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Session;
+import java.util.Optional;
 import org.eclipse.aether.RepositorySystemSession;
 
 public final class MimirUtils {
@@ -27,6 +28,15 @@ public final class MimirUtils {
 
     public static void closeSession(RepositorySystemSession repositorySystemSession) throws Exception {
         requireSession(repositorySystemSession).close();
+    }
+
+    public static Optional<Session> mayGetSession(RepositorySystemSession repositorySystemSession) {
+        requireNonNull(repositorySystemSession, "repositorySystemSession");
+        Session session = (Session) repositorySystemSession.getData().get(Session.class);
+        if (session == null) {
+            return Optional.empty();
+        }
+        return Optional.of(session);
     }
 
     public static Session requireSession(RepositorySystemSession repositorySystemSession) {

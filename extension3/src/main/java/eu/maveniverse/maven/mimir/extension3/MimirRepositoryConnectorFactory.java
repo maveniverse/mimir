@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.mimir.extension3;
 
 import eu.maveniverse.maven.mimir.shared.Session;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Named;
 import org.eclipse.aether.RepositorySystemSession;
@@ -35,13 +36,14 @@ public class MimirRepositoryConnectorFactory implements RepositoryConnectorFacto
     public RepositoryConnector newInstance(RepositorySystemSession session, RemoteRepository repository)
             throws NoRepositoryConnectorException {
         RepositoryConnector repositoryConnector = basicRepositoryConnectorFactory.newInstance(session, repository);
-        Session mimirSession = MimirUtils.requireSession(session);
-        if (mimirSession.supports(repository)) {
-            return new MimirRepositoryConnector(
-                    mimirSession, repository, basicRepositoryConnectorFactory.newInstance(session, repository));
-        } else {
-            return repositoryConnector;
+        Optional<Session> mimirSessionOptional = MimirUtils.mayGetSession(session);
+        if (mimirSessionOptional.isPresent()) {
+            Session mimirSession = mimirSessionOptional.orElseThrow();
+            if (mimirSession.supports(repository)) {
+                return new MimirRepositoryConnector(mimirSession, repository, repositoryConnector);
+            }
         }
+        return repositoryConnector;
     }
 
     @Override

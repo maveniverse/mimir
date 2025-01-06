@@ -90,7 +90,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                 ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, artifactRequest);
                 Utils.copyOrLink(artifactResult.getArtifact().getFile().toPath(), daemonJarPath);
             } catch (Exception e) {
-                logger.warn("Failed to resolve daemon version: {}", e.getMessage());
+                logger.warn("Failed to resolve daemon: {}", e.getMessage());
             }
         }
     }
