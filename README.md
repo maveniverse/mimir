@@ -22,20 +22,6 @@ Concept:
 * is irrelevant is project using it sits on "classic" or "split" or whatever local repository (as it is cache layer "above" local repository)
 * RemoteRepository handling has a huge deal of TBDs, right now is almost trivial.
 
-To use it (you can make it user-wide extension with Maven4):
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<extensions>
-    <extension>
-        <groupId>eu.maveniverse.maven.mimir</groupId>
-        <artifactId>extension3</artifactId>
-        <version>0.2.1</version>
-    </extension>
-</extensions>
-```
-Note: currently `extension3` works with both Maven 3 and Maven 4. Later we may introduce `extension4` specifically for
-Maven 4.
-
 ## To use it
 
 With Maven 4 (latest master) create user-wide `~/.m2/extensions.xml` like this:
