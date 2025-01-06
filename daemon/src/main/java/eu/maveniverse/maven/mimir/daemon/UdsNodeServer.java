@@ -18,11 +18,10 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UdsNodeServer implements Callable<Void> {
+public class UdsNodeServer implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final SocketChannel socketChannel;
     private final DataOutputStream dos;
@@ -40,13 +39,14 @@ public class UdsNodeServer implements Callable<Void> {
     }
 
     @Override
-    public Void call() throws Exception {
+    public void run() {
         try (socketChannel) {
             while (true) {
                 String cmd = dis.readUTF();
                 switch (cmd) {
                     case "LOCATE" -> {
                         String keyString = dis.readUTF();
+                        logger.debug("LOCATE {}", keyString);
                         CacheKey key = CacheKey.fromKeyString(keyString);
                         Optional<CacheEntry> entry = localNode.locate(key);
                         boolean found = entry.isPresent();
@@ -70,6 +70,7 @@ public class UdsNodeServer implements Callable<Void> {
                     case "TRANSFER" -> {
                         String keyString = dis.readUTF();
                         String pathString = dis.readUTF();
+                        logger.debug("TRANSFER {} {}", keyString, pathString);
                         CacheKey key = CacheKey.fromKeyString(keyString);
                         Path path = Path.of(pathString);
                         Optional<CacheEntry> entry = localNode.locate(key);
@@ -85,13 +86,13 @@ public class UdsNodeServer implements Callable<Void> {
                         }
                     }
                     case "BYE" -> {
-                        return null;
+                        logger.debug("BYE");
+                        return;
                     }
                 }
             }
         } catch (Exception e) {
             logger.warn("Server error", e);
-            throw e;
         }
     }
 }

@@ -29,8 +29,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -63,7 +61,6 @@ public class Daemon implements AutoCloseable {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ServerSocketChannel serverSocketChannel;
-    private final ExecutorService executor;
     private final LocalNode localNode;
     private final List<Node> nodes;
 
@@ -80,7 +77,6 @@ public class Daemon implements AutoCloseable {
         }
         nds.sort(Comparator.comparing(Node::distance));
         this.nodes = List.copyOf(nds);
-        this.executor = Executors.newFixedThreadPool(15);
 
         DaemonConfig cfg = DaemonConfig.with(config);
         Path socketPath = cfg.socketPath();
@@ -107,18 +103,16 @@ public class Daemon implements AutoCloseable {
             logger.info("    {} (d={})", node.name(), node.distance());
         }
 
-        executor.submit(() -> {
-            try {
-                while (true) {
-                    SocketChannel socketChannel = serverSocketChannel.accept();
-                    executor.submit(new UdsNodeServer(socketChannel, localNode, nodes));
-                }
-            } catch (AsynchronousCloseException ignored) {
-                // we are done
-            } catch (Exception e) {
-                logger.error("Error while accepting client connection", e);
+        try {
+            while (true) {
+                SocketChannel socketChannel = serverSocketChannel.accept();
+                Thread.ofVirtual().start(new UdsNodeServer(socketChannel, localNode, nodes));
             }
-        });
+        } catch (AsynchronousCloseException ignored) {
+            // we are done
+        } catch (Exception e) {
+            logger.error("Error while accepting client connection", e);
+        }
     }
 
     @Override
@@ -128,11 +122,6 @@ public class Daemon implements AutoCloseable {
                 serverSocketChannel.close();
             } catch (Exception e) {
                 logger.warn("Error closing server socket channel", e);
-            }
-            try {
-                executor.shutdown();
-            } catch (Exception e) {
-                logger.warn("Error closing executor", e);
             }
             for (Node node : this.nodes) {
                 try {
