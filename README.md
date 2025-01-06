@@ -1,5 +1,7 @@
 # Mímir
 
+[![Maven Central](https://img.shields.io/maven-central/v/eu.maveniverse.maven.mimir/extension3.svg?label=Maven%20Central)](https://search.maven.org/artifact/eu.maveniverse.maven.mimir/extension3)
+
 Note: this code is Proof of Concept, with a lot of To-Be-Done parts and intentionally simple as possible. For now
 only "central" repository released artifacts are supported.
 
