@@ -100,7 +100,8 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
 
     private void checkForUpdates(
             Config config, RepositorySystemSession session, List<RemoteRepository> remoteRepositories) {
-        if (!Boolean.parseBoolean(config.effectiveProperties().getOrDefault("mimir.checkupdates", Boolean.TRUE.toString()))) {
+        if (!Boolean.parseBoolean(
+                config.effectiveProperties().getOrDefault("mimir.checkupdates", Boolean.TRUE.toString()))) {
             logger.debug("Not checking for Mimir updates; not enabled");
             return;
         }
