@@ -20,7 +20,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -28,30 +27,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SessionImpl implements Session {
-    private final Logger logger = LoggerFactory.getLogger(SessionImpl.class);
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final NameMapper nameMapper;
     private final LocalNode localNode;
     private final List<Node> nodes;
     private final Stats stats;
 
     public SessionImpl(NameMapper nameMapper, LocalNode localNode, List<Node> nodes) {
-        this.nameMapper = requireNonNull(nameMapper);
-        this.localNode = requireNonNull(localNode);
-        this.nodes = requireNonNull(nodes);
+        this.nameMapper = requireNonNull(nameMapper, "nameMapper");
+        this.localNode = requireNonNull(localNode, "localNode");
+        this.nodes = requireNonNull(nodes, "nodes");
         this.stats = new Stats();
     }
 
     @Override
     public boolean supports(RemoteRepository repository) {
-        // for now, we do only "real remote" artifact caching, those coming over HTTP only (but this includes S3/minio)
-        return repository.getProtocol().toLowerCase(Locale.ROOT).contains("http");
+        return nameMapper.supports(repository);
     }
 
     @Override
     public Optional<CacheKey> cacheKey(RemoteRepository remoteRepository, Artifact artifact) {
-        if (!supports(remoteRepository)) {
-            throw new IllegalArgumentException("Unsupported remote repository: " + remoteRepository);
-        }
         return nameMapper.cacheKey(remoteRepository, artifact);
     }
 

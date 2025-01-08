@@ -7,14 +7,23 @@
  */
 package eu.maveniverse.maven.mimir.shared.impl;
 
+import static java.util.Objects.requireNonNull;
+
+import eu.maveniverse.maven.mimir.shared.CacheKey;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
+import eu.maveniverse.maven.mimir.shared.naming.NameMapper;
 import eu.maveniverse.maven.mimir.shared.naming.NameMapperFactory;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.Node;
 import eu.maveniverse.maven.mimir.shared.node.NodeFactory;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.repository.RemoteRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -27,22 +36,24 @@ import javax.inject.Singleton;
 @Singleton
 @Named
 public class SessionFactoryImpl implements SessionFactory {
-    private final NameMapperFactory nameMapperFactory;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final LocalNodeFactory localNodeFactory;
     private final Map<String, NodeFactory> nodeFactories;
+    private final Map<String, NameMapperFactory> nameMapperFactories;
 
     @Inject
     public SessionFactoryImpl(
-            NameMapperFactory nameMapperFactory,
             LocalNodeFactory localNodeFactory,
-            Map<String, NodeFactory> nodeFactories) {
-        this.nameMapperFactory = nameMapperFactory;
+            Map<String, NodeFactory> nodeFactories,
+            Map<String, NameMapperFactory> nameMapperFactories) {
         this.localNodeFactory = localNodeFactory;
         this.nodeFactories = nodeFactories;
+        this.nameMapperFactories = nameMapperFactories;
     }
 
     @Override
     public Session createSession(Config config) throws IOException {
+        requireNonNull(config, "config");
         LocalNode localNode = localNodeFactory.createLocalNode(config);
         ArrayList<Node> nodes = new ArrayList<>();
         for (NodeFactory nodeFactory : this.nodeFactories.values()) {
@@ -50,6 +61,23 @@ public class SessionFactoryImpl implements SessionFactory {
             node.ifPresent(nodes::add);
         }
         nodes.sort(Comparator.comparing(Node::distance));
-        return new SessionImpl(nameMapperFactory.createNameMapper(config), localNode, nodes);
+        NameMapper nameMapper = NameMapper.NOP;
+        for (NameMapperFactory nameMapperFactory : this.nameMapperFactories.values()) {
+            Optional<NameMapper> optional = nameMapperFactory.createNameMapper(config);
+            if (optional.isPresent()) {
+                nameMapper = optional.orElseThrow();
+                break;
+            }
+        }
+        logger.debug("Mimir {} session created", config.mimirVersion());
+        if (logger.isDebugEnabled()) {
+            logger.debug("  Name mapper: {}", nameMapper == NameMapper.NOP ? "NOP" : nameMapper.getClass().getSimpleName());
+            logger.debug("  Local Node: {} (basedir={}, d={})", localNode.name(), localNode.basedir(), localNode.distance());
+            logger.debug("  {} node(s):", nodes.size());
+            for (Node node : nodes) {
+                logger.debug("    {} (d={})", node.name(), node.distance());
+            }
+        }
+        return new SessionImpl(nameMapper, localNode, nodes);
     }
 }
