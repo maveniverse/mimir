@@ -23,37 +23,36 @@ public final class RemoteRepositories {
      * For simplicity's sake: this one supports ONLY Maven Central (direct access).
      * Repository is supported if:
      * <ul>
-     *     <li>the {@link #httpReleaseDirectOnly()} supports it</li>
-     *     <li>repository.id equals "central"</li>
+     *     <li>the {@link #httpsReleaseDirectOnlyWithId(String)} supports it; id is "central"</li>
      * </ul>
      */
     public static Predicate<RemoteRepository> centralDirectOnly() {
-        return httpReleaseDirectOnlyWithId("central");
+        return httpsReleaseDirectOnlyWithId("central");
     }
 
     /**
      * Repository is supported if:
      * <ul>
-     *     <li>the {@link #httpReleaseDirectOnly()} supports it</li>
+     *     <li>the {@link #httpsReleaseDirectOnly()} supports it</li>
      *     <li>repository.id equals to given ID</li>
      * </ul>
      */
-    public static Predicate<RemoteRepository> httpReleaseDirectOnlyWithId(String repositoryId) {
+    public static Predicate<RemoteRepository> httpsReleaseDirectOnlyWithId(String repositoryId) {
         requireNonNull(repositoryId, "repositoryId");
-        return httpReleaseDirectOnly().and((remoteRepository) -> repositoryId.equals(remoteRepository.getId()));
+        return httpsReleaseDirectOnly().and((remoteRepository) -> repositoryId.equals(remoteRepository.getId()));
     }
 
     /**
      * Repository is supported if:
      * <ul>
      *     <li>the {@link #releaseDirectOnly()} supports it</li>
-     *     <li>repository.protocol contains "http"</li>
+     *     <li>repository.protocol contains "https"</li>
      * </ul>
      */
-    public static Predicate<RemoteRepository> httpReleaseDirectOnly() {
+    public static Predicate<RemoteRepository> httpsReleaseDirectOnly() {
         return releaseDirectOnly()
                 .and((remoteRepository) ->
-                        remoteRepository.getProtocol().toLowerCase(Locale.ROOT).contains("http"));
+                        remoteRepository.getProtocol().toLowerCase(Locale.ROOT).contains("https"));
     }
 
     /**
