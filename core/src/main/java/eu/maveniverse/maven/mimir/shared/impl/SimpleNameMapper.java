@@ -41,7 +41,7 @@ public class SimpleNameMapper implements NameMapper {
     @Override
     public Optional<CacheKey> cacheKey(RemoteRepository remoteRepository, Artifact artifact) {
         if (remoteRepositoryPredicate.test(remoteRepository) && !artifact.isSnapshot()) {
-            String bucket = remoteRepository.getId();
+            String container = remoteRepository.getId();
             String name = artifact.getGroupId() + "/" + artifact.getArtifactId() + "/" + artifact.getVersion() + "/"
                     + artifact.getArtifactId() + "-" + artifact.getVersion();
             if (artifact.getClassifier() != null
@@ -49,7 +49,7 @@ public class SimpleNameMapper implements NameMapper {
                 name += "-" + artifact.getClassifier();
             }
             name += "." + artifact.getExtension();
-            return Optional.of(CacheKey.of(bucket, name));
+            return Optional.of(CacheKey.of(container, name));
         } else {
             return Optional.empty();
         }
