@@ -9,7 +9,6 @@ package eu.maveniverse.maven.mimir.shared.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.CacheKey;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
@@ -19,11 +18,6 @@ import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.Node;
 import eu.maveniverse.maven.mimir.shared.node.NodeFactory;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.repository.RemoteRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -32,6 +26,8 @@ import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 @Named
@@ -71,8 +67,11 @@ public class SessionFactoryImpl implements SessionFactory {
         }
         logger.debug("Mimir {} session created", config.mimirVersion());
         if (logger.isDebugEnabled()) {
-            logger.debug("  Name mapper: {}", nameMapper == NameMapper.NOP ? "NOP" : nameMapper.getClass().getSimpleName());
-            logger.debug("  Local Node: {} (basedir={}, d={})", localNode.name(), localNode.basedir(), localNode.distance());
+            logger.debug(
+                    "  Name mapper: {}",
+                    nameMapper == NameMapper.NOP ? "NOP" : nameMapper.getClass().getSimpleName());
+            logger.debug(
+                    "  Local Node: {} (basedir={}, d={})", localNode.name(), localNode.basedir(), localNode.distance());
             logger.debug("  {} node(s):", nodes.size());
             for (Node node : nodes) {
                 logger.debug("    {} (d={})", node.name(), node.distance());
