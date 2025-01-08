@@ -33,7 +33,7 @@ With Maven 4 (latest master) create user-wide `~/.m2/extensions.xml` like this:
     <extension>
         <groupId>eu.maveniverse.maven.mimir</groupId>
         <artifactId>extension3</artifactId>
-        <version>0.2.2</version>
+        <version>0.2.3</version>
     </extension>
 </extensions>
 ```
@@ -44,6 +44,8 @@ IF you have docker, tailscale (or just non-trivial networking setup), help JGrou
 mimir.jgroups.interface=match-address\:192.168.1.*
 ```
 (use yor LAN IP address).
+
+To make Mimir stop you nagging to auto-update, set `mimir.checkupdates` in `~/.mimir/mimir.properties`.
 
 And just build with Maven...
 
