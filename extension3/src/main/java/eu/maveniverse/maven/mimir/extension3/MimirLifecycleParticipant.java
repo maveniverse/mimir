@@ -60,7 +60,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                     .build();
             List<RemoteRepository> remoteRepositories =
                     RepositoryUtils.toRepos(session.getProjectBuildingRequest().getRemoteRepositories());
-            checkForUpdate(config, repoSession, remoteRepositories);
+            checkForUpdates(config, repoSession, remoteRepositories);
             mayResolveDaemonArtifact(config, repoSession, remoteRepositories);
             MimirUtils.seedSession(session.getRepositorySession(), sessionFactory.createSession(config));
         } catch (Exception e) {
@@ -98,9 +98,9 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
         }
     }
 
-    private void checkForUpdate(
+    private void checkForUpdates(
             Config config, RepositorySystemSession session, List<RemoteRepository> remoteRepositories) {
-        if (!Boolean.parseBoolean(config.effectiveProperties().getOrDefault("mimir.autoupdate", Boolean.TRUE.toString()))) {
+        if (!Boolean.parseBoolean(config.effectiveProperties().getOrDefault("mimir.checkupdates", Boolean.TRUE.toString()))) {
             logger.debug("Not checking for Mimir updates; not enabled");
             return;
         }
