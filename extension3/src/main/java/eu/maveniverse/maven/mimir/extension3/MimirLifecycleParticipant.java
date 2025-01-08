@@ -27,6 +27,9 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.VersionRangeRequest;
+import org.eclipse.aether.resolution.VersionRangeResult;
+import org.eclipse.aether.version.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,10 +58,10 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                     .userProperties(repoSession.getUserProperties())
                     .systemProperties(repoSession.getSystemProperties())
                     .build();
-            mayResolveDaemonArtifact(
-                    config,
-                    repoSession,
-                    RepositoryUtils.toRepos(session.getProjectBuildingRequest().getRemoteRepositories()));
+            List<RemoteRepository> remoteRepositories =
+                    RepositoryUtils.toRepos(session.getProjectBuildingRequest().getRemoteRepositories());
+            checkForUpdate(config, repoSession, remoteRepositories);
+            mayResolveDaemonArtifact(config, repoSession, remoteRepositories);
             MimirUtils.seedSession(session.getRepositorySession(), sessionFactory.createSession(config));
         } catch (Exception e) {
             throw new MavenExecutionException("Error creating Mimir session", e);
@@ -92,6 +95,31 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
             } catch (Exception e) {
                 logger.warn("Failed to resolve daemon: {}", e.getMessage());
             }
+        }
+    }
+
+    private void checkForUpdate(
+            Config config, RepositorySystemSession session, List<RemoteRepository> remoteRepositories) {
+        UdsNodeConfig udsConfig = UdsNodeConfig.with(config);
+        try {
+            logger.debug("Checking for Mimir updates...");
+            VersionRangeRequest versionRangeRequest = new VersionRangeRequest(
+                    new DefaultArtifact(udsConfig.daemonGav()).setVersion("[" + config.mimirVersion() + ",)"),
+                    remoteRepositories,
+                    "mimir");
+            VersionRangeResult rangeResult = repositorySystem.resolveVersionRange(session, versionRangeRequest);
+            List<Version> versions = rangeResult.getVersions();
+            if (versions.size() > 1) {
+                String latest = versions.get(versions.size() - 1).toString();
+                if (!config.mimirVersion().equals(latest)) {
+                    logger.info(
+                            "Please upgrade to Mimir version {} (you are using version {})",
+                            latest,
+                            config.mimirVersion());
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to check for updates; ignoring it", e);
         }
     }
 }

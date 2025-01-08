@@ -65,7 +65,7 @@ public class SessionFactoryImpl implements SessionFactory {
                 break;
             }
         }
-        logger.debug("Mimir {} session created", config.mimirVersion());
+        logger.info("Mimir {} session created", config.mimirVersion());
         if (logger.isDebugEnabled()) {
             logger.debug(
                     "  Name mapper: {}",
