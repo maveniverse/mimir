@@ -100,8 +100,12 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
 
     private void checkForUpdate(
             Config config, RepositorySystemSession session, List<RemoteRepository> remoteRepositories) {
-        UdsNodeConfig udsConfig = UdsNodeConfig.with(config);
+        if (!Boolean.parseBoolean(config.effectiveProperties().getOrDefault("mimir.autoupdate", Boolean.TRUE.toString()))) {
+            logger.debug("Not checking for Mimir updates; not enabled");
+            return;
+        }
         try {
+            UdsNodeConfig udsConfig = UdsNodeConfig.with(config);
             logger.debug("Checking for Mimir updates...");
             VersionRangeRequest versionRangeRequest = new VersionRangeRequest(
                     new DefaultArtifact(udsConfig.daemonGav()).setVersion("[" + config.mimirVersion() + ",)"),
