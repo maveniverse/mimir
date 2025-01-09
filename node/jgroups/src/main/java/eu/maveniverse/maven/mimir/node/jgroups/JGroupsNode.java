@@ -115,10 +115,8 @@ public class JGroupsNode implements Node, RequestHandler {
                                     LocalCacheEntry cacheEntry = tx.remove(txid);
                                     if (cacheEntry != null) {
                                         logger.debug("SERVER HIT: {} to {}", txid, socket.getRemoteSocketAddress());
-                                        try (cacheEntry) {
-                                            Channels.newInputStream(cacheEntry.getReadFileChannel())
-                                                    .transferTo(out);
-                                        }
+                                        Channels.newInputStream(cacheEntry.getReadFileChannel())
+                                                .transferTo(out);
                                     } else {
                                         logger.warn("SERVER MISS: {} to {}", txid, socket.getRemoteSocketAddress());
                                     }
@@ -257,8 +255,5 @@ public class JGroupsNode implements Node, RequestHandler {
                 Files.copy(socket.getInputStream(), file, StandardCopyOption.REPLACE_EXISTING);
             }
         }
-
-        @Override
-        public void close() {}
     }
 }

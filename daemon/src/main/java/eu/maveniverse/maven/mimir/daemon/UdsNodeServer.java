@@ -75,9 +75,8 @@ public class UdsNodeServer implements Runnable {
                         Path path = Path.of(pathString);
                         Optional<CacheEntry> entry = localNode.locate(key);
                         try {
-                            try (CacheEntry e = entry.orElseThrow(() -> new IllegalStateException("Entry not found"))) {
-                                e.transferTo(path);
-                            }
+                            entry.orElseThrow(() -> new IllegalStateException("Entry not found"))
+                                    .transferTo(path);
                             dos.writeUTF("OK");
                             dos.flush();
                         } catch (Exception e) {

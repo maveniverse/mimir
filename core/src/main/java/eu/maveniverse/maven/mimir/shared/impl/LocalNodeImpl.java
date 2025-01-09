@@ -68,8 +68,7 @@ public final class LocalNodeImpl implements LocalNode {
     public LocalCacheEntry store(CacheKey key, CacheEntry entry) throws IOException {
         Path path = resolve(key);
         String origin = entry.origin();
-        try (entry;
-                FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
+        try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
             entry.transferTo(f.getPath());
             f.move();
         }
@@ -110,8 +109,5 @@ public final class LocalNodeImpl implements LocalNode {
         public FileChannel getReadFileChannel() throws IOException {
             return FileChannel.open(cacheFile, StandardOpenOption.READ);
         }
-
-        @Override
-        public void close() {}
     }
 }

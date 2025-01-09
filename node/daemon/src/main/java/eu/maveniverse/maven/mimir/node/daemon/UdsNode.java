@@ -86,13 +86,13 @@ public class UdsNode implements Node {
     public Optional<CacheEntry> locate(CacheKey key) throws IOException {
         String keyString = CacheKey.toKeyString(key);
         logger.debug("LOCATE '{}'", keyString);
-        Handle handle = commSupplier.get();
-        String response = handle.locate(keyString);
-        if (response.startsWith("OK")) {
-            return Optional.of(new UdsCacheEntry(handle, keyString));
-        } else {
-            handle.close();
-            return Optional.empty();
+        try (Handle handle = commSupplier.get()) {
+            String response = handle.locate(keyString);
+            if (response.startsWith("OK")) {
+                return Optional.of(new UdsCacheEntry(commSupplier, keyString));
+            } else {
+                return Optional.empty();
+            }
         }
     }
 
@@ -100,11 +100,11 @@ public class UdsNode implements Node {
     public void close() {}
 
     private class UdsCacheEntry implements CacheEntry {
-        private final Handle handle;
+        private final Supplier<Handle> commSupplier;
         private final String keyString;
 
-        private UdsCacheEntry(Handle handle, String keyString) {
-            this.handle = handle;
+        private UdsCacheEntry(Supplier<Handle> commSupplier, String keyString) {
+            this.commSupplier = commSupplier;
             this.keyString = keyString;
         }
 
@@ -116,15 +116,12 @@ public class UdsNode implements Node {
         @Override
         public void transferTo(Path file) throws IOException {
             logger.debug("TRANSFER '{}'->'{}'", keyString, file);
-            String response = handle.transferTo(keyString, file.toString());
-            if (!response.startsWith("OK")) {
-                throw new IOException(response);
+            try (Handle handle = commSupplier.get()) {
+                String response = handle.transferTo(keyString, file.toString());
+                if (!response.startsWith("OK")) {
+                    throw new IOException(response);
+                }
             }
-        }
-
-        @Override
-        public void close() throws IOException {
-            handle.close();
         }
     }
 }
