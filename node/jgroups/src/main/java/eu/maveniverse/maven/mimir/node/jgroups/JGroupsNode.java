@@ -64,15 +64,14 @@ public class JGroupsNode implements Node, RequestHandler {
         if (nodeName != null) {
             config.put("mimir.local.name", nodeName);
         }
-        LocalNode localNode = new LocalNodeFactoryImpl()
-                .createLocalNode(Config.defaults().userProperties(config).build());
-        JGroupsNode publisher = new JGroupsNode(
-                localNode,
-                new JChannel("udp-new.xml")
-                        .name(nodeName)
-                        .setDiscardOwnMessages(true)
-                        .connect("mimir-jgroups"),
-                true);
+        Config conf = Config.defaults()
+                .userProperties(config)
+                .propertiesPath(Path.of("mimir-publisher.properties"))
+                .build();
+        LocalNode localNode = new LocalNodeFactoryImpl().createLocalNode(conf);
+        Node publisher = new JGroupsNodeFactory()
+                .createNode(conf, localNode)
+                .orElseThrow(() -> new IllegalStateException("Publisher configured to not publish; bailing out"));
 
         logger.info("");
         logger.info("JGroupsNode publisher started (Ctrl+C to exit)");

@@ -62,7 +62,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                     RepositoryUtils.toRepos(session.getProjectBuildingRequest().getRemoteRepositories());
             checkForUpdates(config, repoSession, remoteRepositories);
             mayResolveDaemonArtifact(config, repoSession, remoteRepositories);
-            MimirUtils.seedSession(session.getRepositorySession(), sessionFactory.createSession(config));
+            MimirUtils.setSession(session.getRepositorySession(), sessionFactory.createSession(config));
         } catch (Exception e) {
             throw new MavenExecutionException("Error creating Mimir session", e);
         }
@@ -71,7 +71,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
     @Override
     public void afterSessionEnd(MavenSession session) throws MavenExecutionException {
         try {
-            MimirUtils.closeSession(session.getRepositorySession());
+            MimirUtils.requireSession(session.getRepositorySession()).close();
         } catch (Exception e) {
             throw new MavenExecutionException("Error closing Mimir session", e);
         }

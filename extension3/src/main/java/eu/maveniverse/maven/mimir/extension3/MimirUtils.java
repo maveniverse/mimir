@@ -16,18 +16,14 @@ import org.eclipse.aether.RepositorySystemSession;
 public final class MimirUtils {
     private MimirUtils() {}
 
-    public static void seedSession(RepositorySystemSession repositorySystemSession, Session mimirSession) {
+    public static void setSession(RepositorySystemSession repositorySystemSession, Session mimirSession) {
         requireNonNull(repositorySystemSession, "repositorySystemSession");
         requireNonNull(mimirSession, "mimirSession");
         Session session = (Session) repositorySystemSession.getData().get(Session.class);
         if (session != null) {
-            throw new IllegalStateException("Mimir session already created");
+            throw new IllegalStateException("Mimir session already present");
         }
         repositorySystemSession.getData().set(Session.class, mimirSession);
-    }
-
-    public static void closeSession(RepositorySystemSession repositorySystemSession) throws Exception {
-        requireSession(repositorySystemSession).close();
     }
 
     public static Optional<Session> mayGetSession(RepositorySystemSession repositorySystemSession) {
@@ -43,7 +39,7 @@ public final class MimirUtils {
         requireNonNull(repositorySystemSession, "repositorySystemSession");
         Session session = (Session) repositorySystemSession.getData().get(Session.class);
         if (session == null) {
-            throw new IllegalStateException("Mimir session not yet seeded");
+            throw new IllegalStateException("Mimir session not present");
         }
         return session;
     }

@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.slf4j.Logger;
@@ -28,12 +29,14 @@ import org.slf4j.LoggerFactory;
 
 public class SessionImpl implements Session {
     private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final AtomicBoolean closed;
     private final NameMapper nameMapper;
     private final LocalNode localNode;
     private final List<Node> nodes;
     private final Stats stats;
 
     public SessionImpl(NameMapper nameMapper, LocalNode localNode, List<Node> nodes) {
+        this.closed = new AtomicBoolean(false);
         this.nameMapper = requireNonNull(nameMapper, "nameMapper");
         this.localNode = requireNonNull(localNode, "localNode");
         this.nodes = requireNonNull(nodes, "nodes");
@@ -42,16 +45,19 @@ public class SessionImpl implements Session {
 
     @Override
     public boolean supports(RemoteRepository repository) {
+        checkState();
         return nameMapper.supports(repository);
     }
 
     @Override
     public Optional<CacheKey> cacheKey(RemoteRepository remoteRepository, Artifact artifact) {
+        checkState();
         return nameMapper.cacheKey(remoteRepository, artifact);
     }
 
     @Override
     public Optional<CacheEntry> locate(CacheKey key) throws IOException {
+        checkState();
         requireNonNull(key, "key");
         Optional<CacheEntry> result = localNode.locate(key);
         if (result.isEmpty()) {
@@ -69,6 +75,7 @@ public class SessionImpl implements Session {
 
     @Override
     public void store(CacheKey key, Path content) throws IOException {
+        checkState();
         requireNonNull(key, "key");
         requireNonNull(content, "content");
         if (!Files.isRegularFile(content)) {
@@ -77,30 +84,38 @@ public class SessionImpl implements Session {
         stats.store(localNode.store(key, content));
     }
 
+    private void checkState() {
+        if (closed.get()) {
+            throw new IllegalStateException("Session is closed");
+        }
+    }
+
     @Override
     public void close() {
-        ArrayList<Exception> exceptions = new ArrayList<>();
-        for (Node node : this.nodes) {
+        if (closed.compareAndSet(false, true)) {
+            ArrayList<Exception> exceptions = new ArrayList<>();
+            for (Node node : this.nodes) {
+                try {
+                    node.close();
+                } catch (Exception e) {
+                    exceptions.add(e);
+                }
+            }
             try {
-                node.close();
+                localNode.close();
             } catch (Exception e) {
                 exceptions.add(e);
             }
+            if (!exceptions.isEmpty()) {
+                IllegalStateException illegalStateException = new IllegalStateException("Could not close session");
+                exceptions.forEach(illegalStateException::addSuppressed);
+                throw illegalStateException;
+            }
+            logger.info(
+                    "Mimir session closed (LOCATE/HIT={}/{} STORED={})",
+                    stats.queries(),
+                    stats.queryHits(),
+                    stats.stores());
         }
-        try {
-            localNode.close();
-        } catch (Exception e) {
-            exceptions.add(e);
-        }
-        if (!exceptions.isEmpty()) {
-            IllegalStateException illegalStateException = new IllegalStateException("Could not close session");
-            exceptions.forEach(illegalStateException::addSuppressed);
-            throw illegalStateException;
-        }
-        logger.info(
-                "Mimir session closed (LOCATE/HIT={}/{} STORED={})",
-                stats.queries(),
-                stats.queryHits(),
-                stats.stores());
     }
 }
