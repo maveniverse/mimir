@@ -8,7 +8,7 @@
 package eu.maveniverse.maven.mimir.shared.node;
 
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
-import eu.maveniverse.maven.mimir.shared.CacheKey;
+import eu.maveniverse.maven.mimir.shared.naming.CacheKey;
 import java.io.IOException;
 import java.util.Optional;
 

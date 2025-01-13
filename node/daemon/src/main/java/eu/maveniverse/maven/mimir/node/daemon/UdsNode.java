@@ -8,7 +8,7 @@
 package eu.maveniverse.maven.mimir.node.daemon;
 
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
-import eu.maveniverse.maven.mimir.shared.CacheKey;
+import eu.maveniverse.maven.mimir.shared.naming.CacheKey;
 import eu.maveniverse.maven.mimir.shared.node.Node;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -102,15 +102,22 @@ public class UdsNode implements Node {
     private class UdsCacheEntry implements CacheEntry {
         private final Supplier<Handle> commSupplier;
         private final String keyString;
+        private final Metadata metadata;
 
-        private UdsCacheEntry(Supplier<Handle> commSupplier, String keyString) {
+        private UdsCacheEntry(Supplier<Handle> commSupplier, String keyString, Metadata metadata) {
             this.commSupplier = commSupplier;
             this.keyString = keyString;
+            this.metadata = metadata;
         }
 
         @Override
         public String origin() {
             return name();
+        }
+
+        @Override
+        public Metadata metadata() {
+            return metadata;
         }
 
         @Override

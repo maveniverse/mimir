@@ -8,9 +8,9 @@
 package eu.maveniverse.maven.mimir.node.jgroups;
 
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
-import eu.maveniverse.maven.mimir.shared.CacheKey;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.impl.LocalNodeFactoryImpl;
+import eu.maveniverse.maven.mimir.shared.naming.CacheKey;
 import eu.maveniverse.maven.mimir.shared.node.LocalCacheEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.Node;
@@ -76,7 +76,7 @@ public class JGroupsNode implements Node, RequestHandler {
         logger.info("");
         logger.info("JGroupsNode publisher started (Ctrl+C to exit)");
         logger.info("Publishing:");
-        logger.info("* {} ({})", localNode.name(), localNode.basedir());
+        logger.info("* Local Node {}", localNode);
         try {
             new CountDownLatch(1).await(); // this is merely to get interrupt
         } catch (InterruptedException e) {
@@ -115,7 +115,7 @@ public class JGroupsNode implements Node, RequestHandler {
                                     LocalCacheEntry cacheEntry = tx.remove(txid);
                                     if (cacheEntry != null) {
                                         logger.debug("SERVER HIT: {} to {}", txid, socket.getRemoteSocketAddress());
-                                        Channels.newInputStream(cacheEntry.getReadFileChannel())
+                                        Channels.newInputStream(cacheEntry.openReadableByteChannel())
                                                 .transferTo(out);
                                     } else {
                                         logger.warn("SERVER MISS: {} to {}", txid, socket.getRemoteSocketAddress());
@@ -245,7 +245,7 @@ public class JGroupsNode implements Node, RequestHandler {
         channel.close();
     }
 
-    private record JGroupsCacheEntry(String origin, String host, int port, String txid) implements CacheEntry {
+    private record JGroupsCacheEntry(String origin, Metadata metadata, String host, int port, String txid) implements CacheEntry {
         @Override
         public void transferTo(Path file) throws IOException {
             try (Socket socket = new Socket(host, port)) {

@@ -5,7 +5,7 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.shared;
+package eu.maveniverse.maven.mimir.shared.naming;
 
 import static java.util.Objects.requireNonNull;
 
@@ -27,7 +27,6 @@ public interface CacheKey extends Serializable {
         requireNonNull(cacheKey, "cacheKey");
         return cacheKey.container() + "@" + cacheKey.name();
     }
-    ;
 
     static CacheKey fromKeyString(String string) {
         requireNonNull(string);

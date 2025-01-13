@@ -12,7 +12,6 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.naming.NameMapper;
 import eu.maveniverse.maven.mimir.shared.naming.NameMapperFactory;
-import eu.maveniverse.maven.mimir.shared.naming.RemoteRepositories;
 import java.util.Optional;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -23,6 +22,6 @@ public class SimpleNameMapperFactory implements NameMapperFactory {
     @Override
     public Optional<NameMapper> createNameMapper(Config config) {
         requireNonNull(config, "config");
-        return Optional.of(new SimpleNameMapper(RemoteRepositories.centralDirectOnly()));
+        return Optional.of(new SimpleNameMapper());
     }
 }

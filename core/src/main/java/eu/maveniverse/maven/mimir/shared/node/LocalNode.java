@@ -8,21 +8,10 @@
 package eu.maveniverse.maven.mimir.shared.node;
 
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
-import eu.maveniverse.maven.mimir.shared.CacheKey;
+import eu.maveniverse.maven.mimir.shared.naming.CacheKey;
 import java.io.IOException;
-import java.nio.file.Path;
 
 public interface LocalNode extends Node {
-    /**
-     * Tells the basedir local node uses.
-     */
-    Path basedir();
-
-    /**
-     * Stores content under given cache key on this node.
-     */
-    LocalCacheEntry store(CacheKey key, Path content) throws IOException;
-
     /**
      * Stores cache entry and offers it as own entry.
      */

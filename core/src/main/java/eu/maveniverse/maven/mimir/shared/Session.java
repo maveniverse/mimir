@@ -9,28 +9,36 @@ package eu.maveniverse.maven.mimir.shared;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 public interface Session extends AutoCloseable {
     /**
      * Tells whether session is configured to support given remote repository.
      */
-    boolean supports(RemoteRepository remoteRepository);
+    boolean repositorySupported(RemoteRepository remoteRepository);
 
     /**
-     * Creates cache key out of remote repository and artifact, if supported.
+     * Tells session configured checksum factories.
      */
-    Optional<CacheKey> cacheKey(RemoteRepository remoteRepository, Artifact artifact);
+    Map<String, ChecksumAlgorithmFactory> checksumFactories();
+
+    /**
+     * Tells whether session is configured to support given remote repository and artifact coming from it.
+     */
+    boolean artifactSupported(RemoteRepository remoteRepository, Artifact artifact);
 
     /**
      * Locates cache entry by key.
      */
-    Optional<CacheEntry> locate(CacheKey key) throws IOException;
+    Optional<CacheEntry> locate(RemoteRepository remoteRepository, Artifact artifact) throws IOException;
 
     /**
-     * Stores content under given cache key.
+     * Stores entry under given cache key.
      */
-    void store(CacheKey key, Path content) throws IOException;
+    boolean store(RemoteRepository remoteRepository, Artifact artifact, Path file, Map<String, String> checksums)
+            throws IOException;
 }

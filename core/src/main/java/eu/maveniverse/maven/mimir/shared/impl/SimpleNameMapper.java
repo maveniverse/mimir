@@ -7,18 +7,13 @@
  */
 package eu.maveniverse.maven.mimir.shared.impl;
 
-import static java.util.Objects.requireNonNull;
-
-import eu.maveniverse.maven.mimir.shared.CacheKey;
+import eu.maveniverse.maven.mimir.shared.naming.CacheKey;
 import eu.maveniverse.maven.mimir.shared.naming.NameMapper;
-import java.util.Optional;
-import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
 
 /**
- * This is SIMPLE name mapper; fully usable for any standard scenario: it handles release artifacts ONLY.
- * The "supported repository" is handled by ctor injected predicate.
+ * This is SIMPLE name mapper; fully usable for any standard scenario.
  * More logic may be needed for more complex scenarios, like proper identification of remote repositories,
  * support repo aliases, mirrors, etc.
  * <p>
@@ -27,31 +22,15 @@ import org.eclipse.aether.repository.RemoteRepository;
  * no direct tampering. The layout should be considered "internal" and may change without any compatibility obligation.
  */
 public class SimpleNameMapper implements NameMapper {
-    private final Predicate<RemoteRepository> remoteRepositoryPredicate;
-
-    public SimpleNameMapper(Predicate<RemoteRepository> remoteRepositoryPredicate) {
-        this.remoteRepositoryPredicate = requireNonNull(remoteRepositoryPredicate, "remoteRepositoryPredicate");
-    }
-
     @Override
-    public boolean supports(RemoteRepository remoteRepository) {
-        return remoteRepositoryPredicate.test(remoteRepository);
-    }
-
-    @Override
-    public Optional<CacheKey> cacheKey(RemoteRepository remoteRepository, Artifact artifact) {
-        if (remoteRepositoryPredicate.test(remoteRepository) && !artifact.isSnapshot()) {
-            String container = remoteRepository.getId();
-            String name = artifact.getGroupId() + "/" + artifact.getArtifactId() + "/" + artifact.getVersion() + "/"
-                    + artifact.getArtifactId() + "-" + artifact.getVersion();
-            if (artifact.getClassifier() != null
-                    && !artifact.getClassifier().trim().isEmpty()) {
-                name += "-" + artifact.getClassifier();
-            }
-            name += "." + artifact.getExtension();
-            return Optional.of(CacheKey.of(container, name));
-        } else {
-            return Optional.empty();
+    public CacheKey cacheKey(RemoteRepository remoteRepository, Artifact artifact) {
+        String container = remoteRepository.getId();
+        String name = artifact.getGroupId() + "/" + artifact.getArtifactId() + "/" + artifact.getBaseVersion() + "/"
+                + artifact.getArtifactId() + "-" + artifact.getVersion();
+        if (artifact.getClassifier() != null && !artifact.getClassifier().trim().isEmpty()) {
+            name += "-" + artifact.getClassifier();
         }
+        name += "." + artifact.getExtension();
+        return CacheKey.of(container, name);
     }
 }

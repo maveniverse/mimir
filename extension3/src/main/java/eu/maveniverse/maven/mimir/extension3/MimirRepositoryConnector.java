@@ -8,13 +8,13 @@
 package eu.maveniverse.maven.mimir.extension3;
 
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
-import eu.maveniverse.maven.mimir.shared.CacheKey;
 import eu.maveniverse.maven.mimir.shared.Session;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -23,7 +23,10 @@ import org.eclipse.aether.spi.connector.ArtifactUpload;
 import org.eclipse.aether.spi.connector.MetadataDownload;
 import org.eclipse.aether.spi.connector.MetadataUpload;
 import org.eclipse.aether.spi.connector.RepositoryConnector;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithm;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 import org.eclipse.aether.transfer.ArtifactTransferException;
+import org.eclipse.aether.util.listener.ChainedTransferListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,36 +52,41 @@ public class MimirRepositoryConnector implements RepositoryConnector {
             Collection<? extends MetadataDownload> metadataDownloads) {
         // 1st round: provide whatever we have cached
         List<ArtifactDownload> ads = new ArrayList<>();
-        HashMap<Artifact, CacheKey> keys = new HashMap<>();
+        HashMap<Artifact, PotentiallyCached> keys = new HashMap<>();
         if (artifactDownloads != null && !artifactDownloads.isEmpty()) {
             for (ArtifactDownload artifactDownload : artifactDownloads) {
-                if (artifactDownload.isExistenceCheck()) {
+                if (artifactDownload.isExistenceCheck()
+                        || !mimirSession.artifactSupported(remoteRepository, artifactDownload.getArtifact())) {
                     ads.add(artifactDownload);
                 } else {
-                    Optional<CacheKey> cacheKey =
-                            mimirSession.cacheKey(remoteRepository, artifactDownload.getArtifact());
-                    if (cacheKey.isPresent()) {
-                        try {
-                            CacheKey key = cacheKey.orElseThrow(() -> new IllegalStateException("Cache key not found"));
-                            Optional<CacheEntry> entry = mimirSession.locate(key);
-                            if (entry.isPresent()) {
-                                CacheEntry ce =
-                                        entry.orElseThrow(() -> new IllegalStateException("Cache entry not found"));
-                                logger.debug(
-                                        "Fetched {} from Mimir '{}' cache",
-                                        artifactDownload.getArtifact(),
-                                        ce.origin());
-                                ce.transferTo(artifactDownload.getFile().toPath());
-                            } else {
-                                ads.add(artifactDownload);
-                                keys.put(artifactDownload.getArtifact(), key);
+                    try {
+                        Optional<CacheEntry> entry =
+                                mimirSession.locate(remoteRepository, artifactDownload.getArtifact());
+                        if (entry.isPresent()) {
+                            CacheEntry ce = entry.orElseThrow(() -> new IllegalStateException("Cache entry not found"));
+                            logger.debug(
+                                    "Fetched {} from Mimir '{}' cache", artifactDownload.getArtifact(), ce.origin());
+                            ce.transferTo(artifactDownload.getFile().toPath());
+                            // TODO: hashes?
+                        } else {
+                            HashMap<String, ChecksumAlgorithm> checksumAlgorithms = new HashMap<>();
+                            for (Map.Entry<String, ChecksumAlgorithmFactory> factories :
+                                    mimirSession.checksumFactories().entrySet()) {
+                                checksumAlgorithms.put(
+                                        factories.getKey(), factories.getValue().getAlgorithm());
                             }
-                        } catch (IOException e) {
-                            artifactDownload.setException(
-                                    new ArtifactTransferException(artifactDownload.getArtifact(), remoteRepository, e));
+                            ChecksumCalculator checksumCalculator = new ChecksumCalculator(checksumAlgorithms);
+                            MimirTransferListener transferListener = new MimirTransferListener(checksumCalculator);
+                            PotentiallyCached potentiallyCached = new PotentiallyCached(
+                                    artifactDownload.getArtifact(), checksumCalculator, transferListener);
+                            artifactDownload = artifactDownload.setListener(ChainedTransferListener.newInstance(
+                                    artifactDownload.getListener(), transferListener));
+                            keys.put(artifactDownload.getArtifact(), potentiallyCached);
+                            ads.add(artifactDownload);
                         }
-                    } else {
-                        ads.add(artifactDownload);
+                    } catch (IOException e) {
+                        artifactDownload.setException(
+                                new ArtifactTransferException(artifactDownload.getArtifact(), remoteRepository, e));
                     }
                 }
             }
@@ -90,11 +98,17 @@ public class MimirRepositoryConnector implements RepositoryConnector {
         // 2nd round: those fetched (and healthy) should be cached
         if (!ads.isEmpty()) {
             for (ArtifactDownload artifactDownload : ads) {
-                CacheKey cacheKey = keys.get(artifactDownload.getArtifact());
-                if (cacheKey != null && artifactDownload.getException() == null) {
+                PotentiallyCached potentiallyCached = keys.get(artifactDownload.getArtifact());
+                if (potentiallyCached != null
+                        && potentiallyCached.transferListener.isValid()
+                        && artifactDownload.getException() == null) {
                     try {
                         logger.debug("Storing {} to Mimir 'local' cache", artifactDownload.getArtifact());
-                        mimirSession.store(cacheKey, artifactDownload.getFile().toPath());
+                        mimirSession.store(
+                                remoteRepository,
+                                potentiallyCached.artifact,
+                                artifactDownload.getFile().toPath(),
+                                potentiallyCached.checksumCalculator().getChecksums());
                     } catch (IOException e) {
                         artifactDownload.setException(
                                 new ArtifactTransferException(artifactDownload.getArtifact(), remoteRepository, e));
@@ -116,4 +130,7 @@ public class MimirRepositoryConnector implements RepositoryConnector {
     public void close() {
         delegate.close();
     }
+
+    private record PotentiallyCached(
+            Artifact artifact, ChecksumCalculator checksumCalculator, MimirTransferListener transferListener) {}
 }

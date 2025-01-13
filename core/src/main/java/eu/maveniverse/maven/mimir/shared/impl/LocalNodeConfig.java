@@ -8,9 +8,12 @@
 package eu.maveniverse.maven.mimir.shared.impl;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toList;
 
 import eu.maveniverse.maven.mimir.shared.Config;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 
 public final class LocalNodeConfig {
     public static LocalNodeConfig with(Config config) {
@@ -28,11 +31,24 @@ public final class LocalNodeConfig {
             basedir =
                     Config.getCanonicalPath(Path.of(config.effectiveProperties().get("mimir.local.basedir")));
         }
-        return new LocalNodeConfig(name, distance, basedir);
+        List<String> checksumAlgorithms = Arrays.asList("SHA-1", "SHA-512");
+        if (config.effectiveProperties().containsKey("mimir.local.checksumAlgorithms")) {
+            checksumAlgorithms = Arrays.stream(config.effectiveProperties()
+                            .get("mimir.local.checksumAlgorithms")
+                            .split(","))
+                    .filter(s -> !s.trim().isEmpty())
+                    .collect(toList());
+        }
+
+        return new LocalNodeConfig(name, distance, basedir, checksumAlgorithms);
     }
 
     public static LocalNodeConfig of(String name, int distance, Path basedir) {
-        return new LocalNodeConfig(requireNonNull(name, "name"), distance, Config.getCanonicalPath(basedir));
+        return new LocalNodeConfig(
+                requireNonNull(name, "name"),
+                distance,
+                Config.getCanonicalPath(basedir),
+                Arrays.asList("SHA-1", "SHA-512"));
     }
 
     public static final String NAME = "local";
@@ -40,11 +56,13 @@ public final class LocalNodeConfig {
     private final String name;
     private final int distance;
     private final Path basedir;
+    private final List<String> checksumAlgorithms;
 
-    private LocalNodeConfig(String name, int distance, Path basedir) {
+    private LocalNodeConfig(String name, int distance, Path basedir, List<String> checksumAlgorithms) {
         this.name = name;
         this.distance = distance;
         this.basedir = basedir;
+        this.checksumAlgorithms = List.copyOf(checksumAlgorithms);
     }
 
     public String name() {
@@ -57,5 +75,9 @@ public final class LocalNodeConfig {
 
     public Path basedir() {
         return basedir;
+    }
+
+    public List<String> checksumAlgorithms() {
+        return checksumAlgorithms;
     }
 }

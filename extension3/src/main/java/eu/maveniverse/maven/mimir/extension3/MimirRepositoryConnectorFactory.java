@@ -39,7 +39,7 @@ public class MimirRepositoryConnectorFactory implements RepositoryConnectorFacto
         Optional<Session> mimirSessionOptional = MimirUtils.mayGetSession(session);
         if (mimirSessionOptional.isPresent()) {
             Session mimirSession = mimirSessionOptional.orElseThrow();
-            if (mimirSession.supports(repository)) {
+            if (mimirSession.repositorySupported(repository)) {
                 return new MimirRepositoryConnector(mimirSession, repository, repositoryConnector);
             }
         }

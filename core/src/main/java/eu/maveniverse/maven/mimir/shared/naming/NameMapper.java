@@ -7,35 +7,13 @@
  */
 package eu.maveniverse.maven.mimir.shared.naming;
 
-import eu.maveniverse.maven.mimir.shared.CacheKey;
-import java.util.Optional;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
 
 public interface NameMapper {
     /**
-     * A name mapper that is nop.
-     */
-    NameMapper NOP = new NameMapper() {
-        @Override
-        public boolean supports(RemoteRepository remoteRepository) {
-            return false;
-        }
-
-        @Override
-        public Optional<CacheKey> cacheKey(RemoteRepository remoteRepository, Artifact artifact) {
-            return Optional.empty();
-        }
-    };
-
-    /**
-     * Returns {@code true} if the given remote repository is supported by this mapper.
-     */
-    boolean supports(RemoteRepository remoteRepository);
-
-    /**
      * Creates a cache key according to naming strategy, if supported. If no cache key creation possible, Mimir
      * will step aside for given transaction.
      */
-    Optional<CacheKey> cacheKey(RemoteRepository remoteRepository, Artifact artifact);
+    CacheKey cacheKey(RemoteRepository remoteRepository, Artifact artifact);
 }

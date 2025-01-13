@@ -9,12 +9,38 @@ package eu.maveniverse.maven.mimir.shared;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
 
 public interface CacheEntry {
     /**
-     * The origin of cache entry, a label.
+     * The entry metadata.
+     */
+    interface Metadata {
+        /**
+         * The content length in bytes (octets).
+         */
+        long contentLength();
+
+        /**
+         * The last modified timestamp (unix epoch).
+         */
+        long lastModified();
+
+        /**
+         * Checksums.
+         */
+        Map<String, String> checksums();
+    }
+
+    /**
+     * The entry origin.
      */
     String origin();
+
+    /**
+     * The entry metadata.
+     */
+    Metadata metadata();
 
     /**
      * Transfers cached entry to given file by best available means and atomically. The file will be overwritten,

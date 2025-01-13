@@ -101,7 +101,7 @@ public class Daemon implements AutoCloseable {
         this.serverSocketChannel = serverSocketChannel;
         logger.info("Mimir Daemon {} started", config.mimirVersion());
         logger.info("  Socket: {}", socketAddress);
-        logger.info("  Local Node: {} (d={})", localNode.basedir(), localNode.distance());
+        logger.info("  Local Node: {}", localNode);
         logger.info("  {} node(s):", nodes.size());
         for (Node node : this.nodes) {
             logger.info("    {} (d={})", node.name(), node.distance());
