@@ -5,39 +5,26 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.shared;
+package eu.maveniverse.maven.mimir.shared.node;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
 
-public interface CacheEntry {
+public interface Entry {
+    String CONTENT_PREFIX = "content-";
+    String CONTENT_LENGTH = CONTENT_PREFIX + "length";
+    String CONTENT_LAST_MODIFIED = CONTENT_PREFIX + "modified";
+
     /**
-     * The entry metadata.
+     * The origin node name.
      */
-    interface Metadata {
-        /**
-         * The content length in bytes (octets).
-         */
-        long contentLength();
-
-        /**
-         * The last modified instant of this entry.
-         */
-        Optional<Instant> lastModified();
-
-        /**
-         * Checksums.
-         */
-        Map<String, String> checksums();
-    }
+    Node origin();
 
     /**
      * The entry metadata.
      */
-    Metadata metadata();
+    Map<String, String> metadata();
 
     /**
      * Transfers cached entry to given file by best available means and atomically. The file will be overwritten,

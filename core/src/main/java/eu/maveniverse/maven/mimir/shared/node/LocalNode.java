@@ -7,13 +7,18 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
-import eu.maveniverse.maven.mimir.shared.CacheEntry;
-import eu.maveniverse.maven.mimir.shared.naming.CacheKey;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Map;
 
 public interface LocalNode extends Node {
     /**
      * Stores cache entry and offers it as own entry.
      */
-    LocalCacheEntry store(CacheKey key, CacheEntry entry) throws IOException;
+    LocalEntry store(Key key, Entry entry) throws IOException;
+
+    /**
+     * Stores file and offers it as own entry.
+     */
+    LocalEntry store(Key key, Path file, Map<String, String> checksums) throws IOException;
 }

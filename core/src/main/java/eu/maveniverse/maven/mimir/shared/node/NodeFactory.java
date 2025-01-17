@@ -16,5 +16,5 @@ public interface NodeFactory {
      * Creates a {@link Node} instance, or returns empty optional if for any reason cannot
      * contribute a node.
      */
-    Optional<Node> createNode(Config config, LocalNode localNode) throws IOException;
+    Optional<Node> createNode(Config config) throws IOException;
 }

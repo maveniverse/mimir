@@ -9,11 +9,10 @@ package eu.maveniverse.maven.mimir.shared.naming;
 
 import eu.maveniverse.maven.mimir.shared.Config;
 import java.io.IOException;
-import java.util.Optional;
 
 public interface NameMapperFactory {
     /**
      * Creates a {@link NameMapper} instance, if supported.
      */
-    Optional<NameMapper> createNameMapper(Config config) throws IOException;
+    NameMapper createNameMapper(Config config) throws IOException;
 }

@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.mimir.shared;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
@@ -15,21 +16,21 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
-public interface Session extends AutoCloseable {
+public interface Session extends Closeable {
     /**
      * Tells whether session is configured to support given remote repository.
      */
     boolean repositorySupported(RemoteRepository remoteRepository);
 
     /**
+     * Tells whether session is configured to support given artifact.
+     */
+    boolean artifactSupported(Artifact artifact);
+
+    /**
      * Tells session configured checksum factories.
      */
     Map<String, ChecksumAlgorithmFactory> checksumFactories();
-
-    /**
-     * Tells whether session is configured to support given remote repository and artifact coming from it.
-     */
-    boolean artifactSupported(RemoteRepository remoteRepository, Artifact artifact);
 
     /**
      * Locates cache entry by key.

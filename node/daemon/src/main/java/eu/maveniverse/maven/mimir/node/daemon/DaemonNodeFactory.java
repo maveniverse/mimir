@@ -8,7 +8,6 @@
 package eu.maveniverse.maven.mimir.node.daemon;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.Node;
 import eu.maveniverse.maven.mimir.shared.node.NodeFactory;
 import java.io.IOException;
@@ -24,13 +23,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Singleton
-@Named(UdsNodeConfig.NAME)
-public class UdsNodeFactory implements NodeFactory {
+@Named(DaemonConfig.NAME)
+public class DaemonNodeFactory implements NodeFactory {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
-    public Optional<Node> createNode(Config config, LocalNode localNode) throws IOException {
-        UdsNodeConfig cfg = UdsNodeConfig.with(config);
+    public Optional<Node> createNode(Config config) throws IOException {
+        DaemonConfig cfg = DaemonConfig.with(config);
         if (!cfg.enabled()) {
             logger.debug("Mimir daemon not enabled");
             return Optional.empty();
@@ -45,16 +44,16 @@ public class UdsNodeFactory implements NodeFactory {
                 logger.info("Mimir daemon started (pid={})", daemon.pid());
             }
         }
-        return Optional.of(new UdsNode(() -> {
+        return Optional.of(new DaemonNode(() -> {
             try {
-                return new UdsNode.Handle(SocketChannel.open(UnixDomainSocketAddress.of(cfg.socketPath())));
+                return new DaemonNode.Handle(SocketChannel.open(UnixDomainSocketAddress.of(cfg.socketPath())));
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         }));
     }
 
-    private Process startDaemon(Path basedir, UdsNodeConfig config) throws IOException {
+    private Process startDaemon(Path basedir, DaemonConfig config) throws IOException {
         String daemonJarName = config.daemonJarName();
         String daemonLogName = config.daemonLogName();
         Path daemonJar = basedir.resolve(daemonJarName);

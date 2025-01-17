@@ -56,7 +56,7 @@ public class MimirRepositoryConnector implements RepositoryConnector {
         if (artifactDownloads != null && !artifactDownloads.isEmpty()) {
             for (ArtifactDownload artifactDownload : artifactDownloads) {
                 if (artifactDownload.isExistenceCheck()
-                        || !mimirSession.artifactSupported(remoteRepository, artifactDownload.getArtifact())) {
+                        || !mimirSession.artifactSupported(artifactDownload.getArtifact())) {
                     ads.add(artifactDownload);
                 } else {
                     try {
@@ -64,8 +64,7 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                                 mimirSession.locate(remoteRepository, artifactDownload.getArtifact());
                         if (entry.isPresent()) {
                             CacheEntry ce = entry.orElseThrow(() -> new IllegalStateException("Cache entry not found"));
-                            logger.debug(
-                                    "Fetched {} from Mimir '{}' cache", artifactDownload.getArtifact(), ce.origin());
+                            logger.debug("Fetched {} from Mimir cache", artifactDownload.getArtifact());
                             ce.transferTo(artifactDownload.getFile().toPath());
                             // TODO: hashes?
                         } else {

@@ -7,12 +7,15 @@
  */
 package eu.maveniverse.maven.mimir.node.jgroups;
 
+import static java.util.Objects.requireNonNull;
+
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.node.LocalNode;
+import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.Node;
 import eu.maveniverse.maven.mimir.shared.node.NodeFactory;
 import java.io.IOException;
 import java.util.Optional;
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.jgroups.JChannel;
@@ -22,14 +25,22 @@ import org.jgroups.JChannel;
 public class JGroupsNodeFactory implements NodeFactory {
     public static final String NAME = "jgroups";
 
+    private final LocalNodeFactory localNodeFactory;
+
+    @Inject
+    public JGroupsNodeFactory(LocalNodeFactory localNodeFactory) {
+        this.localNodeFactory = requireNonNull(localNodeFactory, "localNodeFactory");
+    }
+
     @Override
-    public Optional<Node> createNode(Config config, LocalNode localNode) throws IOException {
+    public Optional<Node> createNode(Config config) throws IOException {
         try {
             JGroupsNodeConfig cfg = JGroupsNodeConfig.with(config);
             if (!cfg.enabled()) {
                 return Optional.empty();
             }
-            return Optional.of(new JGroupsNode(localNode, createChannel(cfg), cfg.publisherEnabled()));
+            return Optional.of(new JGroupsNode(
+                    localNodeFactory.createLocalNode(config), createChannel(cfg), cfg.publisherEnabled()));
         } catch (Exception e) {
             throw new IOException("Failed to create JChannel", e);
         }

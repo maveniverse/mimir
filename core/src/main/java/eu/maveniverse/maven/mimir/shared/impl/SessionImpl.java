@@ -11,8 +11,9 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.Session;
-import eu.maveniverse.maven.mimir.shared.naming.CacheKey;
 import eu.maveniverse.maven.mimir.shared.naming.NameMapper;
+import eu.maveniverse.maven.mimir.shared.node.Entry;
+import eu.maveniverse.maven.mimir.shared.node.Key;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.Node;
 import java.io.IOException;
@@ -22,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -30,13 +30,12 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SessionImpl implements Session {
+public final class SessionImpl implements Session {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final AtomicBoolean closed;
     private final Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories;
     private final Predicate<RemoteRepository> repositoryPredicate;
     private final Predicate<Artifact> artifactPredicate;
-    private final BiPredicate<RemoteRepository, Artifact> repositoryArtifactPredicate;
     private final NameMapper nameMapper;
     private final LocalNode localNode;
     private final List<Node> nodes;
@@ -53,7 +52,6 @@ public class SessionImpl implements Session {
         this.checksumAlgorithmFactories = requireNonNull(checksumAlgorithmFactories, "checksumAlgorithmFactories");
         this.repositoryPredicate = requireNonNull(repositoryPredicate, "repositoryPredicate");
         this.artifactPredicate = requireNonNull(artifactPredicate, "artifactPredicate");
-        this.repositoryArtifactPredicate = (r, a) -> repositoryPredicate.test(r) && artifactPredicate.test(a);
         this.nameMapper = requireNonNull(nameMapper, "nameMapper");
         this.localNode = requireNonNull(localNode, "localNode");
         this.nodes = requireNonNull(nodes, "nodes");
@@ -73,9 +71,9 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public boolean artifactSupported(RemoteRepository remoteRepository, Artifact artifact) {
+    public boolean artifactSupported(Artifact artifact) {
         checkState();
-        return repositoryArtifactPredicate.test(remoteRepository, artifact);
+        return artifactPredicate.test(artifact);
     }
 
     @Override
@@ -83,38 +81,41 @@ public class SessionImpl implements Session {
         checkState();
         requireNonNull(remoteRepository, "remoteRepository");
         requireNonNull(artifact, "artifact");
-        if (repositoryArtifactPredicate.test(remoteRepository, artifact)) {
-            CacheKey key = nameMapper.cacheKey(remoteRepository, artifact);
-            Optional<CacheEntry> result = localNode.locate(key);
+        if (repositoryPredicate.test(remoteRepository) && artifactPredicate.test(artifact)) {
+            Key key = nameMapper.apply(remoteRepository, artifact);
+            Optional<Entry> result = localNode.locate(key);
             if (result.isEmpty()) {
                 for (Node node : nodes) {
                     result = node.locate(key);
                     if (result.isPresent()) {
-                        result = Optional.of(localNode.store(
-                                key, result.orElseThrow(() -> new IllegalStateException("should be present"))));
+                        result = Optional.of(localNode.store(key, result.orElseThrow()));
                         break;
                     }
                 }
             }
-            return stats.query(result);
+            stats.query(true);
+            return Optional.of(new CacheEntryImpl(result.orElseThrow()));
         } else {
-            return stats.query(Optional.empty());
+            stats.query(false);
+            return Optional.empty();
         }
     }
 
     @Override
-    public boolean store(RemoteRepository remoteRepository, Artifact artifact, Path path, Map<String, String> checksums)
+    public boolean store(RemoteRepository remoteRepository, Artifact artifact, Path file, Map<String, String> checksums)
             throws IOException {
         checkState();
         requireNonNull(remoteRepository, "remoteRepository");
         requireNonNull(artifact, "artifact");
-        requireNonNull(path, "path");
+        requireNonNull(file, "file");
         requireNonNull(checksums, "checksums");
-        if (repositoryArtifactPredicate.test(remoteRepository, artifact)) {
-            CacheKey key = nameMapper.cacheKey(remoteRepository, artifact);
-            stats.store(localNode.store(key, new PathCacheEntry("session", new PathMetadata(path, checksums), path)));
+        if (repositoryPredicate.test(remoteRepository) && artifactPredicate.test(artifact)) {
+            Key key = nameMapper.apply(remoteRepository, artifact);
+            localNode.store(key, file, checksums);
+            stats.store(true);
             return true;
         } else {
+            stats.store(false);
             return false;
         }
     }
@@ -126,31 +127,32 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public void close() {
+    public void close() throws IOException {
         if (closed.compareAndSet(false, true)) {
-            ArrayList<Exception> exceptions = new ArrayList<>();
+            ArrayList<IOException> exceptions = new ArrayList<>();
             for (Node node : this.nodes) {
                 try {
                     node.close();
-                } catch (Exception e) {
+                } catch (IOException e) {
                     exceptions.add(e);
                 }
             }
             try {
                 localNode.close();
-            } catch (Exception e) {
+            } catch (IOException e) {
                 exceptions.add(e);
             }
             if (!exceptions.isEmpty()) {
-                IllegalStateException illegalStateException = new IllegalStateException("Could not close session");
-                exceptions.forEach(illegalStateException::addSuppressed);
-                throw illegalStateException;
+                IOException closeException = new IOException("Could not close session");
+                exceptions.forEach(closeException::addSuppressed);
+                throw closeException;
             }
             logger.info(
-                    "Mimir session closed (LOCATE/HIT={}/{} STORED={})",
-                    stats.queries(),
-                    stats.queryHits(),
-                    stats.stores());
+                    "Mimir session closed (LOCATED/HIT={}/{} STORED/ACC={}/{})",
+                    stats.locate(),
+                    stats.locateHit(),
+                    stats.store(),
+                    stats.storeAccepted());
         }
     }
 }

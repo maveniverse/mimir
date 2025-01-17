@@ -7,12 +7,11 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
-import eu.maveniverse.maven.mimir.shared.CacheEntry;
-import eu.maveniverse.maven.mimir.shared.naming.CacheKey;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Optional;
 
-public interface Node extends AutoCloseable {
+public interface Node extends Closeable {
     /**
      * Node name, a label.
      */
@@ -26,5 +25,5 @@ public interface Node extends AutoCloseable {
     /**
      * Locates cache entry by key on this node.
      */
-    Optional<CacheEntry> locate(CacheKey key) throws IOException;
+    Optional<Entry> locate(Key key) throws IOException;
 }

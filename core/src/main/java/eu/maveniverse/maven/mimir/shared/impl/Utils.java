@@ -43,8 +43,8 @@ public final class Utils {
             Files.createLink(dest, src);
         } else {
             Files.copy(src, dest);
+            Files.setLastModifiedTime(dest, Files.getLastModifiedTime(src));
         }
-        Files.setLastModifiedTime(dest, Files.getLastModifiedTime(src));
     }
 
     /**

@@ -22,9 +22,9 @@ import eu.maveniverse.maven.mimir.shared.node.NodeFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 
 @Singleton
 @Named
-public class SessionFactoryImpl implements SessionFactory {
+public final class SessionFactoryImpl implements SessionFactory {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector;
     private final LocalNodeFactory localNodeFactory;
@@ -61,31 +61,32 @@ public class SessionFactoryImpl implements SessionFactory {
         LocalNode localNode = localNodeFactory.createLocalNode(config);
         ArrayList<Node> nodes = new ArrayList<>();
         for (NodeFactory nodeFactory : this.nodeFactories.values()) {
-            Optional<Node> node = nodeFactory.createNode(config, localNode);
+            Optional<Node> node = nodeFactory.createNode(config);
             node.ifPresent(nodes::add);
         }
         nodes.sort(Comparator.comparing(Node::distance));
-        NameMapper nameMapper = null;
-        for (NameMapperFactory nameMapperFactory : this.nameMapperFactories.values()) {
-            Optional<NameMapper> optional = nameMapperFactory.createNameMapper(config);
-            if (optional.isPresent()) {
-                nameMapper = optional.orElseThrow();
-                break;
-            }
+
+        SessionConfig sessionConfig = SessionConfig.with(config);
+        NameMapperFactory nameMapperFactory = nameMapperFactories.get(sessionConfig.nameMapper());
+        if (nameMapperFactory == null) {
+            throw new IllegalStateException("No nameMapper: " + sessionConfig.nameMapper());
         }
-        if (nameMapper == null) {
-            throw new IllegalStateException("No nameMapper found");
-        }
-        logger.info("Mimir {} session created", config.mimirVersion());
+        NameMapper nameMapper = requireNonNull(nameMapperFactory.createNameMapper(config), "nameMapper");
+
+        Map<String, ChecksumAlgorithmFactory> factories =
+                checksumAlgorithmFactorySelector.selectList(sessionConfig.checksumAlgorithms()).stream()
+                        .collect(Collectors.toMap(ChecksumAlgorithmFactory::getName, f -> f));
+
         if (logger.isDebugEnabled()) {
+            logger.debug("Mimir {} session created", config.mimirVersion().orElse("UNKNOWN"));
             logger.debug("  Name mapper: {}", nameMapper.getClass().getSimpleName());
+            logger.debug("  Checksums: {}", factories.keySet());
             logger.debug("  Local Node: {}", localNode);
             logger.debug("  {} node(s):", nodes.size());
             for (Node node : nodes) {
                 logger.debug("    {} (d={})", node.name(), node.distance());
             }
         }
-        Map<String, ChecksumAlgorithmFactory> factories = new HashMap<>();
 
         return new SessionImpl(
                 factories, RemoteRepositories.centralDirectOnly(), a -> !a.isSnapshot(), nameMapper, localNode, nodes);

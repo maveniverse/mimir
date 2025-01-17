@@ -5,14 +5,13 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.shared.naming;
+package eu.maveniverse.maven.mimir.shared.node;
 
 import static java.util.Objects.requireNonNull;
 
-import java.io.Serializable;
 import java.util.Objects;
 
-public interface CacheKey extends Serializable {
+public interface Key {
     /**
      * The "container".
      */
@@ -23,12 +22,12 @@ public interface CacheKey extends Serializable {
      */
     String name();
 
-    static String toKeyString(CacheKey cacheKey) {
-        requireNonNull(cacheKey, "cacheKey");
-        return cacheKey.container() + "@" + cacheKey.name();
+    static String toKeyString(Key key) {
+        requireNonNull(key, "cacheKey");
+        return key.container() + "@" + key.name();
     }
 
-    static CacheKey fromKeyString(String string) {
+    static Key fromKeyString(String string) {
         requireNonNull(string);
         int index = string.indexOf('@');
         if (index > 1) {
@@ -37,13 +36,13 @@ public interface CacheKey extends Serializable {
         throw new IllegalArgumentException("Invalid key string");
     }
 
-    static CacheKey of(final String container, final String name) {
+    static Key of(final String container, final String name) {
         requireNonNull(container, "container");
         requireNonNull(name, "name");
         return new Impl(container, name);
     }
 
-    class Impl implements CacheKey {
+    class Impl implements Key {
         private final String container;
         private final String name;
 

@@ -7,37 +7,41 @@
  */
 package eu.maveniverse.maven.mimir.shared.impl;
 
-import eu.maveniverse.maven.mimir.shared.CacheEntry;
-import java.util.Optional;
 import java.util.concurrent.atomic.LongAdder;
 
 public final class Stats {
-    private final LongAdder queries = new LongAdder();
-    private final LongAdder queryHits = new LongAdder();
-    private final LongAdder stores = new LongAdder();
+    private final LongAdder locate = new LongAdder();
+    private final LongAdder locateHit = new LongAdder();
+    private final LongAdder store = new LongAdder();
+    private final LongAdder storeAccepted = new LongAdder();
 
-    public long queries() {
-        return queries.sum();
+    public long locate() {
+        return locate.sum();
     }
 
-    public long queryHits() {
-        return queryHits.sum();
+    public long locateHit() {
+        return locateHit.sum();
     }
 
-    public long stores() {
-        return stores.sum();
+    public long store() {
+        return store.sum();
     }
 
-    public Optional<CacheEntry> query(Optional<CacheEntry> entry) {
-        queries.increment();
-        if (entry.isPresent()) {
-            queryHits.increment();
+    public long storeAccepted() {
+        return storeAccepted.sum();
+    }
+
+    public void query(boolean present) {
+        locate.increment();
+        if (present) {
+            locateHit.increment();
         }
-        return entry;
     }
 
-    public CacheEntry store(CacheEntry stored) {
-        stores.increment();
-        return stored;
+    public void store(boolean accepted) {
+        store.increment();
+        if (accepted) {
+            storeAccepted.increment();
+        }
     }
 }

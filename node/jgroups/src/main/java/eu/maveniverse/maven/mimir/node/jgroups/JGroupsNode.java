@@ -7,24 +7,36 @@
  */
 package eu.maveniverse.maven.mimir.node.jgroups;
 
-import eu.maveniverse.maven.mimir.shared.CacheEntry;
+import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.CMD_LOCATE;
+import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.readLocateRsp;
+import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeLocateReq;
+import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeLocateRspOK;
+import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeRspKO;
+import static java.util.Objects.requireNonNull;
+
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.impl.LocalNodeFactoryImpl;
-import eu.maveniverse.maven.mimir.shared.naming.CacheKey;
-import eu.maveniverse.maven.mimir.shared.node.LocalCacheEntry;
+import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
+import eu.maveniverse.maven.mimir.shared.impl.RemoteEntrySupport;
+import eu.maveniverse.maven.mimir.shared.node.Entry;
+import eu.maveniverse.maven.mimir.shared.node.Key;
+import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.Node;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -32,9 +44,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import org.jgroups.BytesMessage;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
-import org.jgroups.ObjectMessage;
+import org.jgroups.MessageFactory;
 import org.jgroups.blocks.MessageDispatcher;
 import org.jgroups.blocks.RequestHandler;
 import org.jgroups.blocks.RequestOptions;
@@ -44,7 +57,7 @@ import org.jgroups.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JGroupsNode implements Node, RequestHandler {
+public class JGroupsNode extends NodeSupport implements RequestHandler {
     public static void main(String... args) throws Exception {
         Logger logger = LoggerFactory.getLogger(JGroupsNode.class);
 
@@ -68,15 +81,14 @@ public class JGroupsNode implements Node, RequestHandler {
                 .userProperties(config)
                 .propertiesPath(Path.of("mimir-publisher.properties"))
                 .build();
-        LocalNode localNode = new LocalNodeFactoryImpl().createLocalNode(conf);
-        Node publisher = new JGroupsNodeFactory()
-                .createNode(conf, localNode)
+        Node publisher = new JGroupsNodeFactory(new LocalNodeFactoryImpl())
+                .createNode(conf)
                 .orElseThrow(() -> new IllegalStateException("Publisher configured to not publish; bailing out"));
 
         logger.info("");
         logger.info("JGroupsNode publisher started (Ctrl+C to exit)");
         logger.info("Publishing:");
-        logger.info("* Local Node {}", localNode);
+        logger.info("* {}", publisher);
         try {
             new CountDownLatch(1).await(); // this is merely to get interrupt
         } catch (InterruptedException e) {
@@ -84,16 +96,21 @@ public class JGroupsNode implements Node, RequestHandler {
         }
     }
 
+    private static final String JG_TXID = "jg-txid";
+    private static final String JG_HOST = "jg-host";
+    private static final String JG_PORT = "jg-port";
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final LocalNode localNode;
     private final JChannel channel;
     private final MessageDispatcher messageDispatcher;
 
     private final ServerSocket serverSocket;
-    private final ConcurrentHashMap<String, LocalCacheEntry> tx;
+    private final ConcurrentHashMap<String, LocalEntry> tx;
     private final ExecutorService executor;
 
     public JGroupsNode(LocalNode localNode, JChannel channel, boolean publisher) throws IOException {
+        super(JGroupsNodeFactory.NAME, 500);
         this.localNode = localNode;
         this.channel = channel;
         if (publisher) {
@@ -104,7 +121,7 @@ public class JGroupsNode implements Node, RequestHandler {
 
             Thread serverThread = new Thread(() -> {
                 try {
-                    while (true) {
+                    while (!serverSocket.isClosed()) {
                         Socket accepted = serverSocket.accept();
                         executor.submit(() -> {
                             try (Socket socket = accepted) {
@@ -112,11 +129,12 @@ public class JGroupsNode implements Node, RequestHandler {
                                 OutputStream out = socket.getOutputStream();
                                 if (buf.length == 36) {
                                     String txid = new String(buf, StandardCharsets.UTF_8);
-                                    LocalCacheEntry cacheEntry = tx.remove(txid);
-                                    if (cacheEntry != null) {
+                                    LocalEntry entry = tx.remove(txid);
+                                    if (entry != null) {
                                         logger.debug("SERVER HIT: {} to {}", txid, socket.getRemoteSocketAddress());
-                                        Channels.newInputStream(cacheEntry.openReadableByteChannel())
-                                                .transferTo(out);
+                                        try (InputStream inputStream = entry.openStream()) {
+                                            inputStream.transferTo(out);
+                                        }
                                     } else {
                                         logger.warn("SERVER MISS: {} to {}", txid, socket.getRemoteSocketAddress());
                                     }
@@ -146,31 +164,20 @@ public class JGroupsNode implements Node, RequestHandler {
     }
 
     @Override
-    public String name() {
-        return JGroupsNodeFactory.NAME;
-    }
-
-    @Override
-    public int distance() {
-        return 500;
-    }
-
-    @Override
-    public Optional<CacheEntry> locate(CacheKey key) throws IOException {
-        String cmd = CMD_LOOKUP + CacheKey.toKeyString(key);
+    public Optional<Entry> locate(Key key) throws IOException {
+        ByteArrayOutputStream req = new ByteArrayOutputStream();
+        writeLocateReq(new DataOutputStream(req), Key.toKeyString(key));
         try {
-            RspList<String> responses =
-                    messageDispatcher.castMessage(null, new ObjectMessage(null, cmd), RequestOptions.SYNC());
-            for (String response : responses.getResults()) {
-                if (response != null && response.startsWith(RSP_LOOKUP_OK)) {
-                    String body = response.substring(RSP_LOOKUP_OK.length());
-                    String[] parts = body.split(" ");
-                    if (parts.length == 2) {
-                        int colon = parts[0].indexOf(':');
-                        String host = parts[0].substring(0, colon);
-                        int port = Integer.parseInt(parts[0].substring(colon + 1));
-                        return Optional.of(localNode.store(key, new JGroupsCacheEntry(name(), host, port, parts[1])));
-                    }
+            RspList<BytesMessage> responses = messageDispatcher.castMessage(
+                    null, MessageFactory.create(Message.BYTES_MSG).setArray(req.toByteArray()), RequestOptions.SYNC());
+            for (BytesMessage response : responses.getResults()) {
+                Map<String, String> data =
+                        readLocateRsp(new DataInputStream(new ByteArrayInputStream(response.getArray())));
+                if (!data.isEmpty()) {
+                    String host = requireNonNull(data.get(JG_HOST), JG_HOST);
+                    int port = Integer.parseInt(requireNonNull(data.get(JG_PORT), JG_PORT));
+                    String txid = requireNonNull(data.get(JG_TXID), JG_TXID);
+                    return Optional.of(new JGroupsEntry(this, data, host, port, txid));
                 }
             }
         } catch (Exception e) {
@@ -178,10 +185,6 @@ public class JGroupsNode implements Node, RequestHandler {
         }
         return Optional.empty();
     }
-
-    public static final String CMD_LOOKUP = "LOOKUP ";
-    public static final String RSP_LOOKUP_OK = "OK ";
-    public static final String RSP_LOOKUP_KO = "KO ";
 
     @Override
     public Object handle(Message msg) throws Exception {
@@ -202,39 +205,49 @@ public class JGroupsNode implements Node, RequestHandler {
         };
         handle(msg, response);
         if (respIsException.get()) {
-            throw new IllegalArgumentException(String.valueOf(resp.get()));
+            throw new IOException(String.valueOf(resp.get()));
         }
         return resp.get();
     }
 
     @Override
     public void handle(Message msg, Response response) throws Exception {
-        String cmd = msg.getObject();
-        if (cmd != null && cmd.startsWith(CMD_LOOKUP)) {
-            String keyString = cmd.substring(CMD_LOOKUP.length());
-            CacheKey key = CacheKey.fromKeyString(keyString);
-            Optional<CacheEntry> entry = localNode.locate(key);
-            if (entry.isPresent()) {
+        DataInputStream dis = new DataInputStream(new ByteArrayInputStream(msg.getArray()));
+        String cmd = dis.readUTF();
+        ByteArrayOutputStream data = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(data);
+        boolean exception = false;
+        if (CMD_LOCATE.equals(cmd)) {
+            String keyString = dis.readUTF();
+            Key key = Key.fromKeyString(keyString);
+            Optional<Entry> optionalEntry = localNode.locate(key);
+
+            HashMap<String, String> map = new HashMap<>();
+            if (optionalEntry.isPresent()) {
+                Entry entry = optionalEntry.orElseThrow();
                 String txid = UUID.randomUUID().toString();
-                tx.put(txid, (LocalCacheEntry) entry.orElseThrow());
-                response.send(
-                        RSP_LOOKUP_OK + serverSocket.getInetAddress().getHostAddress() + ":"
-                                + serverSocket.getLocalPort() + " " + txid,
-                        false);
-                logger.info("LOOKUP OK: {} asked {}", msg.getSrc(), keyString);
-                return;
+                tx.put(txid, (LocalEntry) entry);
+
+                map.putAll(entry.metadata());
+                map.put(JG_TXID, txid);
+                map.put(JG_PORT, Integer.toString(serverSocket.getLocalPort()));
+                map.put(JG_HOST, InetAddress.getLocalHost().getHostAddress());
+                writeLocateRspOK(dos, map);
+                logger.info("{} OK: {} asked {}", cmd, msg.getSrc(), keyString);
             } else {
-                response.send(RSP_LOOKUP_KO, false);
-                logger.info("LOOKUP KO: {} asked {}", msg.getSrc(), keyString);
-                return;
+                writeLocateRspOK(dos, map);
+                logger.info("{} KO: {} asked {}", cmd, msg.getSrc(), keyString);
             }
+        } else {
+            writeRspKO(dos, "Unknown command");
+            exception = true;
+            logger.info("UNKNOWN COMMAND: {}", cmd);
         }
-        logger.info("UNKNOWN COMMAND: {}", cmd);
-        response.send("Unknown command", true);
+        response.send(MessageFactory.create(Message.BYTES_MSG).setArray(data.toByteArray()), exception);
     }
 
     @Override
-    public void close() throws Exception {
+    public void doClose() throws IOException {
         if (executor != null) {
             executor.shutdown();
         }
@@ -245,14 +258,25 @@ public class JGroupsNode implements Node, RequestHandler {
         channel.close();
     }
 
-    private record JGroupsCacheEntry(String origin, Metadata metadata, String host, int port, String txid) implements CacheEntry {
+    private static class JGroupsEntry extends RemoteEntrySupport {
+        private final String host;
+        private final int port;
+        private final String txid;
+
+        public JGroupsEntry(Node origin, Map<String, String> metadata, String host, int port, String txid) {
+            super(origin, metadata);
+            this.host = host;
+            this.port = port;
+            this.txid = txid;
+        }
+
         @Override
-        public void transferTo(Path file) throws IOException {
+        protected void handleContent(IOConsumer consumer) throws IOException {
             try (Socket socket = new Socket(host, port)) {
                 OutputStream os = socket.getOutputStream();
                 os.write(txid.getBytes(StandardCharsets.UTF_8));
                 os.flush();
-                Files.copy(socket.getInputStream(), file, StandardCopyOption.REPLACE_EXISTING);
+                consumer.accept(socket.getInputStream());
             }
         }
     }

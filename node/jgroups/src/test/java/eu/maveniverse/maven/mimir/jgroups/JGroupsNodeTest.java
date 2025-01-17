@@ -4,11 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.maveniverse.maven.mimir.node.jgroups.JGroupsNode;
-import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.impl.LocalNodeConfig;
 import eu.maveniverse.maven.mimir.shared.impl.LocalNodeImpl;
-import eu.maveniverse.maven.mimir.shared.naming.CacheKey;
+import eu.maveniverse.maven.mimir.shared.node.Entry;
+import eu.maveniverse.maven.mimir.shared.node.Key;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.net.InetAddress;
 import java.nio.file.Files;
@@ -49,8 +49,8 @@ public class JGroupsNodeTest {
 
         try (JGroupsNode publisher = new JGroupsNode(nodeOne, channelOne, true);
                 JGroupsNode consumer = new JGroupsNode(nodeTwo, channelTwo, false); ) {
-            CacheKey key = CacheKey.of("container", "file.txt");
-            Optional<CacheEntry> entry = consumer.locate(key);
+            Key key = Key.of("container", "file.txt");
+            Optional<Entry> entry = consumer.locate(key);
             assertTrue(entry.isPresent());
 
             Path tmpTarget = Files.createTempFile("tmp", ".tmp");
