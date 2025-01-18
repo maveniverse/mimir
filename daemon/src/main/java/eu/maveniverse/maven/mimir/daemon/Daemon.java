@@ -90,7 +90,7 @@ public class Daemon implements Closeable {
         }
         nds.sort(Comparator.comparing(RemoteNode::distance));
         this.remoteNodes = List.copyOf(nds);
-        this.executor = Executors.newFixedThreadPool(15);
+        this.executor = Executors.newVirtualThreadPerTaskExecutor();
 
         Path socketPath = daemonConfig.socketPath();
         // make sure socket is deleted once daemon exits

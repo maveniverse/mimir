@@ -76,7 +76,7 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
             this.messageDispatcher = new MessageDispatcher(channel, this);
             this.serverSocket = new ServerSocket(0, 50, InetAddress.getLocalHost());
             this.tx = new ConcurrentHashMap<>();
-            this.executor = Executors.newFixedThreadPool(6);
+            this.executor = Executors.newVirtualThreadPerTaskExecutor();
 
             Thread serverThread = new Thread(() -> {
                 try {
