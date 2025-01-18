@@ -101,7 +101,7 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
                         readLocateRsp(new DataInputStream(new ByteArrayInputStream(response.getArray())));
                 if (!data.isEmpty()) {
                     URI handle = URI.create(requireNonNull(data.get(PUBLISHER_HANDLE), PUBLISHER_HANDLE));
-                    return Optional.of(localNode.store(key, new PublisherRemoteEntry(this, data, handle)));
+                    return Optional.of(localNode.store(key, new PublisherRemoteEntry(data, handle)));
                 }
             }
         } catch (Exception e) {

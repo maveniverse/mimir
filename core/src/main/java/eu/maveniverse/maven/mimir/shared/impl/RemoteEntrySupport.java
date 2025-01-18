@@ -8,7 +8,6 @@
 package eu.maveniverse.maven.mimir.shared.impl;
 
 import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.Node;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -19,8 +18,8 @@ import java.util.Map;
 import org.eclipse.aether.util.FileUtils;
 
 public abstract class RemoteEntrySupport extends EntrySupport implements Entry {
-    public RemoteEntrySupport(Node origin, Map<String, String> metadata) {
-        super(origin, metadata);
+    public RemoteEntrySupport(Map<String, String> metadata) {
+        super(metadata);
     }
 
     @Override

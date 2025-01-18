@@ -10,7 +10,6 @@ package eu.maveniverse.maven.mimir.shared.impl.publisher;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.RemoteEntrySupport;
-import eu.maveniverse.maven.mimir.shared.node.Node;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -22,8 +21,8 @@ import java.util.Map;
 public class PublisherRemoteEntry extends RemoteEntrySupport {
     private final URI handle;
 
-    public PublisherRemoteEntry(Node origin, Map<String, String> metadata, URI handle) {
-        super(origin, metadata);
+    public PublisherRemoteEntry(Map<String, String> metadata, URI handle) {
+        super(metadata);
         this.handle = requireNonNull(handle, "handle");
     }
 

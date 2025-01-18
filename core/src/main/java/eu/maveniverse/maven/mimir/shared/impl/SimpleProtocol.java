@@ -41,11 +41,26 @@ public final class SimpleProtocol {
     // - TRANSFER
     // - key
     // - path
-    // Resolver:
+    // Response:
     // - OK
     // or
     // - KO
     // - Message
+
+    // LS_CHECKSUMS command:
+    // Request:
+    // - LS_CHECKSUMS
+    // Response:
+    // - OK
+    // - list size (> 0)
+    // - entry
+    // or
+    // - KO
+    // - Message
+
+    // STORE_ENTRY
+
+    // STORE_PATH
 
     public static void writeRspKO(DataOutputStream dos, String errorMessage) throws IOException {
         dos.writeUTF(KO);

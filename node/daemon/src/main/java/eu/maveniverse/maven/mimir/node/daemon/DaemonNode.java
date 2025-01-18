@@ -53,7 +53,7 @@ public class DaemonNode extends NodeSupport implements RemoteNode {
             writeLocateReq(handle.dos, keyString);
             Map<String, String> response = readLocateRsp(handle.dis);
             if (!response.isEmpty()) {
-                return Optional.of(new DaemonEntry(this, response, keyString));
+                return Optional.of(new DaemonEntry(response, keyString));
             } else {
                 return Optional.empty();
             }
@@ -89,8 +89,8 @@ public class DaemonNode extends NodeSupport implements RemoteNode {
     private class DaemonEntry extends EntrySupport implements Entry {
         private final String keyString;
 
-        private DaemonEntry(DaemonNode node, Map<String, String> metadata, String keyString) {
-            super(node, metadata);
+        private DaemonEntry(Map<String, String> metadata, String keyString) {
+            super(metadata);
             this.keyString = keyString;
         }
 

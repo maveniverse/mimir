@@ -17,11 +17,6 @@ public interface Entry {
     String CONTENT_LAST_MODIFIED = CONTENT_PREFIX + "modified";
 
     /**
-     * The origin node name.
-     */
-    Node origin();
-
-    /**
      * The entry metadata.
      */
     Map<String, String> metadata();
