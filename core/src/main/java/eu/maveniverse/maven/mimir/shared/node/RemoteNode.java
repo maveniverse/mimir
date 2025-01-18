@@ -16,5 +16,5 @@ public interface RemoteNode extends Node {
      * Locates cache entry by key on this node.
      */
     @Override
-    Optional<RemoteEntry> locate(URI key) throws IOException;
+    Optional<Entry> locate(URI key) throws IOException;
 }

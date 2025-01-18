@@ -15,6 +15,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
+import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import java.io.BufferedInputStream;
@@ -63,7 +64,7 @@ public class DaemonNode extends NodeSupport implements RemoteNode {
     }
 
     @Override
-    public Optional<RemoteEntry> locate(URI key) throws IOException {
+    public Optional<Entry> locate(URI key) throws IOException {
         String keyString = key.toASCIIString();
         logger.debug("LOCATE '{}'", keyString);
         try (Handle handle = commSupplier.get()) {

@@ -8,8 +8,8 @@ import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.impl.LocalNodeConfig;
 import eu.maveniverse.maven.mimir.shared.impl.LocalNodeImpl;
 import eu.maveniverse.maven.mimir.shared.impl.SimpleKeyResolverFactory;
+import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
-import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import java.net.InetAddress;
 import java.net.URI;
 import java.nio.file.Files;
@@ -56,7 +56,7 @@ public class JGroupsNodeTest {
         try (JGroupsNode publisher = new JGroupsNode(nodeOne, channelOne, true);
                 JGroupsNode consumer = new JGroupsNode(nodeTwo, channelTwo, false); ) {
             URI key = URI.create("mimir:file:container:file.txt");
-            Optional<RemoteEntry> entry = consumer.locate(key);
+            Optional<Entry> entry = consumer.locate(key);
             assertTrue(entry.isPresent());
 
             Path tmpTarget = Files.createTempFile("tmp", ".tmp");

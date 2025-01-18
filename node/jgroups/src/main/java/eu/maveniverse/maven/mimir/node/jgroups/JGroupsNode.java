@@ -19,10 +19,10 @@ import eu.maveniverse.maven.mimir.shared.impl.LocalNodeFactoryImpl;
 import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.impl.RemoteEntrySupport;
 import eu.maveniverse.maven.mimir.shared.impl.SimpleKeyResolverFactory;
+import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.Node;
-import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -167,7 +167,7 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
     }
 
     @Override
-    public Optional<RemoteEntry> locate(URI key) throws IOException {
+    public Optional<Entry> locate(URI key) throws IOException {
         ByteArrayOutputStream req = new ByteArrayOutputStream();
         writeLocateReq(new DataOutputStream(req), key.toASCIIString());
         try {
@@ -180,7 +180,7 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
                     String host = requireNonNull(data.get(JG_HOST), JG_HOST);
                     int port = Integer.parseInt(requireNonNull(data.get(JG_PORT), JG_PORT));
                     String txid = requireNonNull(data.get(JG_TXID), JG_TXID);
-                    return Optional.of(new JGroupsEntry(this, data, host, port, txid));
+                    return Optional.of(localNode.store(key, new JGroupsEntry(this, data, host, port, txid)));
                 }
             }
         } catch (Exception e) {

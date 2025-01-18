@@ -11,9 +11,8 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.Session;
-import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
+import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
-import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import java.io.IOException;
 import java.net.URI;
@@ -84,23 +83,22 @@ public final class SessionImpl implements Session {
         requireNonNull(artifact, "artifact");
         if (repositoryPredicate.test(remoteRepository) && artifactPredicate.test(artifact)) {
             URI key = keyMapper.apply(remoteRepository, artifact);
-            Optional<LocalEntry> result = localNode.locate(key);
+            Optional<? extends Entry> result = localNode.locate(key);
             if (result.isEmpty()) {
-                Optional<RemoteEntry> remoteResult = Optional.empty();
                 for (RemoteNode node : remoteNodes) {
-                    remoteResult = node.locate(key);
-                    if (remoteResult.isPresent()) {
-                        result = Optional.of(localNode.store(key, remoteResult.orElseThrow()));
+                    result = node.locate(key);
+                    if (result.isPresent()) {
                         break;
                     }
                 }
             }
-            stats.query(true);
-            return Optional.of(new CacheEntryImpl(result.orElseThrow()));
-        } else {
-            stats.query(false);
-            return Optional.empty();
+            if (result.isPresent()) {
+                stats.query(true);
+                return Optional.of(new CacheEntryImpl(result.orElseThrow()));
+            }
         }
+        stats.query(false);
+        return Optional.empty();
     }
 
     @Override

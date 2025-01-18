@@ -13,9 +13,9 @@ import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeLocateR
 import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeRspKO;
 import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeTransferRspOK;
 
+import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
-import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -55,13 +55,12 @@ public class DaemonServer implements Runnable {
                     String keyString = dis.readUTF();
                     logger.debug("{} {}", cmd, keyString);
                     URI key = URI.create(keyString);
-                    Optional<LocalEntry> entry = localNode.locate(key);
+                    Optional<? extends Entry> entry = localNode.locate(key);
                     if (entry.isEmpty()) {
-                        Optional<RemoteEntry> remoteEntry;
                         for (RemoteNode node : remoteNodes) {
-                            remoteEntry = node.locate(key);
-                            if (remoteEntry.isPresent()) {
-                                localNode.store(key, remoteEntry.orElseThrow());
+                            entry = node.locate(key);
+                            if (entry.isPresent()) {
+                                localNode.store(key, entry.orElseThrow());
                                 break;
                             }
                         }
