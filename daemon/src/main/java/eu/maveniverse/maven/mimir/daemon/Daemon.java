@@ -15,8 +15,8 @@ import eu.maveniverse.maven.mimir.node.daemon.DaemonConfig;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
-import eu.maveniverse.maven.mimir.shared.node.Node;
-import eu.maveniverse.maven.mimir.shared.node.NodeFactory;
+import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
+import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.StandardProtocolFamily;
@@ -72,24 +72,24 @@ public class Daemon implements Closeable {
     private final ServerSocketChannel serverSocketChannel;
     private final ExecutorService executor;
     private final LocalNode localNode;
-    private final List<Node> nodes;
+    private final List<RemoteNode> remoteNodes;
 
     @Inject
     public Daemon(
             Config config,
             DaemonConfig daemonConfig,
             LocalNodeFactory localNodeFactory,
-            Map<String, NodeFactory> nodeFactories)
+            Map<String, RemoteNodeFactory> remoteNodeFactories)
             throws IOException {
         requireNonNull(config, "config");
         this.localNode = localNodeFactory.createLocalNode(config);
-        ArrayList<Node> nds = new ArrayList<>();
-        for (NodeFactory nodeFactory : nodeFactories.values()) {
-            Optional<Node> node = nodeFactory.createNode(config);
+        ArrayList<RemoteNode> nds = new ArrayList<>();
+        for (RemoteNodeFactory remoteNodeFactory : remoteNodeFactories.values()) {
+            Optional<RemoteNode> node = remoteNodeFactory.createNode(config);
             node.ifPresent(nds::add);
         }
-        nds.sort(Comparator.comparing(Node::distance));
-        this.nodes = List.copyOf(nds);
+        nds.sort(Comparator.comparing(RemoteNode::distance));
+        this.remoteNodes = List.copyOf(nds);
         this.executor = Executors.newFixedThreadPool(15);
 
         Path socketPath = daemonConfig.socketPath();
@@ -111,8 +111,8 @@ public class Daemon implements Closeable {
         logger.info("Mimir Daemon {} started", config.mimirVersion().orElse("UNKNOWN"));
         logger.info("  Socket: {}", socketAddress);
         logger.info("  Local Node: {}", localNode);
-        logger.info("  {} node(s):", nodes.size());
-        for (Node node : this.nodes) {
+        logger.info("  {} remote node(s):", remoteNodes.size());
+        for (RemoteNode node : this.remoteNodes) {
             logger.info("    {} (d={})", node.name(), node.distance());
         }
 
@@ -120,7 +120,7 @@ public class Daemon implements Closeable {
             try {
                 while (serverSocketChannel.isOpen()) {
                     SocketChannel socketChannel = serverSocketChannel.accept();
-                    executor.submit(new DaemonServer(socketChannel, localNode, nodes));
+                    executor.submit(new DaemonServer(socketChannel, localNode, remoteNodes));
                 }
             } catch (AsynchronousCloseException ignored) {
                 // we are done
@@ -143,7 +143,7 @@ public class Daemon implements Closeable {
             } catch (Exception e) {
                 logger.warn("Error closing executor", e);
             }
-            for (Node node : this.nodes) {
+            for (RemoteNode node : this.remoteNodes) {
                 try {
                     node.close();
                 } catch (IOException e) {

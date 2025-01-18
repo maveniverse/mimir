@@ -13,12 +13,13 @@ import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeLocateR
 import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeRspKO;
 import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeTransferRspOK;
 
-import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.Key;
+import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
-import eu.maveniverse.maven.mimir.shared.node.Node;
+import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
+import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.net.URI;
 import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
@@ -35,14 +36,14 @@ public class DaemonServer implements Runnable {
     private final DataInputStream dis;
 
     private final LocalNode localNode;
-    private final List<Node> nodes;
+    private final List<RemoteNode> remoteNodes;
 
-    public DaemonServer(SocketChannel socketChannel, LocalNode localNode, List<Node> nodes) {
+    public DaemonServer(SocketChannel socketChannel, LocalNode localNode, List<RemoteNode> remoteNodes) {
         this.socketChannel = socketChannel;
         this.dos = new DataOutputStream(Channels.newOutputStream(socketChannel));
         this.dis = new DataInputStream(Channels.newInputStream(socketChannel));
         this.localNode = localNode;
-        this.nodes = nodes;
+        this.remoteNodes = remoteNodes;
     }
 
     @Override
@@ -53,13 +54,14 @@ public class DaemonServer implements Runnable {
                 case CMD_LOCATE -> {
                     String keyString = dis.readUTF();
                     logger.debug("{} {}", cmd, keyString);
-                    Key key = Key.fromKeyString(keyString);
-                    Optional<Entry> entry = localNode.locate(key);
+                    URI key = URI.create(keyString);
+                    Optional<LocalEntry> entry = localNode.locate(key);
                     if (entry.isEmpty()) {
-                        for (Node node : nodes) {
-                            entry = node.locate(key);
-                            if (entry.isPresent()) {
-                                localNode.store(key, entry.orElseThrow());
+                        Optional<RemoteEntry> remoteEntry;
+                        for (RemoteNode node : remoteNodes) {
+                            remoteEntry = node.locate(key);
+                            if (remoteEntry.isPresent()) {
+                                localNode.store(key, remoteEntry.orElseThrow());
                                 break;
                             }
                         }
@@ -74,9 +76,9 @@ public class DaemonServer implements Runnable {
                     String keyString = dis.readUTF();
                     String pathString = dis.readUTF();
                     logger.debug("{} {} {}", cmd, keyString, pathString);
-                    Key key = Key.fromKeyString(keyString);
+                    URI key = URI.create(keyString);
                     Path path = Path.of(pathString);
-                    Optional<Entry> entry = localNode.locate(key);
+                    Optional<LocalEntry> entry = localNode.locate(key);
                     if (entry.isPresent()) {
                         entry.orElseThrow().transferTo(path);
                         writeTransferRspOK(dos);

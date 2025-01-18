@@ -11,18 +11,19 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.Session;
-import eu.maveniverse.maven.mimir.shared.naming.NameMapper;
-import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.Key;
+import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
-import eu.maveniverse.maven.mimir.shared.node.Node;
+import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
+import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -36,25 +37,25 @@ public final class SessionImpl implements Session {
     private final Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories;
     private final Predicate<RemoteRepository> repositoryPredicate;
     private final Predicate<Artifact> artifactPredicate;
-    private final NameMapper nameMapper;
+    private final BiFunction<RemoteRepository, Artifact, URI> keyMapper;
     private final LocalNode localNode;
-    private final List<Node> nodes;
+    private final List<RemoteNode> remoteNodes;
     private final Stats stats;
 
     public SessionImpl(
             Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories,
             Predicate<RemoteRepository> repositoryPredicate,
             Predicate<Artifact> artifactPredicate,
-            NameMapper nameMapper,
+            BiFunction<RemoteRepository, Artifact, URI> keyMapper,
             LocalNode localNode,
-            List<Node> nodes) {
+            List<RemoteNode> remoteNodes) {
         this.closed = new AtomicBoolean(false);
         this.checksumAlgorithmFactories = requireNonNull(checksumAlgorithmFactories, "checksumAlgorithmFactories");
         this.repositoryPredicate = requireNonNull(repositoryPredicate, "repositoryPredicate");
         this.artifactPredicate = requireNonNull(artifactPredicate, "artifactPredicate");
-        this.nameMapper = requireNonNull(nameMapper, "nameMapper");
+        this.keyMapper = requireNonNull(keyMapper, "nameMapper");
         this.localNode = requireNonNull(localNode, "localNode");
-        this.nodes = requireNonNull(nodes, "nodes");
+        this.remoteNodes = requireNonNull(remoteNodes, "remoteNodes");
         this.stats = new Stats();
     }
 
@@ -82,13 +83,14 @@ public final class SessionImpl implements Session {
         requireNonNull(remoteRepository, "remoteRepository");
         requireNonNull(artifact, "artifact");
         if (repositoryPredicate.test(remoteRepository) && artifactPredicate.test(artifact)) {
-            Key key = nameMapper.apply(remoteRepository, artifact);
-            Optional<Entry> result = localNode.locate(key);
+            URI key = keyMapper.apply(remoteRepository, artifact);
+            Optional<LocalEntry> result = localNode.locate(key);
             if (result.isEmpty()) {
-                for (Node node : nodes) {
-                    result = node.locate(key);
-                    if (result.isPresent()) {
-                        result = Optional.of(localNode.store(key, result.orElseThrow()));
+                Optional<RemoteEntry> remoteResult = Optional.empty();
+                for (RemoteNode node : remoteNodes) {
+                    remoteResult = node.locate(key);
+                    if (remoteResult.isPresent()) {
+                        result = Optional.of(localNode.store(key, remoteResult.orElseThrow()));
                         break;
                     }
                 }
@@ -110,7 +112,7 @@ public final class SessionImpl implements Session {
         requireNonNull(file, "file");
         requireNonNull(checksums, "checksums");
         if (repositoryPredicate.test(remoteRepository) && artifactPredicate.test(artifact)) {
-            Key key = nameMapper.apply(remoteRepository, artifact);
+            URI key = keyMapper.apply(remoteRepository, artifact);
             localNode.store(key, file, checksums);
             stats.store(true);
             return true;
@@ -130,7 +132,7 @@ public final class SessionImpl implements Session {
     public void close() throws IOException {
         if (closed.compareAndSet(false, true)) {
             ArrayList<IOException> exceptions = new ArrayList<>();
-            for (Node node : this.nodes) {
+            for (RemoteNode node : this.remoteNodes) {
                 try {
                     node.close();
                 } catch (IOException e) {

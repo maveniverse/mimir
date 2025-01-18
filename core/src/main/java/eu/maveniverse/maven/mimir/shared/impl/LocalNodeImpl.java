@@ -9,30 +9,34 @@ package eu.maveniverse.maven.mimir.shared.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.Key;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import org.eclipse.aether.util.FileUtils;
 
 public final class LocalNodeImpl extends NodeSupport implements LocalNode {
     private final LocalNodeConfig config;
+    private final BiFunction<Path, URI, Path> keyResolver;
 
-    public LocalNodeImpl(LocalNodeConfig config) throws IOException {
+    public LocalNodeImpl(LocalNodeConfig config, KeyResolver keyResolver) throws IOException {
         super(requireNonNull(config, "config").name(), config.distance());
         this.config = config;
+        this.keyResolver = requireNonNull(keyResolver, "keyResolver");
         Files.createDirectories(config.basedir());
     }
 
     @Override
-    public Optional<Entry> locate(Key key) throws IOException {
+    public Optional<LocalEntry> locate(URI key) throws IOException {
         ensureOpen();
         Path path = resolve(key);
         if (Files.isRegularFile(path)) {
@@ -43,7 +47,7 @@ public final class LocalNodeImpl extends NodeSupport implements LocalNode {
     }
 
     @Override
-    public LocalEntry store(Key key, Entry entry) throws IOException {
+    public LocalEntry store(URI key, Entry entry) throws IOException {
         ensureOpen();
         Path path = resolve(key);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
@@ -54,7 +58,7 @@ public final class LocalNodeImpl extends NodeSupport implements LocalNode {
     }
 
     @Override
-    public LocalEntry store(Key key, Path file, Map<String, String> checksums) throws IOException {
+    public LocalEntry store(URI key, Path file, Map<String, String> checksums) throws IOException {
         ensureOpen();
         Path path = resolve(key);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
@@ -78,8 +82,8 @@ public final class LocalNodeImpl extends NodeSupport implements LocalNode {
         }
     }
 
-    private Path resolve(Key key) {
-        return config.basedir().resolve(key.container()).resolve(key.name());
+    private Path resolve(URI key) {
+        return keyResolver.apply(config.basedir(), key);
     }
 
     private LocalEntryImpl createEntry(Path file) throws IOException {

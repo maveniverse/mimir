@@ -11,8 +11,8 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
-import eu.maveniverse.maven.mimir.shared.node.Node;
-import eu.maveniverse.maven.mimir.shared.node.NodeFactory;
+import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
+import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import java.io.IOException;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -22,7 +22,7 @@ import org.jgroups.JChannel;
 
 @Singleton
 @Named(JGroupsNodeFactory.NAME)
-public class JGroupsNodeFactory implements NodeFactory {
+public class JGroupsNodeFactory implements RemoteNodeFactory {
     public static final String NAME = "jgroups";
 
     private final LocalNodeFactory localNodeFactory;
@@ -33,7 +33,7 @@ public class JGroupsNodeFactory implements NodeFactory {
     }
 
     @Override
-    public Optional<Node> createNode(Config config) throws IOException {
+    public Optional<RemoteNode> createNode(Config config) throws IOException {
         try {
             JGroupsNodeConfig cfg = JGroupsNodeConfig.with(config);
             if (!cfg.enabled()) {

@@ -10,18 +10,33 @@ package eu.maveniverse.maven.mimir.shared.impl;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.naming.KeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import java.io.IOException;
+import java.util.Map;
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 @Singleton
 @Named
 public final class LocalNodeFactoryImpl implements LocalNodeFactory {
+    private final Map<String, KeyResolverFactory> keyResolverFactories;
+
+    @Inject
+    public LocalNodeFactoryImpl(Map<String, KeyResolverFactory> keyResolverFactories) {
+        this.keyResolverFactories = requireNonNull(keyResolverFactories, "keyResolverFactories");
+    }
+
     @Override
     public LocalNode createLocalNode(Config config) throws IOException {
         requireNonNull(config, "config");
-        return new LocalNodeImpl(LocalNodeConfig.with(config));
+        LocalNodeConfig localNodeConfig = LocalNodeConfig.with(config);
+        KeyResolverFactory keyResolverFactory = keyResolverFactories.get(localNodeConfig.keyResolver());
+        if (keyResolverFactory == null) {
+            throw new IllegalArgumentException("Unknown keyResolver: " + localNodeConfig.keyResolver());
+        }
+        return new LocalNodeImpl(localNodeConfig, keyResolverFactory.createKeyResolver(config));
     }
 }

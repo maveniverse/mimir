@@ -7,12 +7,14 @@ import eu.maveniverse.maven.mimir.node.jgroups.JGroupsNode;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.impl.LocalNodeConfig;
 import eu.maveniverse.maven.mimir.shared.impl.LocalNodeImpl;
-import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.Key;
+import eu.maveniverse.maven.mimir.shared.impl.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
+import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import java.net.InetAddress;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Optional;
 import org.jgroups.JChannel;
 import org.junit.jupiter.api.Test;
@@ -34,8 +36,12 @@ public class JGroupsNodeTest {
         Files.createDirectories(contentPath.getParent());
         Files.writeString(contentPath, content);
 
-        LocalNode nodeOne = new LocalNodeImpl(LocalNodeConfig.of("one", 0, one));
-        LocalNode nodeTwo = new LocalNodeImpl(LocalNodeConfig.of("two", 0, two));
+        LocalNode nodeOne = new LocalNodeImpl(
+                LocalNodeConfig.of("one", 0, one, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME),
+                new SimpleKeyResolverFactory().createKeyResolver(config));
+        LocalNode nodeTwo = new LocalNodeImpl(
+                LocalNodeConfig.of("two", 0, two, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME),
+                new SimpleKeyResolverFactory().createKeyResolver(config));
 
         JChannel channelOne = new JChannel("udp-new.xml")
                 .name(InetAddress.getLocalHost().getHostName() + "-one")
@@ -49,8 +55,8 @@ public class JGroupsNodeTest {
 
         try (JGroupsNode publisher = new JGroupsNode(nodeOne, channelOne, true);
                 JGroupsNode consumer = new JGroupsNode(nodeTwo, channelTwo, false); ) {
-            Key key = Key.of("container", "file.txt");
-            Optional<Entry> entry = consumer.locate(key);
+            URI key = URI.create("mimir:file:container:file.txt");
+            Optional<RemoteEntry> entry = consumer.locate(key);
             assertTrue(entry.isPresent());
 
             Path tmpTarget = Files.createTempFile("tmp", ".tmp");

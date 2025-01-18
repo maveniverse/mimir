@@ -39,16 +39,22 @@ public final class LocalNodeConfig {
                     .filter(s -> !s.trim().isEmpty())
                     .collect(toList());
         }
+        String keyResolver = SimpleKeyResolverFactory.NAME;
+        if (config.effectiveProperties().containsKey("mimir.local.keyResolver")) {
+            keyResolver = config.effectiveProperties().get("mimir.local.keyResolver");
+        }
 
-        return new LocalNodeConfig(name, distance, basedir, checksumAlgorithms);
+        return new LocalNodeConfig(name, distance, basedir, checksumAlgorithms, keyResolver);
     }
 
-    public static LocalNodeConfig of(String name, int distance, Path basedir) {
+    public static LocalNodeConfig of(
+            String name, int distance, Path basedir, List<String> checksumAlgorithms, String keyResolver) {
         return new LocalNodeConfig(
                 requireNonNull(name, "name"),
                 distance,
                 Config.getCanonicalPath(basedir),
-                Arrays.asList("SHA-1", "SHA-512"));
+                checksumAlgorithms,
+                keyResolver);
     }
 
     public static final String NAME = "local";
@@ -57,12 +63,15 @@ public final class LocalNodeConfig {
     private final int distance;
     private final Path basedir;
     private final List<String> checksumAlgorithms;
+    private final String keyResolver;
 
-    private LocalNodeConfig(String name, int distance, Path basedir, List<String> checksumAlgorithms) {
+    private LocalNodeConfig(
+            String name, int distance, Path basedir, List<String> checksumAlgorithms, String keyResolver) {
         this.name = name;
         this.distance = distance;
         this.basedir = basedir;
         this.checksumAlgorithms = List.copyOf(checksumAlgorithms);
+        this.keyResolver = keyResolver;
     }
 
     public String name() {
@@ -79,5 +88,9 @@ public final class LocalNodeConfig {
 
     public List<String> checksumAlgorithms() {
         return checksumAlgorithms;
+    }
+
+    public String keyResolver() {
+        return keyResolver;
     }
 }

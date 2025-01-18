@@ -12,22 +12,26 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
-import eu.maveniverse.maven.mimir.shared.naming.NameMapper;
-import eu.maveniverse.maven.mimir.shared.naming.NameMapperFactory;
+import eu.maveniverse.maven.mimir.shared.naming.KeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.naming.RemoteRepositories;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.Node;
-import eu.maveniverse.maven.mimir.shared.node.NodeFactory;
+import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
+import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactorySelector;
 import org.slf4j.Logger;
@@ -39,19 +43,19 @@ public final class SessionFactoryImpl implements SessionFactory {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector;
     private final LocalNodeFactory localNodeFactory;
-    private final Map<String, NodeFactory> nodeFactories;
-    private final Map<String, NameMapperFactory> nameMapperFactories;
+    private final Map<String, RemoteNodeFactory> remoteNodeFactories;
+    private final Map<String, KeyMapperFactory> nameMapperFactories;
 
     @Inject
     public SessionFactoryImpl(
             ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector,
             LocalNodeFactory localNodeFactory,
-            Map<String, NodeFactory> nodeFactories,
-            Map<String, NameMapperFactory> nameMapperFactories) {
+            Map<String, RemoteNodeFactory> remoteNodeFactories,
+            Map<String, KeyMapperFactory> nameMapperFactories) {
         this.checksumAlgorithmFactorySelector =
                 requireNonNull(checksumAlgorithmFactorySelector, "checksumAlgorithmFactorySelector");
         this.localNodeFactory = requireNonNull(localNodeFactory, "localNodeFactory");
-        this.nodeFactories = requireNonNull(nodeFactories, "nodeFactories");
+        this.remoteNodeFactories = requireNonNull(remoteNodeFactories, "remoteNodeFactories");
         this.nameMapperFactories = requireNonNull(nameMapperFactories, "nameMapperFactories");
     }
 
@@ -59,19 +63,20 @@ public final class SessionFactoryImpl implements SessionFactory {
     public Session createSession(Config config) throws IOException {
         requireNonNull(config, "config");
         LocalNode localNode = localNodeFactory.createLocalNode(config);
-        ArrayList<Node> nodes = new ArrayList<>();
-        for (NodeFactory nodeFactory : this.nodeFactories.values()) {
-            Optional<Node> node = nodeFactory.createNode(config);
-            node.ifPresent(nodes::add);
+        ArrayList<RemoteNode> remoteNodes = new ArrayList<>();
+        for (RemoteNodeFactory nodeFactory : this.remoteNodeFactories.values()) {
+            Optional<RemoteNode> node = nodeFactory.createNode(config);
+            node.ifPresent(remoteNodes::add);
         }
-        nodes.sort(Comparator.comparing(Node::distance));
+        remoteNodes.sort(Comparator.comparing(Node::distance));
 
         SessionConfig sessionConfig = SessionConfig.with(config);
-        NameMapperFactory nameMapperFactory = nameMapperFactories.get(sessionConfig.nameMapper());
-        if (nameMapperFactory == null) {
-            throw new IllegalStateException("No nameMapper: " + sessionConfig.nameMapper());
+        KeyMapperFactory keyMapperFactory = nameMapperFactories.get(sessionConfig.keyMapper());
+        if (keyMapperFactory == null) {
+            throw new IllegalStateException("No keyMapper: " + sessionConfig.keyMapper());
         }
-        NameMapper nameMapper = requireNonNull(nameMapperFactory.createNameMapper(config), "nameMapper");
+        BiFunction<RemoteRepository, Artifact, URI> nameMapper =
+                requireNonNull(keyMapperFactory.createKeyMapper(config), "keyMapper");
 
         Map<String, ChecksumAlgorithmFactory> factories =
                 checksumAlgorithmFactorySelector.selectList(sessionConfig.checksumAlgorithms()).stream()
@@ -82,13 +87,18 @@ public final class SessionFactoryImpl implements SessionFactory {
             logger.debug("  Name mapper: {}", nameMapper.getClass().getSimpleName());
             logger.debug("  Checksums: {}", factories.keySet());
             logger.debug("  Local Node: {}", localNode);
-            logger.debug("  {} node(s):", nodes.size());
-            for (Node node : nodes) {
+            logger.debug("  {} remote node(s):", remoteNodes.size());
+            for (RemoteNode node : remoteNodes) {
                 logger.debug("    {} (d={})", node.name(), node.distance());
             }
         }
 
         return new SessionImpl(
-                factories, RemoteRepositories.centralDirectOnly(), a -> !a.isSnapshot(), nameMapper, localNode, nodes);
+                factories,
+                RemoteRepositories.centralDirectOnly(),
+                a -> !a.isSnapshot(),
+                nameMapper,
+                localNode,
+                remoteNodes);
     }
 }

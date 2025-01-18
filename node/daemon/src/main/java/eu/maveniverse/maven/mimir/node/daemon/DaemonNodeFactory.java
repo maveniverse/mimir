@@ -8,8 +8,8 @@
 package eu.maveniverse.maven.mimir.node.daemon;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.node.Node;
-import eu.maveniverse.maven.mimir.shared.node.NodeFactory;
+import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
+import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.UnixDomainSocketAddress;
@@ -24,11 +24,11 @@ import org.slf4j.LoggerFactory;
 
 @Singleton
 @Named(DaemonConfig.NAME)
-public class DaemonNodeFactory implements NodeFactory {
+public class DaemonNodeFactory implements RemoteNodeFactory {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
-    public Optional<Node> createNode(Config config) throws IOException {
+    public Optional<RemoteNode> createNode(Config config) throws IOException {
         DaemonConfig cfg = DaemonConfig.with(config);
         if (!cfg.enabled()) {
             logger.debug("Mimir daemon not enabled");

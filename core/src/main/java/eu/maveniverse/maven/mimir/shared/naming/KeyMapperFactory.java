@@ -5,16 +5,14 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.shared.node;
+package eu.maveniverse.maven.mimir.shared.naming;
 
 import eu.maveniverse.maven.mimir.shared.Config;
 import java.io.IOException;
-import java.util.Optional;
 
-public interface NodeFactory {
+public interface KeyMapperFactory {
     /**
-     * Creates a {@link Node} instance, or returns empty optional if for any reason cannot
-     * contribute a node.
+     * Creates a {@link KeyMapper} instance.
      */
-    Optional<Node> createNode(Config config) throws IOException;
+    KeyMapper createKeyMapper(Config config) throws IOException;
 }

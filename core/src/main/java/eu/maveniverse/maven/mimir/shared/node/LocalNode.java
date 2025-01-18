@@ -8,17 +8,25 @@
 package eu.maveniverse.maven.mimir.shared.node;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Optional;
 
 public interface LocalNode extends Node {
     /**
+     * Locates cache entry by key on this node.
+     */
+    @Override
+    Optional<LocalEntry> locate(URI key) throws IOException;
+
+    /**
      * Stores cache entry and offers it as own entry.
      */
-    LocalEntry store(Key key, Entry entry) throws IOException;
+    LocalEntry store(URI key, Entry entry) throws IOException;
 
     /**
      * Stores file and offers it as own entry.
      */
-    LocalEntry store(Key key, Path file, Map<String, String> checksums) throws IOException;
+    LocalEntry store(URI key, Path file, Map<String, String> checksums) throws IOException;
 }

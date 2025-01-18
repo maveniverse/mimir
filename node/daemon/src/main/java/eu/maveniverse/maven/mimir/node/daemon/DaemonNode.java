@@ -15,14 +15,15 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
-import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.Key;
+import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
+import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
@@ -35,7 +36,7 @@ import org.slf4j.LoggerFactory;
 /**
  * This node is delegating all the work to daemon via Unix Domain Sockets.
  */
-public class DaemonNode extends NodeSupport {
+public class DaemonNode extends NodeSupport implements RemoteNode {
     public static final class Handle implements Closeable {
         private final SocketChannel socketChannel;
         private final DataOutputStream dos;
@@ -62,8 +63,8 @@ public class DaemonNode extends NodeSupport {
     }
 
     @Override
-    public Optional<Entry> locate(Key key) throws IOException {
-        String keyString = Key.toKeyString(key);
+    public Optional<RemoteEntry> locate(URI key) throws IOException {
+        String keyString = key.toASCIIString();
         logger.debug("LOCATE '{}'", keyString);
         try (Handle handle = commSupplier.get()) {
             writeLocateReq(handle.dos, keyString);
@@ -76,7 +77,7 @@ public class DaemonNode extends NodeSupport {
         }
     }
 
-    private class DaemonEntry extends EntrySupport {
+    private class DaemonEntry extends EntrySupport implements RemoteEntry {
         private final Supplier<Handle> commSupplier;
         private final String keyString;
 

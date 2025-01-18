@@ -10,30 +10,27 @@ package eu.maveniverse.maven.mimir.shared.impl;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.naming.NameMapper;
-import eu.maveniverse.maven.mimir.shared.naming.NameMapperFactory;
+import eu.maveniverse.maven.mimir.shared.naming.KeyMapper;
+import eu.maveniverse.maven.mimir.shared.naming.KeyMapperFactory;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 @Singleton
-@Named(SimpleNameMapperFactory.NAME)
-public final class SimpleNameMapperFactory implements NameMapperFactory {
+@Named(SimpleKeyMapperFactory.NAME)
+public final class SimpleKeyMapperFactory implements KeyMapperFactory {
     public static final String NAME = "simple";
 
     @Override
-    public NameMapper createNameMapper(Config config) {
+    public KeyMapper createKeyMapper(Config config) {
         requireNonNull(config, "config");
-        return new SimpleNameMapper();
+        return new SimpleKeyMapper();
     }
 
     /**
      * This is SIMPLE name mapper; fully usable for any standard scenario.
+     * <p>
      * More logic may be needed for more complex scenarios, like proper identification of remote repositories,
      * support repo aliases, mirrors, etc.
-     * <p>
-     * Note: the layout this name mapper uses is intentionally non-standard, and is selected on purpose: to discourage
-     * any direct tampering with cache contents. In essence, same rules applies as are in effect for Maven local repository:
-     * no direct tampering. The layout should be considered "internal" and may change without any compatibility obligation.
      */
-    private static class SimpleNameMapper implements NameMapper {}
+    private static class SimpleKeyMapper implements KeyMapper {}
 }

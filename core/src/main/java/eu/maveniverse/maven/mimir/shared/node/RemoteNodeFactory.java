@@ -5,14 +5,16 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.shared.naming;
+package eu.maveniverse.maven.mimir.shared.node;
 
 import eu.maveniverse.maven.mimir.shared.Config;
 import java.io.IOException;
+import java.util.Optional;
 
-public interface NameMapperFactory {
+public interface RemoteNodeFactory {
     /**
-     * Creates a {@link NameMapper} instance, if supported.
+     * Creates a {@link RemoteNode} instance, or returns empty optional if for any reason cannot
+     * contribute a node.
      */
-    NameMapper createNameMapper(Config config) throws IOException;
+    Optional<RemoteNode> createNode(Config config) throws IOException;
 }

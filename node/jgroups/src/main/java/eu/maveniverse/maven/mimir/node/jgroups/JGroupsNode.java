@@ -18,11 +18,12 @@ import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.impl.LocalNodeFactoryImpl;
 import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.impl.RemoteEntrySupport;
-import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.Key;
+import eu.maveniverse.maven.mimir.shared.impl.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.Node;
+import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
+import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -33,6 +34,7 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -57,7 +59,7 @@ import org.jgroups.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JGroupsNode extends NodeSupport implements RequestHandler {
+public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandler {
     public static void main(String... args) throws Exception {
         Logger logger = LoggerFactory.getLogger(JGroupsNode.class);
 
@@ -81,7 +83,8 @@ public class JGroupsNode extends NodeSupport implements RequestHandler {
                 .userProperties(config)
                 .propertiesPath(Path.of("mimir-publisher.properties"))
                 .build();
-        Node publisher = new JGroupsNodeFactory(new LocalNodeFactoryImpl())
+        Node publisher = new JGroupsNodeFactory(
+                        new LocalNodeFactoryImpl(Map.of(SimpleKeyResolverFactory.NAME, new SimpleKeyResolverFactory())))
                 .createNode(conf)
                 .orElseThrow(() -> new IllegalStateException("Publisher configured to not publish; bailing out"));
 
@@ -164,9 +167,9 @@ public class JGroupsNode extends NodeSupport implements RequestHandler {
     }
 
     @Override
-    public Optional<Entry> locate(Key key) throws IOException {
+    public Optional<RemoteEntry> locate(URI key) throws IOException {
         ByteArrayOutputStream req = new ByteArrayOutputStream();
-        writeLocateReq(new DataOutputStream(req), Key.toKeyString(key));
+        writeLocateReq(new DataOutputStream(req), key.toASCIIString());
         try {
             RspList<BytesMessage> responses = messageDispatcher.castMessage(
                     null, MessageFactory.create(Message.BYTES_MSG).setArray(req.toByteArray()), RequestOptions.SYNC());
@@ -219,14 +222,14 @@ public class JGroupsNode extends NodeSupport implements RequestHandler {
         boolean exception = false;
         if (CMD_LOCATE.equals(cmd)) {
             String keyString = dis.readUTF();
-            Key key = Key.fromKeyString(keyString);
-            Optional<Entry> optionalEntry = localNode.locate(key);
+            URI key = URI.create(keyString);
+            Optional<LocalEntry> optionalEntry = localNode.locate(key);
 
             HashMap<String, String> map = new HashMap<>();
             if (optionalEntry.isPresent()) {
-                Entry entry = optionalEntry.orElseThrow();
+                LocalEntry entry = optionalEntry.orElseThrow();
                 String txid = UUID.randomUUID().toString();
-                tx.put(txid, (LocalEntry) entry);
+                tx.put(txid, entry);
 
                 map.putAll(entry.metadata());
                 map.put(JG_TXID, txid);

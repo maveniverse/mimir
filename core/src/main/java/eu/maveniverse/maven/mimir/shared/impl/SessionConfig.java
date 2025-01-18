@@ -17,9 +17,9 @@ import java.util.List;
 public final class SessionConfig {
     public static SessionConfig with(Config config) {
         requireNonNull(config, "config");
-        String nameMapper = SimpleNameMapperFactory.NAME;
-        if (config.effectiveProperties().containsKey("mimir.session.nameMapper")) {
-            nameMapper = config.effectiveProperties().get("mimir.session.nameMapper");
+        String keyMapper = SimpleKeyMapperFactory.NAME;
+        if (config.effectiveProperties().containsKey("mimir.session.keyMapper")) {
+            keyMapper = config.effectiveProperties().get("mimir.session.keyMapper");
         }
         List<String> checksumAlgorithms = Arrays.asList("SHA-1", "SHA-512");
         if (config.effectiveProperties().containsKey("mimir.session.checksumAlgorithms")) {
@@ -30,23 +30,23 @@ public final class SessionConfig {
                     .collect(toList());
         }
 
-        return new SessionConfig(nameMapper, checksumAlgorithms);
+        return new SessionConfig(keyMapper, checksumAlgorithms);
     }
 
     public static SessionConfig of(String nameMapper, List<String> checksumAlgorithms) {
         return new SessionConfig(requireNonNull(nameMapper, "nameMapper"), checksumAlgorithms);
     }
 
-    private final String nameMapper;
+    private final String keyMapper;
     private final List<String> checksumAlgorithms;
 
-    private SessionConfig(String nameMapper, List<String> checksumAlgorithms) {
-        this.nameMapper = nameMapper;
+    private SessionConfig(String keyMapper, List<String> checksumAlgorithms) {
+        this.keyMapper = keyMapper;
         this.checksumAlgorithms = List.copyOf(checksumAlgorithms);
     }
 
-    public String nameMapper() {
-        return nameMapper;
+    public String keyMapper() {
+        return keyMapper;
     }
 
     public List<String> checksumAlgorithms() {
