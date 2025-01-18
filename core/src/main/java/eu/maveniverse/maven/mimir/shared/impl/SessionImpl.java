@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 public final class SessionImpl implements Session {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final AtomicBoolean closed;
-    private final Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories;
     private final Predicate<RemoteRepository> repositoryPredicate;
     private final Predicate<Artifact> artifactPredicate;
     private final BiFunction<RemoteRepository, Artifact, URI> keyMapper;
@@ -42,14 +41,12 @@ public final class SessionImpl implements Session {
     private final Stats stats;
 
     public SessionImpl(
-            Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories,
             Predicate<RemoteRepository> repositoryPredicate,
             Predicate<Artifact> artifactPredicate,
             BiFunction<RemoteRepository, Artifact, URI> keyMapper,
             LocalNode localNode,
             List<RemoteNode> remoteNodes) {
         this.closed = new AtomicBoolean(false);
-        this.checksumAlgorithmFactories = requireNonNull(checksumAlgorithmFactories, "checksumAlgorithmFactories");
         this.repositoryPredicate = requireNonNull(repositoryPredicate, "repositoryPredicate");
         this.artifactPredicate = requireNonNull(artifactPredicate, "artifactPredicate");
         this.keyMapper = requireNonNull(keyMapper, "nameMapper");
@@ -67,7 +64,7 @@ public final class SessionImpl implements Session {
     @Override
     public Map<String, ChecksumAlgorithmFactory> checksumFactories() {
         checkState();
-        return checksumAlgorithmFactories;
+        return localNode.checksumFactories();
     }
 
     @Override

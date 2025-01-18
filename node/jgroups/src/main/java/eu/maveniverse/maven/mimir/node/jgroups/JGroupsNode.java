@@ -14,31 +14,25 @@ import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeLocateR
 import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeRspKO;
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
-import eu.maveniverse.maven.mimir.shared.impl.RemoteEntrySupport;
+import eu.maveniverse.maven.mimir.shared.impl.publisher.PublisherRemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
-import eu.maveniverse.maven.mimir.shared.node.Node;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
+import eu.maveniverse.maven.mimir.shared.publisher.Publisher;
+import eu.maveniverse.maven.mimir.shared.publisher.PublisherFactory;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jgroups.BytesMessage;
@@ -55,71 +49,44 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandler {
-    private static final String JG_TXID = "jg-txid";
-    private static final String JG_HOST = "jg-host";
-    private static final String JG_PORT = "jg-port";
+    private static final String PUBLISHER_HANDLE = "handle";
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final LocalNode localNode;
     private final JChannel channel;
     private final MessageDispatcher messageDispatcher;
-
-    private final ServerSocket serverSocket;
+    private final Publisher publisher;
     private final ConcurrentHashMap<String, LocalEntry> tx;
-    private final ExecutorService executor;
 
-    public JGroupsNode(LocalNode localNode, JChannel channel, boolean publisher) throws IOException {
-        super(JGroupsNodeFactory.NAME, 500);
+    /**
+     * Creates JGroups node w/o publisher.
+     */
+    public JGroupsNode(LocalNode localNode, JChannel channel) throws IOException {
+        super(JGroupsNodeConfig.NAME, 500);
         this.localNode = localNode;
         this.channel = channel;
-        if (publisher) {
-            this.messageDispatcher = new MessageDispatcher(channel, this);
-            this.serverSocket = new ServerSocket(0, 50, InetAddress.getLocalHost());
-            this.tx = new ConcurrentHashMap<>();
-            this.executor = Executors.newVirtualThreadPerTaskExecutor();
+        this.messageDispatcher = new MessageDispatcher(channel);
+        this.tx = null;
+        this.publisher = null;
+    }
 
-            Thread serverThread = new Thread(() -> {
-                try {
-                    while (!serverSocket.isClosed()) {
-                        Socket accepted = serverSocket.accept();
-                        executor.submit(() -> {
-                            try (Socket socket = accepted) {
-                                byte[] buf = socket.getInputStream().readNBytes(36);
-                                OutputStream out = socket.getOutputStream();
-                                if (buf.length == 36) {
-                                    String txid = new String(buf, StandardCharsets.UTF_8);
-                                    LocalEntry entry = tx.remove(txid);
-                                    if (entry != null) {
-                                        logger.debug("SERVER HIT: {} to {}", txid, socket.getRemoteSocketAddress());
-                                        try (InputStream inputStream = entry.openStream()) {
-                                            inputStream.transferTo(out);
-                                        }
-                                    } else {
-                                        logger.warn("SERVER MISS: {} to {}", txid, socket.getRemoteSocketAddress());
-                                    }
-                                }
-                                out.flush();
-                            } catch (Exception e) {
-                                logger.error("Error while serving a client", e);
-                            }
-                        });
-                    }
-                } catch (Exception e) {
-                    logger.error("Error while accepting client connection", e);
-                    try {
-                        close();
-                    } catch (Exception ignore) {
-                    }
-                }
-            });
-            serverThread.setDaemon(true);
-            serverThread.start();
-        } else {
-            this.messageDispatcher = new MessageDispatcher(channel);
-            this.serverSocket = null;
-            this.tx = null;
-            this.executor = null;
-        }
+    /**
+     * Creates JGroups node with publisher.
+     */
+    public JGroupsNode(LocalNode localNode, JChannel channel, Config config, PublisherFactory publisherFactory)
+            throws IOException {
+        super(JGroupsNodeConfig.NAME, 500);
+        this.localNode = localNode;
+        this.channel = channel;
+        this.messageDispatcher = new MessageDispatcher(channel, this);
+        this.tx = new ConcurrentHashMap<>();
+        this.publisher = publisherFactory.createPublisher(config, txid -> {
+            LocalEntry entry = tx.get(txid);
+            if (entry == null) {
+                return Optional.empty();
+            }
+            return Optional.of(entry);
+        });
     }
 
     @Override
@@ -133,10 +100,8 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
                 Map<String, String> data =
                         readLocateRsp(new DataInputStream(new ByteArrayInputStream(response.getArray())));
                 if (!data.isEmpty()) {
-                    String host = requireNonNull(data.get(JG_HOST), JG_HOST);
-                    int port = Integer.parseInt(requireNonNull(data.get(JG_PORT), JG_PORT));
-                    String txid = requireNonNull(data.get(JG_TXID), JG_TXID);
-                    return Optional.of(localNode.store(key, new JGroupsEntry(this, data, host, port, txid)));
+                    URI handle = URI.create(requireNonNull(data.get(PUBLISHER_HANDLE), PUBLISHER_HANDLE));
+                    return Optional.of(localNode.store(key, new PublisherRemoteEntry(this, data, handle)));
                 }
             }
         } catch (Exception e) {
@@ -179,18 +144,15 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
         if (CMD_LOCATE.equals(cmd)) {
             String keyString = dis.readUTF();
             URI key = URI.create(keyString);
-            Optional<LocalEntry> optionalEntry = localNode.locate(key);
-
             HashMap<String, String> map = new HashMap<>();
+            Optional<LocalEntry> optionalEntry = localNode.locate(key);
             if (optionalEntry.isPresent()) {
                 LocalEntry entry = optionalEntry.orElseThrow();
                 String txid = UUID.randomUUID().toString();
                 tx.put(txid, entry);
-
+                URI handle = publisher.createHandle(txid);
                 map.putAll(entry.metadata());
-                map.put(JG_TXID, txid);
-                map.put(JG_PORT, Integer.toString(serverSocket.getLocalPort()));
-                map.put(JG_HOST, InetAddress.getLocalHost().getHostAddress());
+                map.put(PUBLISHER_HANDLE, handle.toASCIIString());
                 writeLocateRspOK(dos, map);
                 logger.info("{} OK: {} asked {}", cmd, msg.getSrc(), keyString);
             } else {
@@ -207,36 +169,10 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
 
     @Override
     public void doClose() throws IOException {
-        if (executor != null) {
-            executor.shutdown();
-        }
-        if (serverSocket != null) {
-            serverSocket.close();
+        if (publisher != null) {
+            publisher.close();
         }
         messageDispatcher.close();
         channel.close();
-    }
-
-    private static class JGroupsEntry extends RemoteEntrySupport {
-        private final String host;
-        private final int port;
-        private final String txid;
-
-        public JGroupsEntry(Node origin, Map<String, String> metadata, String host, int port, String txid) {
-            super(origin, metadata);
-            this.host = host;
-            this.port = port;
-            this.txid = txid;
-        }
-
-        @Override
-        protected void handleContent(IOConsumer consumer) throws IOException {
-            try (Socket socket = new Socket(host, port)) {
-                OutputStream os = socket.getOutputStream();
-                os.write(txid.getBytes(StandardCharsets.UTF_8));
-                os.flush();
-                consumer.accept(socket.getInputStream());
-            }
-        }
     }
 }

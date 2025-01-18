@@ -16,7 +16,6 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.mimir.shared.impl.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -78,7 +77,7 @@ public class DaemonNode extends NodeSupport implements RemoteNode {
         }
     }
 
-    private class DaemonEntry extends EntrySupport implements RemoteEntry {
+    private static class DaemonEntry extends EntrySupport implements Entry {
         private final Supplier<Handle> commSupplier;
         private final String keyString;
 

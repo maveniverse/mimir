@@ -5,51 +5,53 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.shared.impl;
+package eu.maveniverse.maven.mimir.shared.impl.file;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.impl.SimpleKeyResolverFactory;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
-public final class LocalNodeConfig {
-    public static LocalNodeConfig with(Config config) {
+public final class FileNodeConfig {
+    public static FileNodeConfig with(Config config) {
         requireNonNull(config, "config");
         String name = NAME;
-        if (config.effectiveProperties().containsKey("mimir.local.name")) {
-            name = config.effectiveProperties().get("mimir.local.name");
-        }
         int distance = 0;
-        if (config.effectiveProperties().containsKey("mimir.local.distance")) {
-            distance = Integer.parseInt(config.effectiveProperties().get("mimir.local.distance"));
-        }
         Path basedir = config.basedir().resolve(name);
-        if (config.effectiveProperties().containsKey("mimir.local.basedir")) {
-            basedir =
-                    Config.getCanonicalPath(Path.of(config.effectiveProperties().get("mimir.local.basedir")));
-        }
         List<String> checksumAlgorithms = Arrays.asList("SHA-1", "SHA-512");
-        if (config.effectiveProperties().containsKey("mimir.local.checksumAlgorithms")) {
+        String keyResolver = SimpleKeyResolverFactory.NAME;
+
+        if (config.effectiveProperties().containsKey("mimir.file.name")) {
+            name = config.effectiveProperties().get("mimir.file.name");
+        }
+        if (config.effectiveProperties().containsKey("mimir.file.distance")) {
+            distance = Integer.parseInt(config.effectiveProperties().get("mimir.file.distance"));
+        }
+        if (config.effectiveProperties().containsKey("mimir.file.basedir")) {
+            basedir =
+                    Config.getCanonicalPath(Path.of(config.effectiveProperties().get("mimir.file.basedir")));
+        }
+        if (config.effectiveProperties().containsKey("mimir.file.checksumAlgorithms")) {
             checksumAlgorithms = Arrays.stream(config.effectiveProperties()
-                            .get("mimir.local.checksumAlgorithms")
+                            .get("mimir.file.checksumAlgorithms")
                             .split(","))
                     .filter(s -> !s.trim().isEmpty())
                     .collect(toList());
         }
-        String keyResolver = SimpleKeyResolverFactory.NAME;
-        if (config.effectiveProperties().containsKey("mimir.local.keyResolver")) {
-            keyResolver = config.effectiveProperties().get("mimir.local.keyResolver");
+        if (config.effectiveProperties().containsKey("mimir.file.keyResolver")) {
+            keyResolver = config.effectiveProperties().get("mimir.file.keyResolver");
         }
 
-        return new LocalNodeConfig(name, distance, basedir, checksumAlgorithms, keyResolver);
+        return new FileNodeConfig(name, distance, basedir, checksumAlgorithms, keyResolver);
     }
 
-    public static LocalNodeConfig of(
+    public static FileNodeConfig of(
             String name, int distance, Path basedir, List<String> checksumAlgorithms, String keyResolver) {
-        return new LocalNodeConfig(
+        return new FileNodeConfig(
                 requireNonNull(name, "name"),
                 distance,
                 Config.getCanonicalPath(basedir),
@@ -57,7 +59,7 @@ public final class LocalNodeConfig {
                 keyResolver);
     }
 
-    public static final String NAME = "local";
+    public static final String NAME = "file";
 
     private final String name;
     private final int distance;
@@ -65,7 +67,7 @@ public final class LocalNodeConfig {
     private final List<String> checksumAlgorithms;
     private final String keyResolver;
 
-    private LocalNodeConfig(
+    private FileNodeConfig(
             String name, int distance, Path basedir, List<String> checksumAlgorithms, String keyResolver) {
         this.name = name;
         this.distance = distance;

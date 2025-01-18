@@ -5,16 +5,17 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.shared.node;
+package eu.maveniverse.maven.mimir.shared.publisher;
 
 import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Function;
 
-public interface RemoteNodeFactory {
+public interface PublisherFactory {
     /**
-     * Creates a {@link RemoteNode} instance, or returns empty optional if for any reason cannot
-     * contribute a node.
+     * Creates a publisher.
      */
-    Optional<RemoteNode> createRemoteNode(Config config, LocalNode localNode) throws IOException;
+    Publisher createPublisher(Config config, Function<String, Optional<LocalEntry>> entrySupplier) throws IOException;
 }

@@ -5,17 +5,20 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.node.jgroups;
+package eu.maveniverse.maven.mimir.shared.impl.publisher;
 
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
+import eu.maveniverse.maven.mimir.shared.publisher.Publisher;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
@@ -66,8 +69,11 @@ public class ServerSocketPublisher implements Publisher {
                         }
                     });
                 }
+            } catch (SocketException ignored) {
+                // closed
             } catch (Exception e) {
                 logger.error("Error while accepting client connection", e);
+            } finally {
                 try {
                     close();
                 } catch (Exception ignore) {
@@ -75,16 +81,19 @@ public class ServerSocketPublisher implements Publisher {
             }
         });
         serverThread.setDaemon(true);
+        logger.info("Socket publisher starting at {}", serverSocket.getLocalSocketAddress());
         serverThread.start();
     }
 
     @Override
-    public URI createHandle(String txid) {
-        return URI.create("socket://xxx.xxx.xxx.xxx:" + serverSocket.getLocalPort() + "/" + txid);
+    public URI createHandle(String txid) throws IOException {
+        return URI.create("socket://" + InetAddress.getLocalHost().getHostAddress() + ":" + serverSocket.getLocalPort()
+                + "/" + txid);
     }
 
     @Override
     public void close() throws IOException {
+        logger.info("Socket publisher stopping at {}", serverSocket.getLocalSocketAddress());
         executor.shutdown();
         serverSocket.close();
     }

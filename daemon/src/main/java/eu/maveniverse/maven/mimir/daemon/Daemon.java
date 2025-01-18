@@ -13,8 +13,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import eu.maveniverse.maven.mimir.node.daemon.DaemonConfig;
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.node.LocalNode;
-import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
+import eu.maveniverse.maven.mimir.shared.impl.file.FileNode;
+import eu.maveniverse.maven.mimir.shared.impl.file.FileNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import java.io.Closeable;
@@ -71,21 +71,21 @@ public class Daemon implements Closeable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ServerSocketChannel serverSocketChannel;
     private final ExecutorService executor;
-    private final LocalNode localNode;
+    private final FileNode localNode;
     private final List<RemoteNode> remoteNodes;
 
     @Inject
     public Daemon(
             Config config,
             DaemonConfig daemonConfig,
-            LocalNodeFactory localNodeFactory,
+            FileNodeFactory fileNodeFactory,
             Map<String, RemoteNodeFactory> remoteNodeFactories)
             throws IOException {
         requireNonNull(config, "config");
-        this.localNode = localNodeFactory.createLocalNode(config);
+        this.localNode = fileNodeFactory.createLocalNode(config);
         ArrayList<RemoteNode> nds = new ArrayList<>();
         for (RemoteNodeFactory remoteNodeFactory : remoteNodeFactories.values()) {
-            Optional<RemoteNode> node = remoteNodeFactory.createNode(config);
+            Optional<RemoteNode> node = remoteNodeFactory.createRemoteNode(config, localNode);
             node.ifPresent(nds::add);
         }
         nds.sort(Comparator.comparing(RemoteNode::distance));

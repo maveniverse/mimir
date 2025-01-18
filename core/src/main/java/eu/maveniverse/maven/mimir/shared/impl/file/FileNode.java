@@ -5,10 +5,13 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.shared.impl;
+package eu.maveniverse.maven.mimir.shared.impl.file;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.impl.EntrySupport;
+import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
+import eu.maveniverse.maven.mimir.shared.impl.Utils;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
@@ -25,12 +28,12 @@ import java.util.function.BiFunction;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 import org.eclipse.aether.util.FileUtils;
 
-public final class LocalNodeImpl extends NodeSupport implements LocalNode {
+public final class FileNode extends NodeSupport implements LocalNode {
     private final Path basedir;
     private final BiFunction<Path, URI, Path> keyResolver;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
-    public LocalNodeImpl(
+    public FileNode(
             String name,
             int distance,
             Path basedir,
@@ -101,20 +104,20 @@ public final class LocalNodeImpl extends NodeSupport implements LocalNode {
         return keyResolver.apply(basedir, key);
     }
 
-    private LocalEntryImpl createEntry(Path file) throws IOException {
+    private FileEntryImpl createEntry(Path file) throws IOException {
         HashMap<String, String> metadata = new HashMap<>();
         metadata.put(Entry.CONTENT_LENGTH, Long.toString(Files.size(file)));
         metadata.put(
                 Entry.CONTENT_LAST_MODIFIED,
                 Long.toString(Files.getLastModifiedTime(file).toMillis()));
-        return new LocalEntryImpl(this, metadata, file);
+        return new FileEntryImpl(this, metadata, file);
     }
 
-    private static class LocalEntryImpl extends EntrySupport implements LocalEntry {
+    private static class FileEntryImpl extends EntrySupport implements LocalEntry {
         private final Path path;
-        private final LocalNodeImpl localNode;
+        private final FileNode localNode;
 
-        public LocalEntryImpl(LocalNodeImpl origin, Map<String, String> metadata, Path path) {
+        public FileEntryImpl(FileNode origin, Map<String, String> metadata, Path path) {
             super(origin, metadata);
             this.path = requireNonNull(path, "path");
             this.localNode = origin;

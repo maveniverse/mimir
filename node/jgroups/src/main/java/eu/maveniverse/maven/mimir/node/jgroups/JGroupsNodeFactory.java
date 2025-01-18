@@ -10,10 +10,12 @@ package eu.maveniverse.maven.mimir.node.jgroups;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
+import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
+import eu.maveniverse.maven.mimir.shared.publisher.PublisherFactory;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -21,26 +23,34 @@ import javax.inject.Singleton;
 import org.jgroups.JChannel;
 
 @Singleton
-@Named(JGroupsNodeFactory.NAME)
+@Named(JGroupsNodeConfig.NAME)
 public class JGroupsNodeFactory implements RemoteNodeFactory {
-    public static final String NAME = "jgroups";
-
-    private final LocalNodeFactory localNodeFactory;
+    private final Map<String, PublisherFactory> publisherFactories;
 
     @Inject
-    public JGroupsNodeFactory(LocalNodeFactory localNodeFactory) {
-        this.localNodeFactory = requireNonNull(localNodeFactory, "localNodeFactory");
+    public JGroupsNodeFactory(Map<String, PublisherFactory> publisherFactories) {
+        this.publisherFactories = requireNonNull(publisherFactories, "publisherFactories");
     }
 
     @Override
-    public Optional<RemoteNode> createNode(Config config) throws IOException {
+    public Optional<RemoteNode> createRemoteNode(Config config, LocalNode localNode) throws IOException {
+        requireNonNull(config, "config");
+        requireNonNull(localNode, "localNode");
+
         try {
             JGroupsNodeConfig cfg = JGroupsNodeConfig.with(config);
             if (!cfg.enabled()) {
                 return Optional.empty();
             }
-            return Optional.of(new JGroupsNode(
-                    localNodeFactory.createLocalNode(config), createChannel(cfg), cfg.publisherEnabled()));
+            if (cfg.publisherEnabled()) {
+                PublisherFactory publisherFactory = publisherFactories.get(cfg.publisherTransport());
+                if (publisherFactory == null) {
+                    throw new IllegalStateException("No publisher found for transport " + cfg.publisherTransport());
+                }
+                return Optional.of(new JGroupsNode(localNode, createChannel(cfg), config, publisherFactory));
+            } else {
+                return Optional.of(new JGroupsNode(localNode, createChannel(cfg)));
+            }
         } catch (Exception e) {
             throw new IOException("Failed to create JChannel", e);
         }

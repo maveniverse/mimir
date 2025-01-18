@@ -5,7 +5,7 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.node.jgroups;
+package eu.maveniverse.maven.mimir.shared.impl.publisher;
 
 import static java.util.Objects.requireNonNull;
 
@@ -15,21 +15,17 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
-import eu.maveniverse.maven.mimir.shared.node.Node;
-import java.io.ByteArrayInputStream;
+import eu.maveniverse.maven.mimir.shared.publisher.Publisher;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -37,43 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class HttpServerPublisher implements Publisher {
-    public static void main(String... args) throws IOException {
-        Function<String, Optional<LocalEntry>> entrySupplier = t -> {
-            if ("123456".equals(t)) {
-                byte[] payload = "this is the payload".getBytes(StandardCharsets.UTF_8);
-                HashMap<String, String> metadata = new HashMap<>();
-                metadata.put(Entry.CONTENT_LENGTH, Integer.toString(payload.length));
-                metadata.put(
-                        Entry.CONTENT_LAST_MODIFIED, Long.toString(Instant.now().toEpochMilli()));
-                LocalEntry localEntry = new LocalEntry() {
-                    @Override
-                    public InputStream openStream() throws IOException {
-                        return new ByteArrayInputStream(payload);
-                    }
-
-                    @Override
-                    public Node origin() {
-                        return null;
-                    }
-
-                    @Override
-                    public Map<String, String> metadata() {
-                        return Map.copyOf(metadata);
-                    }
-
-                    @Override
-                    public void transferTo(Path file) throws IOException {
-                        throw new UnsupportedOperationException("not implemented");
-                    }
-                };
-                return Optional.of(localEntry);
-            } else {
-                return Optional.empty();
-            }
-        };
-        HttpServerPublisher publisher = new HttpServerPublisher(new InetSocketAddress(0), entrySupplier);
-    }
-
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final HttpServer httpServer;
 
@@ -85,23 +44,24 @@ public class HttpServerPublisher implements Publisher {
 
         httpServer = HttpServer.create(inetSocketAddress, 0);
         httpServer.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
-        httpServer.createContext("/txid", new MimirTxHandler(entrySupplier));
+        httpServer.createContext("/txid", new TxHandler(entrySupplier));
+        logger.info("HTTP publisher starting at {}", httpServer.getAddress());
         httpServer.start();
-
-        logger.info("HTTP server started at {}", httpServer.getAddress());
     }
 
     @Override
-    public URI createHandle(String txid) {
-        return URI.create("http://xxx.xxx.xxx.xxx:" + httpServer.getAddress().getPort() + "/txid/" + txid);
+    public URI createHandle(String txid) throws IOException {
+        return URI.create("http://" + InetAddress.getLocalHost().getHostAddress() + ":"
+                + httpServer.getAddress().getPort() + "/txid/" + txid);
     }
 
     @Override
     public void close() {
-        httpServer.stop(5);
+        logger.info("HTTP publisher stopping at {}", httpServer.getAddress());
+        httpServer.stop(0);
     }
 
-    private static class MimirTxHandler implements HttpHandler {
+    private static class TxHandler implements HttpHandler {
         private final Logger logger = LoggerFactory.getLogger(getClass());
         private final Function<String, Optional<LocalEntry>> entrySupplier;
 
@@ -109,7 +69,7 @@ public class HttpServerPublisher implements Publisher {
                         "EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH)
                 .withZone(ZoneId.of("GMT"));
 
-        public MimirTxHandler(Function<String, Optional<LocalEntry>> entrySupplier) {
+        public TxHandler(Function<String, Optional<LocalEntry>> entrySupplier) {
             this.entrySupplier = requireNonNull(entrySupplier, "entrySupplier");
         }
 

@@ -5,9 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.maveniverse.maven.mimir.node.jgroups.JGroupsNode;
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.impl.LocalNodeConfig;
-import eu.maveniverse.maven.mimir.shared.impl.LocalNodeImpl;
 import eu.maveniverse.maven.mimir.shared.impl.SimpleKeyResolverFactory;
+import eu.maveniverse.maven.mimir.shared.impl.file.FileNode;
+import eu.maveniverse.maven.mimir.shared.impl.file.FileNodeConfig;
+import eu.maveniverse.maven.mimir.shared.impl.publisher.ServerSocketPublisherFactory;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.net.InetAddress;
@@ -38,17 +39,17 @@ public class JGroupsNodeTest {
         Files.createDirectories(contentPath.getParent());
         Files.writeString(contentPath, content);
 
-        LocalNodeConfig configOne =
-                LocalNodeConfig.of("one", 0, one, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
-        LocalNode nodeOne = new LocalNodeImpl(
+        FileNodeConfig configOne =
+                FileNodeConfig.of("one", 0, one, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
+        LocalNode nodeOne = new FileNode(
                 configOne.name(),
                 configOne.distance(),
                 configOne.basedir(),
                 new SimpleKeyResolverFactory().createKeyResolver(config),
                 Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()));
-        LocalNodeConfig configTwo =
-                LocalNodeConfig.of("two", 0, two, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
-        LocalNode nodeTwo = new LocalNodeImpl(
+        FileNodeConfig configTwo =
+                FileNodeConfig.of("two", 0, two, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
+        LocalNode nodeTwo = new FileNode(
                 configTwo.name(),
                 configTwo.distance(),
                 configTwo.basedir(),
@@ -65,8 +66,8 @@ public class JGroupsNodeTest {
                 .connect("mimir-jgroups");
         Thread.sleep(1000);
 
-        try (JGroupsNode publisher = new JGroupsNode(nodeOne, channelOne, true);
-                JGroupsNode consumer = new JGroupsNode(nodeTwo, channelTwo, false); ) {
+        try (JGroupsNode publisher = new JGroupsNode(nodeOne, channelOne, config, new ServerSocketPublisherFactory());
+                JGroupsNode consumer = new JGroupsNode(nodeTwo, channelTwo); ) {
             URI key = URI.create("mimir:file:container:file.txt");
             Optional<Entry> entry = consumer.locate(key);
             assertTrue(entry.isPresent());

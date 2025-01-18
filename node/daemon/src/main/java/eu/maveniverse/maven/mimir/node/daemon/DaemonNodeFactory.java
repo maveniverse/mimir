@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.mimir.node.daemon;
 
 import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import java.io.IOException;
@@ -28,7 +29,7 @@ public class DaemonNodeFactory implements RemoteNodeFactory {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
-    public Optional<RemoteNode> createNode(Config config) throws IOException {
+    public Optional<RemoteNode> createRemoteNode(Config config, LocalNode localNode) throws IOException {
         DaemonConfig cfg = DaemonConfig.with(config);
         if (!cfg.enabled()) {
             logger.debug("Mimir daemon not enabled");

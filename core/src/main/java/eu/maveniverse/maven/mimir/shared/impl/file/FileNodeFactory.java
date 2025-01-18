@@ -5,14 +5,13 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.shared.impl;
+package eu.maveniverse.maven.mimir.shared.impl.file;
 
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolverFactory;
-import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import java.io.IOException;
 import java.util.HashMap;
@@ -23,13 +22,13 @@ import javax.inject.Singleton;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 @Singleton
-@Named
-public final class LocalNodeFactoryImpl implements LocalNodeFactory {
+@Named(FileNodeConfig.NAME)
+public final class FileNodeFactory implements LocalNodeFactory {
     private final Map<String, KeyResolverFactory> keyResolverFactories;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
     @Inject
-    public LocalNodeFactoryImpl(
+    public FileNodeFactory(
             Map<String, KeyResolverFactory> keyResolverFactories,
             Map<String, ChecksumAlgorithmFactory> checksumFactories) {
         this.keyResolverFactories = requireNonNull(keyResolverFactories, "keyResolverFactories");
@@ -37,26 +36,26 @@ public final class LocalNodeFactoryImpl implements LocalNodeFactory {
     }
 
     @Override
-    public LocalNode createLocalNode(Config config) throws IOException {
+    public FileNode createLocalNode(Config config) throws IOException {
         requireNonNull(config, "config");
-        LocalNodeConfig localNodeConfig = LocalNodeConfig.with(config);
-        KeyResolverFactory keyResolverFactory = keyResolverFactories.get(localNodeConfig.keyResolver());
+        FileNodeConfig fileNodeConfig = FileNodeConfig.with(config);
+        KeyResolverFactory keyResolverFactory = keyResolverFactories.get(fileNodeConfig.keyResolver());
         if (keyResolverFactory == null) {
-            throw new IllegalArgumentException("Unknown keyResolver: " + localNodeConfig.keyResolver());
+            throw new IllegalArgumentException("Unknown keyResolver: " + fileNodeConfig.keyResolver());
         }
         KeyResolver keyResolver = requireNonNull(keyResolverFactory.createKeyResolver(config), "keyResolver");
         Map<String, ChecksumAlgorithmFactory> localChecksumFactories = new HashMap<>();
-        for (String alg : localNodeConfig.checksumAlgorithms()) {
+        for (String alg : fileNodeConfig.checksumAlgorithms()) {
             ChecksumAlgorithmFactory checksumAlgorithmFactory = checksumFactories.get(alg);
             if (checksumAlgorithmFactory == null) {
                 throw new IllegalArgumentException("Unknown checksumAlgorithmFactory: " + alg);
             }
             localChecksumFactories.put(alg, checksumAlgorithmFactory);
         }
-        return new LocalNodeImpl(
-                localNodeConfig.name(),
-                localNodeConfig.distance(),
-                localNodeConfig.basedir(),
+        return new FileNode(
+                fileNodeConfig.name(),
+                fileNodeConfig.distance(),
+                fileNodeConfig.basedir(),
                 keyResolver,
                 localChecksumFactories);
     }

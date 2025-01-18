@@ -31,8 +31,6 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
-import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactorySelector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,17 +38,16 @@ import org.slf4j.LoggerFactory;
 @Named
 public final class SessionFactoryImpl implements SessionFactory {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final LocalNodeFactory localNodeFactory;
+    private final Map<String, LocalNodeFactory> localNodeFactories;
     private final Map<String, RemoteNodeFactory> remoteNodeFactories;
     private final Map<String, KeyMapperFactory> nameMapperFactories;
 
     @Inject
     public SessionFactoryImpl(
-            ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector,
-            LocalNodeFactory localNodeFactory,
+            Map<String, LocalNodeFactory> localNodeFactories,
             Map<String, RemoteNodeFactory> remoteNodeFactories,
             Map<String, KeyMapperFactory> nameMapperFactories) {
-        this.localNodeFactory = requireNonNull(localNodeFactory, "localNodeFactory");
+        this.localNodeFactories = requireNonNull(localNodeFactories, "localNodeFactories");
         this.remoteNodeFactories = requireNonNull(remoteNodeFactories, "remoteNodeFactories");
         this.nameMapperFactories = requireNonNull(nameMapperFactories, "nameMapperFactories");
     }
@@ -58,17 +55,22 @@ public final class SessionFactoryImpl implements SessionFactory {
     @Override
     public Session createSession(Config config) throws IOException {
         requireNonNull(config, "config");
+
+        SessionConfig sessionConfig = SessionConfig.with(config);
+
+        LocalNodeFactory localNodeFactory = localNodeFactories.get(sessionConfig.localNodeName());
+        if (localNodeFactory == null) {
+            throw new IllegalArgumentException("Unknown local node name: " + sessionConfig.localNodeName());
+        }
         LocalNode localNode = localNodeFactory.createLocalNode(config);
-        Map<String, ChecksumAlgorithmFactory> factories = localNode.checksumFactories();
 
         ArrayList<RemoteNode> remoteNodes = new ArrayList<>();
-        for (RemoteNodeFactory nodeFactory : this.remoteNodeFactories.values()) {
-            Optional<RemoteNode> node = nodeFactory.createNode(config);
+        for (RemoteNodeFactory nodeFactory : remoteNodeFactories.values()) {
+            Optional<RemoteNode> node = nodeFactory.createRemoteNode(config, localNode);
             node.ifPresent(remoteNodes::add);
         }
         remoteNodes.sort(Comparator.comparing(Node::distance));
 
-        SessionConfig sessionConfig = SessionConfig.with(config);
         KeyMapperFactory keyMapperFactory = nameMapperFactories.get(sessionConfig.keyMapper());
         if (keyMapperFactory == null) {
             throw new IllegalStateException("No keyMapper: " + sessionConfig.keyMapper());
@@ -79,7 +81,7 @@ public final class SessionFactoryImpl implements SessionFactory {
         if (logger.isDebugEnabled()) {
             logger.debug("Mimir {} session created", config.mimirVersion().orElse("UNKNOWN"));
             logger.debug("  Name mapper: {}", nameMapper.getClass().getSimpleName());
-            logger.debug("  Checksums: {}", factories.keySet());
+            logger.debug("  Checksums: {}", localNodeFactories.keySet());
             logger.debug("  Local Node: {}", localNode);
             logger.debug("  {} remote node(s):", remoteNodes.size());
             for (RemoteNode node : remoteNodes) {
@@ -88,11 +90,6 @@ public final class SessionFactoryImpl implements SessionFactory {
         }
 
         return new SessionImpl(
-                factories,
-                RemoteRepositories.centralDirectOnly(),
-                a -> !a.isSnapshot(),
-                nameMapper,
-                localNode,
-                remoteNodes);
+                RemoteRepositories.centralDirectOnly(), a -> !a.isSnapshot(), nameMapper, localNode, remoteNodes);
     }
 }

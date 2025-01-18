@@ -5,11 +5,15 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.node.jgroups;
+package eu.maveniverse.maven.mimir.shared.publisher;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.net.URI;
 
 public interface Publisher extends Closeable {
-    URI createHandle(String txid);
+    /**
+     * Crafts a publisher specific URI based on passed in token.
+     */
+    URI createHandle(String txid) throws IOException;
 }
