@@ -68,8 +68,8 @@ public interface Config {
             this.mimirVersion = mimirVersion;
             this.basedir = basedir;
             this.propertiesPath = propertiesPath;
-            this.userProperties = userProperties;
-            this.systemProperties = systemProperties;
+            this.userProperties = new HashMap<>(userProperties);
+            this.systemProperties = new HashMap<>(systemProperties);
         }
 
         public Builder basedir(Path basedir) {
