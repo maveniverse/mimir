@@ -66,16 +66,16 @@ public class DaemonNode extends NodeSupport implements RemoteNode {
     }
 
     private Handle create() throws IOException {
-        return new Handle(SocketChannel.open(UnixDomainSocketAddress.of(socketPath)));
+        return new Handle();
     }
 
-    private static class Handle implements Closeable {
+    private class Handle implements Closeable {
         private final SocketChannel socketChannel;
         private final DataOutputStream dos;
         private final DataInputStream dis;
 
-        public Handle(SocketChannel socketChannel) {
-            this.socketChannel = socketChannel;
+        public Handle() throws IOException {
+            this.socketChannel = SocketChannel.open(UnixDomainSocketAddress.of(socketPath));
             this.dos = new DataOutputStream(new BufferedOutputStream(Channels.newOutputStream(socketChannel)));
             this.dis = new DataInputStream(new BufferedInputStream(Channels.newInputStream(socketChannel)));
         }
