@@ -113,7 +113,7 @@ public class Daemon implements Closeable {
         logger.info("  Local Node: {}", localNode);
         logger.info("  {} remote node(s):", remoteNodes.size());
         for (RemoteNode node : this.remoteNodes) {
-            logger.info("    {} (d={})", node.name(), node.distance());
+            logger.info("    {}", node);
         }
 
         executor.submit(() -> {

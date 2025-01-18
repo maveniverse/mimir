@@ -168,7 +168,12 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
     }
 
     @Override
-    public void doClose() throws IOException {
+    public String toString() {
+        return "jgroups (distance=" + distance + " channel=" + channel.getAddress() + " publisher=" + publisher + ")";
+    }
+
+    @Override
+    protected void doClose() throws IOException {
         if (publisher != null) {
             publisher.close();
         }

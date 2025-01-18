@@ -12,11 +12,14 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.mimir.shared.node.Node;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class NodeSupport implements Node {
-    private final String name;
-    private final int distance;
-    private final AtomicBoolean closed;
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final String name;
+    protected final int distance;
+    protected final AtomicBoolean closed;
 
     public NodeSupport(String name, int distance) {
         this.name = requireNonNull(name, "name");
@@ -48,4 +51,7 @@ public abstract class NodeSupport implements Node {
     }
 
     protected void doClose() throws IOException {}
+
+    @Override
+    public abstract String toString();
 }

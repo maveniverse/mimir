@@ -24,12 +24,12 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.net.UnixDomainSocketAddress;
 import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +37,39 @@ import org.slf4j.LoggerFactory;
  * This node is delegating all the work to daemon via Unix Domain Sockets.
  */
 public class DaemonNode extends NodeSupport implements RemoteNode {
-    public static final class Handle implements Closeable {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Path socketPath;
+
+    public DaemonNode(Path socketPath) {
+        super(DaemonConfig.NAME, 10);
+        this.socketPath = requireNonNull(socketPath, "socketPath");
+    }
+
+    @Override
+    public Optional<Entry> locate(URI key) throws IOException {
+        String keyString = key.toASCIIString();
+        logger.debug("LOCATE '{}'", keyString);
+        try (Handle handle = create()) {
+            writeLocateReq(handle.dos, keyString);
+            Map<String, String> response = readLocateRsp(handle.dis);
+            if (!response.isEmpty()) {
+                return Optional.of(new DaemonEntry(this, response, keyString));
+            } else {
+                return Optional.empty();
+            }
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "daemon (distance=" + distance + " socketPath=" + socketPath + ")";
+    }
+
+    private Handle create() throws IOException {
+        return new Handle(SocketChannel.open(UnixDomainSocketAddress.of(socketPath)));
+    }
+
+    private static class Handle implements Closeable {
         private final SocketChannel socketChannel;
         private final DataOutputStream dos;
         private final DataInputStream dis;
@@ -54,44 +86,18 @@ public class DaemonNode extends NodeSupport implements RemoteNode {
         }
     }
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Supplier<Handle> commSupplier;
-
-    public DaemonNode(Supplier<Handle> commSupplier) {
-        super(DaemonConfig.NAME, 10);
-        this.commSupplier = requireNonNull(commSupplier, "commSupplier");
-    }
-
-    @Override
-    public Optional<Entry> locate(URI key) throws IOException {
-        String keyString = key.toASCIIString();
-        logger.debug("LOCATE '{}'", keyString);
-        try (Handle handle = commSupplier.get()) {
-            writeLocateReq(handle.dos, keyString);
-            Map<String, String> response = readLocateRsp(handle.dis);
-            if (!response.isEmpty()) {
-                return Optional.of(new DaemonEntry(this, response, commSupplier, keyString));
-            } else {
-                return Optional.empty();
-            }
-        }
-    }
-
-    private static class DaemonEntry extends EntrySupport implements Entry {
-        private final Supplier<Handle> commSupplier;
+    private class DaemonEntry extends EntrySupport implements Entry {
         private final String keyString;
 
-        private DaemonEntry(
-                DaemonNode node, Map<String, String> metadata, Supplier<Handle> commSupplier, String keyString) {
+        private DaemonEntry(DaemonNode node, Map<String, String> metadata, String keyString) {
             super(node, metadata);
-            this.commSupplier = commSupplier;
             this.keyString = keyString;
         }
 
         @Override
         public void transferTo(Path file) throws IOException {
             logger.debug("TRANSFER '{}'->'{}'", keyString, file);
-            try (Handle handle = commSupplier.get()) {
+            try (Handle handle = create()) {
                 writeTransferReq(handle.dos, keyString, file.toString());
                 readTransferRsp(handle.dis);
             }

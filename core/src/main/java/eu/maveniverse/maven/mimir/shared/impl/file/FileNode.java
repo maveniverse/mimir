@@ -86,6 +86,11 @@ public final class FileNode extends NodeSupport implements LocalNode {
         return createEntry(path);
     }
 
+    @Override
+    public String toString() {
+        return name + " (distance=" + distance + " basedir=" + basedir + ")";
+    }
+
     InputStream openStream(Path path) throws IOException {
         ensureOpen();
         return Files.newInputStream(path);

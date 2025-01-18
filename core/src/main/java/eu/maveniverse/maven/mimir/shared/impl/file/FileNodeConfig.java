@@ -21,7 +21,7 @@ public final class FileNodeConfig {
         requireNonNull(config, "config");
         String name = NAME;
         int distance = 0;
-        Path basedir = config.basedir().resolve(name);
+        Path basedir = config.basedir().resolve("local");
         List<String> checksumAlgorithms = Arrays.asList("SHA-1", "SHA-512");
         String keyResolver = SimpleKeyResolverFactory.NAME;
 

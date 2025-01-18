@@ -97,4 +97,9 @@ public class ServerSocketPublisher implements Publisher {
         executor.shutdown();
         serverSocket.close();
     }
+
+    @Override
+    public String toString() {
+        return "HTTP(" + serverSocket.getLocalSocketAddress() + ")";
+    }
 }

@@ -61,6 +61,11 @@ public class HttpServerPublisher implements Publisher {
         httpServer.stop(0);
     }
 
+    @Override
+    public String toString() {
+        return "HTTP(" + httpServer.getAddress() + ")";
+    }
+
     private static class TxHandler implements HttpHandler {
         private final Logger logger = LoggerFactory.getLogger(getClass());
         private final Function<String, Optional<LocalEntry>> entrySupplier;

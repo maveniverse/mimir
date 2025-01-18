@@ -12,9 +12,6 @@ import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.net.UnixDomainSocketAddress;
-import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -45,13 +42,7 @@ public class DaemonNodeFactory implements RemoteNodeFactory {
                 logger.info("Mimir daemon started (pid={})", daemon.pid());
             }
         }
-        return Optional.of(new DaemonNode(() -> {
-            try {
-                return new DaemonNode.Handle(SocketChannel.open(UnixDomainSocketAddress.of(cfg.socketPath())));
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }));
+        return Optional.of(new DaemonNode(cfg.socketPath()));
     }
 
     private Process startDaemon(Path basedir, DaemonConfig config) throws IOException {
