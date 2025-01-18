@@ -26,7 +26,6 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -41,7 +40,6 @@ import org.slf4j.LoggerFactory;
 @Named
 public final class SessionFactoryImpl implements SessionFactory {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector;
     private final LocalNodeFactory localNodeFactory;
     private final Map<String, RemoteNodeFactory> remoteNodeFactories;
     private final Map<String, KeyMapperFactory> nameMapperFactories;
@@ -52,8 +50,6 @@ public final class SessionFactoryImpl implements SessionFactory {
             LocalNodeFactory localNodeFactory,
             Map<String, RemoteNodeFactory> remoteNodeFactories,
             Map<String, KeyMapperFactory> nameMapperFactories) {
-        this.checksumAlgorithmFactorySelector =
-                requireNonNull(checksumAlgorithmFactorySelector, "checksumAlgorithmFactorySelector");
         this.localNodeFactory = requireNonNull(localNodeFactory, "localNodeFactory");
         this.remoteNodeFactories = requireNonNull(remoteNodeFactories, "remoteNodeFactories");
         this.nameMapperFactories = requireNonNull(nameMapperFactories, "nameMapperFactories");
@@ -63,6 +59,8 @@ public final class SessionFactoryImpl implements SessionFactory {
     public Session createSession(Config config) throws IOException {
         requireNonNull(config, "config");
         LocalNode localNode = localNodeFactory.createLocalNode(config);
+        Map<String, ChecksumAlgorithmFactory> factories = localNode.checksumFactories();
+
         ArrayList<RemoteNode> remoteNodes = new ArrayList<>();
         for (RemoteNodeFactory nodeFactory : this.remoteNodeFactories.values()) {
             Optional<RemoteNode> node = nodeFactory.createNode(config);
@@ -77,10 +75,6 @@ public final class SessionFactoryImpl implements SessionFactory {
         }
         BiFunction<RemoteRepository, Artifact, URI> nameMapper =
                 requireNonNull(keyMapperFactory.createKeyMapper(config), "keyMapper");
-
-        Map<String, ChecksumAlgorithmFactory> factories =
-                checksumAlgorithmFactorySelector.selectList(sessionConfig.checksumAlgorithms()).stream()
-                        .collect(Collectors.toMap(ChecksumAlgorithmFactory::getName, f -> f));
 
         if (logger.isDebugEnabled()) {
             logger.debug("Mimir {} session created", config.mimirVersion().orElse("UNKNOWN"));

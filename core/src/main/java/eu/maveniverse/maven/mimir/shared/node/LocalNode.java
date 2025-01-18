@@ -12,8 +12,14 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 public interface LocalNode extends Node {
+    /**
+     * Tells checksum factories used by this local node.
+     */
+    Map<String, ChecksumAlgorithmFactory> checksumFactories();
+
     /**
      * Locates cache entry by key on this node.
      */

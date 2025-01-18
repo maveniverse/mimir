@@ -14,11 +14,8 @@ import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeLocateR
 import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeRspKO;
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.impl.LocalNodeFactoryImpl;
 import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.impl.RemoteEntrySupport;
-import eu.maveniverse.maven.mimir.shared.impl.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
@@ -36,12 +33,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -60,45 +55,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandler {
-    public static void main(String... args) throws Exception {
-        Logger logger = LoggerFactory.getLogger(JGroupsNode.class);
-
-        Path basedir = null;
-        String nodeName = null;
-        if (args.length > 0) {
-            basedir = Config.getCanonicalPath(Path.of(args[0]));
-        }
-        if (args.length > 1) {
-            nodeName = args[1];
-        }
-
-        HashMap<String, String> config = new HashMap<>();
-        if (basedir != null) {
-            config.put("mimir.local.basedir", basedir.toString());
-        }
-        if (nodeName != null) {
-            config.put("mimir.local.name", nodeName);
-        }
-        Config conf = Config.defaults()
-                .userProperties(config)
-                .propertiesPath(Path.of("mimir-publisher.properties"))
-                .build();
-        Node publisher = new JGroupsNodeFactory(
-                        new LocalNodeFactoryImpl(Map.of(SimpleKeyResolverFactory.NAME, new SimpleKeyResolverFactory())))
-                .createNode(conf)
-                .orElseThrow(() -> new IllegalStateException("Publisher configured to not publish; bailing out"));
-
-        logger.info("");
-        logger.info("JGroupsNode publisher started (Ctrl+C to exit)");
-        logger.info("Publishing:");
-        logger.info("* {}", publisher);
-        try {
-            new CountDownLatch(1).await(); // this is merely to get interrupt
-        } catch (InterruptedException e) {
-            publisher.close();
-        }
-    }
-
     private static final String JG_TXID = "jg-txid";
     private static final String JG_HOST = "jg-host";
     private static final String JG_PORT = "jg-port";

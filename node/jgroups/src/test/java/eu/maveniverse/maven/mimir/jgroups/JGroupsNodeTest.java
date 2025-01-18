@@ -15,7 +15,9 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
+import org.eclipse.aether.internal.impl.checksum.Sha1ChecksumAlgorithmFactory;
 import org.jgroups.JChannel;
 import org.junit.jupiter.api.Test;
 
@@ -36,12 +38,22 @@ public class JGroupsNodeTest {
         Files.createDirectories(contentPath.getParent());
         Files.writeString(contentPath, content);
 
+        LocalNodeConfig configOne =
+                LocalNodeConfig.of("one", 0, one, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
         LocalNode nodeOne = new LocalNodeImpl(
-                LocalNodeConfig.of("one", 0, one, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME),
-                new SimpleKeyResolverFactory().createKeyResolver(config));
+                configOne.name(),
+                configOne.distance(),
+                configOne.basedir(),
+                new SimpleKeyResolverFactory().createKeyResolver(config),
+                Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()));
+        LocalNodeConfig configTwo =
+                LocalNodeConfig.of("two", 0, two, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
         LocalNode nodeTwo = new LocalNodeImpl(
-                LocalNodeConfig.of("two", 0, two, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME),
-                new SimpleKeyResolverFactory().createKeyResolver(config));
+                configTwo.name(),
+                configTwo.distance(),
+                configTwo.basedir(),
+                new SimpleKeyResolverFactory().createKeyResolver(config),
+                Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()));
 
         JChannel channelOne = new JChannel("udp-new.xml")
                 .name(InetAddress.getLocalHost().getHostName() + "-one")

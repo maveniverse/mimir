@@ -22,17 +22,32 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 import org.eclipse.aether.util.FileUtils;
 
 public final class LocalNodeImpl extends NodeSupport implements LocalNode {
-    private final LocalNodeConfig config;
+    private final Path basedir;
     private final BiFunction<Path, URI, Path> keyResolver;
+    private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
-    public LocalNodeImpl(LocalNodeConfig config, KeyResolver keyResolver) throws IOException {
-        super(requireNonNull(config, "config").name(), config.distance());
-        this.config = config;
+    public LocalNodeImpl(
+            String name,
+            int distance,
+            Path basedir,
+            KeyResolver keyResolver,
+            Map<String, ChecksumAlgorithmFactory> checksumFactories)
+            throws IOException {
+        super(requireNonNull(name, "name"), distance);
+        this.basedir = basedir;
         this.keyResolver = requireNonNull(keyResolver, "keyResolver");
-        Files.createDirectories(config.basedir());
+        this.checksumFactories = Map.copyOf(requireNonNull(checksumFactories, "checksumFactories"));
+
+        Files.createDirectories(basedir);
+    }
+
+    @Override
+    public Map<String, ChecksumAlgorithmFactory> checksumFactories() {
+        return checksumFactories;
     }
 
     @Override
@@ -83,7 +98,7 @@ public final class LocalNodeImpl extends NodeSupport implements LocalNode {
     }
 
     private Path resolve(URI key) {
-        return keyResolver.apply(config.basedir(), key);
+        return keyResolver.apply(basedir, key);
     }
 
     private LocalEntryImpl createEntry(Path file) throws IOException {
