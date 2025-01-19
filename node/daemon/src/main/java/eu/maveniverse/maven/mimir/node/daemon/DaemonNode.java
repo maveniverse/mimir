@@ -7,10 +7,10 @@
  */
 package eu.maveniverse.maven.mimir.node.daemon;
 
-import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.readLocateRsp;
-import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.readTransferRsp;
-import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeLocateReq;
-import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeTransferReq;
+import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.readLocateRsp;
+import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.readTransferRsp;
+import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeLocateReq;
+import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeTransferReq;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.EntrySupport;

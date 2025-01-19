@@ -7,11 +7,11 @@
  */
 package eu.maveniverse.maven.mimir.daemon;
 
-import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.CMD_LOCATE;
-import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.CMD_TRANSFER;
-import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeLocateRspOK;
-import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeRspKO;
-import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeTransferRspOK;
+import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.CMD_LOCATE;
+import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.CMD_TRANSFER;
+import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeLocateRspOK;
+import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeRspKO;
+import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeTransferRspOK;
 
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;

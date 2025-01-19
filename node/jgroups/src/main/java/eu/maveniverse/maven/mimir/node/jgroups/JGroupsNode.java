@@ -7,11 +7,6 @@
  */
 package eu.maveniverse.maven.mimir.node.jgroups;
 
-import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.CMD_LOCATE;
-import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.readLocateRsp;
-import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeLocateReq;
-import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeLocateRspOK;
-import static eu.maveniverse.maven.mimir.shared.impl.SimpleProtocol.writeRspKO;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
@@ -23,21 +18,18 @@ import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.publisher.Publisher;
 import eu.maveniverse.maven.mimir.shared.publisher.PublisherFactory;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import org.jgroups.Address;
-import org.jgroups.BytesMessage;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
-import org.jgroups.MessageFactory;
+import org.jgroups.ObjectMessage;
 import org.jgroups.blocks.MessageDispatcher;
 import org.jgroups.blocks.RequestHandler;
 import org.jgroups.blocks.RequestOptions;
@@ -49,6 +41,8 @@ import org.slf4j.LoggerFactory;
 
 public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandler {
     private static final String PUBLISHER_HANDLE = "handle";
+    private static final String CMD_LOCATE = "locate";
+    private static final String RSP_ERROR = "error";
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final LocalNode localNode;
@@ -92,14 +86,14 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
 
     @Override
     public Optional<Entry> locate(URI key) throws IOException {
-        ByteArrayOutputStream req = new ByteArrayOutputStream();
-        writeLocateReq(new DataOutputStream(req), key.toASCIIString());
+        ArrayList<String> req = new ArrayList<>();
+        req.add(CMD_LOCATE);
+        req.add(key.toASCIIString());
         try {
-            RspList<Object> responses = messageDispatcher.castMessage(
-                    null, MessageFactory.create(Message.BYTES_MSG).setArray(req.toByteArray()), RequestOptions.SYNC());
+            RspList<Map<String, String>> responses =
+                    messageDispatcher.castMessage(null, new ObjectMessage(null, req), RequestOptions.SYNC());
             for (Address responder : responses.keySet()) {
-                Map<String, String> data = readLocateRsp(new DataInputStream(new ByteArrayInputStream(
-                        (byte[]) responses.get(responder).getValue())));
+                Map<String, String> data = responses.get(responder).getValue();
                 if (!data.isEmpty()) {
                     URI handle = URI.create(requireNonNull(data.get(PUBLISHER_HANDLE), PUBLISHER_HANDLE));
                     return Optional.of(localNode.store(key, new PublisherRemoteEntry(data, handle)));
@@ -119,45 +113,34 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
     @Override
     public void handle(Message msg, Response response) {
         Thread.startVirtualThread(() -> {
+            HashMap<String, String> responseMap = new HashMap<>();
+            boolean responseException = false;
             try {
-                DataInputStream dis = new DataInputStream(new ByteArrayInputStream(msg.getArray()));
-                String cmd = dis.readUTF();
-                ByteArrayOutputStream data = new ByteArrayOutputStream();
-                DataOutputStream dos = new DataOutputStream(data);
-                boolean exception = false;
-                if (CMD_LOCATE.equals(cmd)) {
-                    String keyString = dis.readUTF();
+                List<String> req = msg.getObject();
+                if (req.size() == 2 && CMD_LOCATE.equals(req.getFirst())) {
+                    String keyString = req.get(1);
                     URI key = URI.create(keyString);
-                    HashMap<String, String> map = new HashMap<>();
                     Optional<LocalEntry> optionalEntry = localNode.locate(key);
                     if (optionalEntry.isPresent()) {
                         LocalEntry entry = optionalEntry.orElseThrow();
                         String txid = UUID.randomUUID().toString();
                         tx.put(txid, entry);
                         URI handle = publisher.createHandle(txid);
-                        map.putAll(entry.metadata());
-                        map.put(PUBLISHER_HANDLE, handle.toASCIIString());
-                        writeLocateRspOK(dos, map);
-                        logger.info("{} OK: {} asked {}", cmd, msg.getSrc(), keyString);
+                        responseMap.putAll(entry.metadata());
+                        responseMap.put(PUBLISHER_HANDLE, handle.toASCIIString());
+                        logger.info("OK: {} asked {}", msg.getSrc(), keyString);
                     } else {
-                        writeLocateRspOK(dos, map);
-                        logger.info("{} KO: {} asked {}", cmd, msg.getSrc(), keyString);
+                        logger.info("KO: {} asked {}", msg.getSrc(), keyString);
                     }
                 } else {
-                    writeRspKO(dos, "Unknown command");
-                    exception = true;
-                    logger.info("UNKNOWN COMMAND: {}", cmd);
+                    responseMap.put(RSP_ERROR, "Unknown command");
+                    responseException = true;
+                    logger.info("UNKNOWN COMMAND: {}", req);
                 }
-
-                response.send(new BytesMessage(null, data.toByteArray()), exception);
+                response.send(responseMap, responseException);
             } catch (IOException e) {
-                try {
-                    ByteArrayOutputStream data = new ByteArrayOutputStream();
-                    DataOutputStream dos = new DataOutputStream(data);
-                    writeRspKO(dos, e.getMessage());
-                    response.send(new BytesMessage(null, data.toByteArray()), true);
-                } catch (IOException ignored) {
-                }
+                responseMap.put(RSP_ERROR, e.getMessage());
+                response.send(responseMap, true);
             }
         });
     }

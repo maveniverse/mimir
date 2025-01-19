@@ -5,7 +5,7 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.shared.impl;
+package eu.maveniverse.maven.mimir.node.daemon;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -58,7 +58,7 @@ public final class SimpleProtocol {
     // - KO
     // - Message
 
-    // STORE_ENTRY
+    // STORE_ENTRY command:
 
     // STORE_PATH
 
