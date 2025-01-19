@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -39,7 +40,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
         super(requireNonNull(name, "name"), distance);
         this.basedir = basedir;
         this.keyResolver = requireNonNull(keyResolver, "keyResolver");
-        this.checksumFactories = Map.copyOf(requireNonNull(checksumFactories, "checksumFactories"));
+        this.checksumFactories = Collections.unmodifiableMap(requireNonNull(checksumFactories, "checksumFactories"));
 
         Files.createDirectories(basedir);
     }

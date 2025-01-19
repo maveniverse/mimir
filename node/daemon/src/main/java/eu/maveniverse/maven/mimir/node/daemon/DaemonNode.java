@@ -17,6 +17,7 @@ import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeStorePa
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeTransferReq;
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.impl.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
@@ -32,7 +33,8 @@ import java.net.UnixDomainSocketAddress;
 import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,7 +53,7 @@ public class DaemonNode extends NodeSupport implements LocalNode {
     public DaemonNode(Path socketPath, Map<String, ChecksumAlgorithmFactory> checksumFactories) {
         super(DaemonConfig.NAME, 10);
         this.socketPath = requireNonNull(socketPath, "socketPath");
-        this.checksumFactories = requireNonNull(checksumFactories, "checksumFactories");
+        this.checksumFactories = Collections.unmodifiableMap(requireNonNull(checksumFactories, "checksumFactories"));
     }
 
     @Override
@@ -60,7 +62,7 @@ public class DaemonNode extends NodeSupport implements LocalNode {
         try (Handle handle = create()) {
             writeLsChecksumsReq(handle.dos);
             List<String> algorithms = readLsChecksumsRsp(handle.dis);
-            HashMap<String, ChecksumAlgorithmFactory> result = new HashMap<>(algorithms.size());
+            LinkedHashMap<String, ChecksumAlgorithmFactory> result = new LinkedHashMap<>(algorithms.size());
             for (String algorithm : algorithms) {
                 ChecksumAlgorithmFactory factory = checksumFactories.get(algorithm);
                 if (factory == null) {
@@ -90,7 +92,7 @@ public class DaemonNode extends NodeSupport implements LocalNode {
     @Override
     public void store(URI key, Path file, Map<String, String> checksums) throws IOException {
         String keyString = key.toASCIIString();
-        String filePath = file.toAbsolutePath().toString();
+        String filePath = Config.getCanonicalPath(file).toString();
         logger.debug("STORE PATH '{}' -> '{}'", keyString, filePath);
         try (Handle handle = create()) {
             writeStorePathReq(handle.dos, keyString, filePath, checksums);
@@ -136,7 +138,8 @@ public class DaemonNode extends NodeSupport implements LocalNode {
         public void transferTo(Path file) throws IOException {
             logger.debug("TRANSFER '{}'->'{}'", keyString, file);
             try (Handle handle = create()) {
-                writeTransferReq(handle.dos, keyString, file.toString());
+                writeTransferReq(
+                        handle.dos, keyString, Config.getCanonicalPath(file).toString());
                 readTransferRsp(handle.dis);
             }
         }

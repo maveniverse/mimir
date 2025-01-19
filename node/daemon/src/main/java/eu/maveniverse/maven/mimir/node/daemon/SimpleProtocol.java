@@ -11,7 +11,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -94,6 +94,15 @@ public final class SimpleProtocol {
         }
     }
 
+    public static Map<String, String> readMap(DataInputStream dis) throws IOException {
+        int pairs = dis.readInt();
+        Map<String, String> map = new LinkedHashMap<>();
+        for (int i = 0; i < pairs; i++) {
+            map.put(dis.readUTF(), dis.readUTF());
+        }
+        return map;
+    }
+
     // LOCATE
 
     public static void writeLocateReq(DataOutputStream dos, String key) throws IOException {
@@ -115,12 +124,7 @@ public final class SimpleProtocol {
     public static Map<String, String> readLocateRsp(DataInputStream dis) throws IOException {
         String result = dis.readUTF();
         if (OK.equals(result)) {
-            int pairs = dis.readInt();
-            Map<String, String> map = new HashMap<>();
-            for (int i = 0; i < pairs; i++) {
-                map.put(dis.readUTF(), dis.readUTF());
-            }
-            return map;
+            return readMap(dis);
         } else {
             String errorMessage = dis.readUTF();
             throw new IOException(errorMessage);
