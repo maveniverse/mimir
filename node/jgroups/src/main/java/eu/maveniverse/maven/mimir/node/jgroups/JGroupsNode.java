@@ -33,8 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import org.jgroups.Address;
 import org.jgroups.BytesMessage;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
@@ -61,11 +60,12 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
     /**
      * Creates JGroups node w/o publisher.
      */
-    public JGroupsNode(LocalNode localNode, JChannel channel) throws IOException {
+    public JGroupsNode(LocalNode localNode, JChannel channel) {
         super(JGroupsNodeConfig.NAME, 500);
         this.localNode = localNode;
         this.channel = channel;
         this.messageDispatcher = new MessageDispatcher(channel);
+        this.messageDispatcher.setAsynDispatching(true);
         this.tx = null;
         this.publisher = null;
     }
@@ -79,6 +79,7 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
         this.localNode = localNode;
         this.channel = channel;
         this.messageDispatcher = new MessageDispatcher(channel, this);
+        this.messageDispatcher.setAsynDispatching(true);
         this.tx = new ConcurrentHashMap<>();
         this.publisher = publisherFactory.createPublisher(config, txid -> {
             LocalEntry entry = tx.get(txid);
@@ -94,11 +95,11 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
         ByteArrayOutputStream req = new ByteArrayOutputStream();
         writeLocateReq(new DataOutputStream(req), key.toASCIIString());
         try {
-            RspList<BytesMessage> responses = messageDispatcher.castMessage(
+            RspList<Object> responses = messageDispatcher.castMessage(
                     null, MessageFactory.create(Message.BYTES_MSG).setArray(req.toByteArray()), RequestOptions.SYNC());
-            for (BytesMessage response : responses.getResults()) {
-                Map<String, String> data =
-                        readLocateRsp(new DataInputStream(new ByteArrayInputStream(response.getArray())));
+            for (Address responder : responses.keySet()) {
+                Map<String, String> data = readLocateRsp(new DataInputStream(new ByteArrayInputStream(
+                        (byte[]) responses.get(responder).getValue())));
                 if (!data.isEmpty()) {
                     URI handle = URI.create(requireNonNull(data.get(PUBLISHER_HANDLE), PUBLISHER_HANDLE));
                     return Optional.of(localNode.store(key, new PublisherRemoteEntry(data, handle)));
@@ -111,60 +112,54 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
     }
 
     @Override
-    public Object handle(Message msg) throws Exception {
-        AtomicReference<Object> resp = new AtomicReference<>(null);
-        AtomicBoolean respIsException = new AtomicBoolean(false);
-        Response response = new Response() {
-            @Override
-            public void send(Object reply, boolean is_exception) {
-                resp.set(reply);
-                respIsException.set(is_exception);
-            }
-
-            @Override
-            public void send(Message reply, boolean is_exception) {
-                resp.set(reply);
-                respIsException.set(is_exception);
-            }
-        };
-        handle(msg, response);
-        if (respIsException.get()) {
-            throw new IOException(String.valueOf(resp.get()));
-        }
-        return resp.get();
+    public Object handle(Message msg) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void handle(Message msg, Response response) throws Exception {
-        DataInputStream dis = new DataInputStream(new ByteArrayInputStream(msg.getArray()));
-        String cmd = dis.readUTF();
-        ByteArrayOutputStream data = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(data);
-        boolean exception = false;
-        if (CMD_LOCATE.equals(cmd)) {
-            String keyString = dis.readUTF();
-            URI key = URI.create(keyString);
-            HashMap<String, String> map = new HashMap<>();
-            Optional<LocalEntry> optionalEntry = localNode.locate(key);
-            if (optionalEntry.isPresent()) {
-                LocalEntry entry = optionalEntry.orElseThrow();
-                String txid = UUID.randomUUID().toString();
-                tx.put(txid, entry);
-                URI handle = publisher.createHandle(txid);
-                map.putAll(entry.metadata());
-                map.put(PUBLISHER_HANDLE, handle.toASCIIString());
-                writeLocateRspOK(dos, map);
-                logger.info("{} OK: {} asked {}", cmd, msg.getSrc(), keyString);
-            } else {
-                writeLocateRspOK(dos, map);
-                logger.info("{} KO: {} asked {}", cmd, msg.getSrc(), keyString);
+    public void handle(Message msg, Response response) {
+        Thread.startVirtualThread(() -> {
+            try {
+                DataInputStream dis = new DataInputStream(new ByteArrayInputStream(msg.getArray()));
+                String cmd = dis.readUTF();
+                ByteArrayOutputStream data = new ByteArrayOutputStream();
+                DataOutputStream dos = new DataOutputStream(data);
+                boolean exception = false;
+                if (CMD_LOCATE.equals(cmd)) {
+                    String keyString = dis.readUTF();
+                    URI key = URI.create(keyString);
+                    HashMap<String, String> map = new HashMap<>();
+                    Optional<LocalEntry> optionalEntry = localNode.locate(key);
+                    if (optionalEntry.isPresent()) {
+                        LocalEntry entry = optionalEntry.orElseThrow();
+                        String txid = UUID.randomUUID().toString();
+                        tx.put(txid, entry);
+                        URI handle = publisher.createHandle(txid);
+                        map.putAll(entry.metadata());
+                        map.put(PUBLISHER_HANDLE, handle.toASCIIString());
+                        writeLocateRspOK(dos, map);
+                        logger.info("{} OK: {} asked {}", cmd, msg.getSrc(), keyString);
+                    } else {
+                        writeLocateRspOK(dos, map);
+                        logger.info("{} KO: {} asked {}", cmd, msg.getSrc(), keyString);
+                    }
+                } else {
+                    writeRspKO(dos, "Unknown command");
+                    exception = true;
+                    logger.info("UNKNOWN COMMAND: {}", cmd);
+                }
+
+                response.send(new BytesMessage(null, data.toByteArray()), exception);
+            } catch (IOException e) {
+                try {
+                    ByteArrayOutputStream data = new ByteArrayOutputStream();
+                    DataOutputStream dos = new DataOutputStream(data);
+                    writeRspKO(dos, e.getMessage());
+                    response.send(new BytesMessage(null, data.toByteArray()), true);
+                } catch (IOException ignored) {
+                }
             }
-        } else {
-            writeRspKO(dos, "Unknown command");
-            exception = true;
-            logger.info("UNKNOWN COMMAND: {}", cmd);
-        }
-        response.send(MessageFactory.create(Message.BYTES_MSG).setArray(data.toByteArray()), exception);
+        });
     }
 
     @Override
