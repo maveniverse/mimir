@@ -22,7 +22,7 @@ public interface LocalNode extends Node {
     /**
      * Tells checksum factories used by this local node.
      */
-    Map<String, ChecksumAlgorithmFactory> checksumFactories();
+    Map<String, ChecksumAlgorithmFactory> checksumFactories() throws IOException;
 
     /**
      * Locates cache entry by key on this node.

@@ -48,9 +48,9 @@ public final class SessionFactoryImpl implements SessionFactory {
 
         SessionConfig sessionConfig = SessionConfig.with(config);
 
-        LocalNodeFactory localNodeFactory = localNodeFactories.get(sessionConfig.localNodeName());
+        LocalNodeFactory localNodeFactory = localNodeFactories.get(sessionConfig.localNode());
         if (localNodeFactory == null) {
-            throw new IllegalArgumentException("Unknown local node name: " + sessionConfig.localNodeName());
+            throw new IllegalArgumentException("Unknown local node: " + sessionConfig.localNode());
         }
         LocalNode localNode = localNodeFactory.createLocalNode(config);
 

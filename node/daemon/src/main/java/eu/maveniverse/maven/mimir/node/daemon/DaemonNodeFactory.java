@@ -7,13 +7,18 @@
  */
 package eu.maveniverse.maven.mimir.node.daemon;
 
+import static java.util.Objects.requireNonNull;
+
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +26,13 @@ import org.slf4j.LoggerFactory;
 @Named(DaemonConfig.NAME)
 public class DaemonNodeFactory implements LocalNodeFactory {
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private final Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories;
+
+    @Inject
+    public DaemonNodeFactory(Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories) {
+        this.checksumAlgorithmFactories = requireNonNull(checksumAlgorithmFactories, "checksumAlgorithmFactories");
+    }
 
     @Override
     public DaemonNode createLocalNode(Config config) throws IOException {
@@ -35,7 +47,7 @@ public class DaemonNodeFactory implements LocalNodeFactory {
                 logger.info("Mimir daemon started (pid={})", daemon.pid());
             }
         }
-        return new DaemonNode(cfg.socketPath());
+        return new DaemonNode(cfg.socketPath(), checksumAlgorithmFactories);
     }
 
     private Process startDaemon(Path basedir, DaemonConfig config) throws IOException {

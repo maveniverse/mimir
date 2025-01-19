@@ -17,36 +17,35 @@ public final class SessionConfig {
         requireNonNull(config, "config");
 
         String keyMapper = SimpleKeyMapperFactory.NAME;
-        String localNodeName = FileNodeConfig.NAME;
+        String localNode = FileNodeConfig.NAME;
 
         if (config.effectiveProperties().containsKey("mimir.session.keyMapper")) {
             keyMapper = config.effectiveProperties().get("mimir.session.keyMapper");
         }
-        if (config.effectiveProperties().containsKey("mimir.session.localNodeName")) {
-            localNodeName = config.effectiveProperties().get("mimir.session.localNodeName");
+        if (config.effectiveProperties().containsKey("mimir.session.localNode")) {
+            localNode = config.effectiveProperties().get("mimir.session.localNode");
         }
 
-        return new SessionConfig(keyMapper, localNodeName);
+        return new SessionConfig(keyMapper, localNode);
     }
 
-    public static SessionConfig of(String nameMapper, String localNodeName) {
-        return new SessionConfig(
-                requireNonNull(nameMapper, "nameMapper"), requireNonNull(localNodeName, "localNodeName"));
+    public static SessionConfig of(String nameMapper, String localNode) {
+        return new SessionConfig(requireNonNull(nameMapper, "nameMapper"), requireNonNull(localNode, "localNode"));
     }
 
     private final String keyMapper;
-    private final String localNodeName;
+    private final String localNode;
 
-    private SessionConfig(String keyMapper, String localNodeName) {
+    private SessionConfig(String keyMapper, String localNode) {
         this.keyMapper = keyMapper;
-        this.localNodeName = localNodeName;
+        this.localNode = localNode;
     }
 
     public String keyMapper() {
         return keyMapper;
     }
 
-    public String localNodeName() {
-        return localNodeName;
+    public String localNode() {
+        return localNode;
     }
 }

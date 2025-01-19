@@ -67,7 +67,7 @@ public final class SimpleProtocol {
     // - STORE_PATH
     // - key
     // - path
-    // - metadata size > 0
+    // - checksums size > 0
     // - pair=pair
     // Response:
     // - OK
@@ -177,13 +177,13 @@ public final class SimpleProtocol {
 
     // STORE_PATH
 
-    public static void writeStorePathReq(DataOutputStream dos, String key, String path, Map<String, String> metadata)
+    public static void writeStorePathReq(DataOutputStream dos, String key, String path, Map<String, String> checksums)
             throws IOException {
         dos.writeUTF(CMD_STORE_PATH);
         dos.writeUTF(key);
         dos.writeUTF(path);
-        dos.writeInt(metadata.size());
-        for (Map.Entry<String, String> entry : metadata.entrySet()) {
+        dos.writeInt(checksums.size());
+        for (Map.Entry<String, String> entry : checksums.entrySet()) {
             dos.writeUTF(entry.getKey());
             dos.writeUTF(entry.getValue());
         }

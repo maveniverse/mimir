@@ -57,7 +57,7 @@ public final class SessionImpl implements Session {
     }
 
     @Override
-    public Map<String, ChecksumAlgorithmFactory> checksumFactories() {
+    public Map<String, ChecksumAlgorithmFactory> checksumFactories() throws IOException {
         checkState();
         return localNode.checksumFactories();
     }

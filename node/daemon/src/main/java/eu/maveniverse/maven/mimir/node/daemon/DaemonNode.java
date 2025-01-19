@@ -8,9 +8,11 @@
 package eu.maveniverse.maven.mimir.node.daemon;
 
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.readLocateRsp;
+import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.readLsChecksumsRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.readStorePathRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.readTransferRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeLocateReq;
+import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeLsChecksumsReq;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeStorePathReq;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeTransferReq;
 import static java.util.Objects.requireNonNull;
@@ -30,6 +32,8 @@ import java.net.UnixDomainSocketAddress;
 import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
@@ -42,15 +46,30 @@ import org.slf4j.LoggerFactory;
 public class DaemonNode extends NodeSupport implements LocalNode {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Path socketPath;
+    private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
-    public DaemonNode(Path socketPath) {
+    public DaemonNode(Path socketPath, Map<String, ChecksumAlgorithmFactory> checksumFactories) {
         super(DaemonConfig.NAME, 10);
         this.socketPath = requireNonNull(socketPath, "socketPath");
+        this.checksumFactories = requireNonNull(checksumFactories, "checksumFactories");
     }
 
     @Override
-    public Map<String, ChecksumAlgorithmFactory> checksumFactories() {
-        return Map.of();
+    public Map<String, ChecksumAlgorithmFactory> checksumFactories() throws IOException {
+        logger.debug("LS_CHECKSUMS");
+        try (Handle handle = create()) {
+            writeLsChecksumsReq(handle.dos);
+            List<String> algorithms = readLsChecksumsRsp(handle.dis);
+            HashMap<String, ChecksumAlgorithmFactory> result = new HashMap<>(algorithms.size());
+            for (String algorithm : algorithms) {
+                ChecksumAlgorithmFactory factory = checksumFactories.get(algorithm);
+                if (factory == null) {
+                    throw new IllegalArgumentException("Unknown daemon checksum algorithm: " + algorithm);
+                }
+                result.put(algorithm, factory);
+            }
+            return result;
+        }
     }
 
     @Override

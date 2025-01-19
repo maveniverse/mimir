@@ -30,7 +30,7 @@ public interface Session extends Closeable {
     /**
      * Tells session configured checksum factories.
      */
-    Map<String, ChecksumAlgorithmFactory> checksumFactories();
+    Map<String, ChecksumAlgorithmFactory> checksumFactories() throws IOException;
 
     /**
      * Locates cache entry by key.
