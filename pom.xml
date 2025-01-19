@@ -75,6 +75,7 @@
     <version.maven>3.9.9</version.maven>
     <version.resolver>1.9.22</version.resolver>
     <version.slf4j>2.0.16</version.slf4j>
+    <version.mavenPluginTools>3.15.1</version.mavenPluginTools>
   </properties>
 
   <dependencyManagement>
@@ -177,6 +178,12 @@
         <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-xml</artifactId>
         <version>3.0.1</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.maven.plugin-tools</groupId>
+        <artifactId>maven-plugin-annotations</artifactId>
+        <version>${version.mavenPluginTools}</version>
       </dependency>
 
       <dependency>
