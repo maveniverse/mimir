@@ -13,6 +13,7 @@ import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
+import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,7 +24,7 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 @Singleton
 @Named(FileNodeConfig.NAME)
-public final class FileNodeFactory implements LocalNodeFactory {
+public final class FileNodeFactory implements LocalNodeFactory, SystemNodeFactory {
     private final Map<String, KeyResolverFactory> keyResolverFactories;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
@@ -37,6 +38,15 @@ public final class FileNodeFactory implements LocalNodeFactory {
 
     @Override
     public FileNode createLocalNode(Config config) throws IOException {
+        return doCreateFileNode(config);
+    }
+
+    @Override
+    public FileNode createSystemNode(Config config) throws IOException {
+        return doCreateFileNode(config);
+    }
+
+    private FileNode doCreateFileNode(Config config) throws IOException {
         requireNonNull(config, "config");
         FileNodeConfig fileNodeConfig = FileNodeConfig.with(config);
         KeyResolverFactory keyResolverFactory = keyResolverFactories.get(fileNodeConfig.keyResolver());

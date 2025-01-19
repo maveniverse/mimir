@@ -13,20 +13,18 @@ import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.impl.Utils;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
-import eu.maveniverse.maven.mimir.shared.node.LocalNode;
+import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 import org.eclipse.aether.util.FileUtils;
 
-public final class FileNode extends NodeSupport implements LocalNode {
+public final class FileNode extends NodeSupport implements SystemNode {
     private final Path basedir;
     private final BiFunction<Path, URI, Path> keyResolver;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
@@ -52,36 +50,35 @@ public final class FileNode extends NodeSupport implements LocalNode {
     }
 
     @Override
-    public Optional<LocalEntry> locate(URI key) throws IOException {
+    public Optional<FileEntry> locate(URI key) throws IOException {
         ensureOpen();
         Path path = resolve(key);
         if (Files.isRegularFile(path)) {
-            return Optional.of(createEntry(path));
+            return Optional.of(FileEntry.createEntry(path));
         } else {
             return Optional.empty();
         }
     }
 
     @Override
-    public LocalEntry store(URI key, Entry entry) throws IOException {
+    public FileEntry store(URI key, Entry entry) throws IOException {
         ensureOpen();
         Path path = resolve(key);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
             entry.transferTo(f.getPath());
             f.move();
         }
-        return createEntry(path);
+        return FileEntry.createEntry(path);
     }
 
     @Override
-    public LocalEntry store(URI key, Path file, Map<String, String> checksums) throws IOException {
+    public void store(URI key, Path file, Map<String, String> checksums) throws IOException {
         ensureOpen();
         Path path = resolve(key);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
             Utils.copyOrLink(file, f.getPath());
             f.move();
         }
-        return createEntry(path);
     }
 
     @Override
@@ -91,14 +88,5 @@ public final class FileNode extends NodeSupport implements LocalNode {
 
     private Path resolve(URI key) {
         return keyResolver.apply(basedir, key);
-    }
-
-    private FileEntry createEntry(Path file) throws IOException {
-        HashMap<String, String> metadata = new HashMap<>();
-        metadata.put(Entry.CONTENT_LENGTH, Long.toString(Files.size(file)));
-        metadata.put(
-                Entry.CONTENT_LAST_MODIFIED,
-                Long.toString(Files.getLastModifiedTime(file).toMillis()));
-        return new FileEntry(metadata, file);
     }
 }

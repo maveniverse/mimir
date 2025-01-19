@@ -7,4 +7,12 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
-public interface LocalEntry extends Entry {}
+import eu.maveniverse.maven.mimir.shared.Config;
+import java.io.IOException;
+
+public interface SystemNodeFactory {
+    /**
+     * Creates a {@link SystemNode} instance.
+     */
+    SystemNode createSystemNode(Config config) throws IOException;
+}

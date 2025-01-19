@@ -22,7 +22,6 @@ public class DaemonConfig {
     public static DaemonConfig with(Config config) {
         requireNonNull(config, "config");
 
-        boolean enabled = config.mimirVersion().isPresent();
         Path socketPath = config.basedir().resolve("uds-socket");
         boolean autoupdate = true;
         boolean autostart = true;
@@ -30,9 +29,6 @@ public class DaemonConfig {
         String daemonLogName = "daemon-" + config.mimirVersion().orElse("UNKNOWN") + ".log";
         String daemonGav = "eu.maveniverse.maven.mimir:daemon:jar:daemon:"
                 + config.mimirVersion().orElse("UNKNOWN");
-        if (config.effectiveProperties().containsKey("mimir.daemon.enabled")) {
-            enabled = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.enabled"));
-        }
         if (config.effectiveProperties().containsKey("mimir.daemon.socketPath")) {
             socketPath =
                     Config.getCanonicalPath(Path.of(config.effectiveProperties().get("mimir.daemon.socketPath")));
@@ -52,12 +48,11 @@ public class DaemonConfig {
         if (config.effectiveProperties().containsKey("mimir.daemon.daemonGav")) {
             daemonGav = config.effectiveProperties().get("mimir.daemon.daemonGav");
         }
-        return new DaemonConfig(enabled, socketPath, autoupdate, autostart, daemonJarName, daemonLogName, daemonGav);
+        return new DaemonConfig(socketPath, autoupdate, autostart, daemonJarName, daemonLogName, daemonGav);
     }
 
     public static final String NAME = "daemon";
 
-    private final boolean enabled;
     private final Path socketPath;
     private final boolean autoupdate;
     private final boolean autostart;
@@ -66,24 +61,18 @@ public class DaemonConfig {
     private final String daemonGav;
 
     private DaemonConfig(
-            boolean enabled,
             Path socketPath,
             boolean autoupdate,
             boolean autostart,
             String daemonJarName,
             String daemonLogName,
             String daemonGav) {
-        this.enabled = enabled;
         this.socketPath = socketPath;
         this.autoupdate = autoupdate;
         this.autostart = autostart;
         this.daemonJarName = daemonJarName;
         this.daemonLogName = daemonLogName;
         this.daemonGav = daemonGav;
-    }
-
-    public boolean enabled() {
-        return enabled;
     }
 
     public Path socketPath() {

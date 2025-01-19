@@ -7,4 +7,12 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
-public interface LocalEntry extends Entry {}
+import java.io.IOException;
+import java.io.InputStream;
+
+public interface SystemEntry extends LocalEntry {
+    /**
+     * Provides cache entry content as input stream.
+     */
+    InputStream openStream() throws IOException;
+}

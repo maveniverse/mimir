@@ -16,15 +16,9 @@ import eu.maveniverse.maven.mimir.shared.naming.KeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.naming.RemoteRepositories;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
-import eu.maveniverse.maven.mimir.shared.node.Node;
-import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
-import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -39,16 +33,12 @@ import org.slf4j.LoggerFactory;
 public final class SessionFactoryImpl implements SessionFactory {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Map<String, LocalNodeFactory> localNodeFactories;
-    private final Map<String, RemoteNodeFactory> remoteNodeFactories;
     private final Map<String, KeyMapperFactory> nameMapperFactories;
 
     @Inject
     public SessionFactoryImpl(
-            Map<String, LocalNodeFactory> localNodeFactories,
-            Map<String, RemoteNodeFactory> remoteNodeFactories,
-            Map<String, KeyMapperFactory> nameMapperFactories) {
+            Map<String, LocalNodeFactory> localNodeFactories, Map<String, KeyMapperFactory> nameMapperFactories) {
         this.localNodeFactories = requireNonNull(localNodeFactories, "localNodeFactories");
-        this.remoteNodeFactories = requireNonNull(remoteNodeFactories, "remoteNodeFactories");
         this.nameMapperFactories = requireNonNull(nameMapperFactories, "nameMapperFactories");
     }
 
@@ -64,13 +54,6 @@ public final class SessionFactoryImpl implements SessionFactory {
         }
         LocalNode localNode = localNodeFactory.createLocalNode(config);
 
-        ArrayList<RemoteNode> remoteNodes = new ArrayList<>();
-        for (RemoteNodeFactory nodeFactory : remoteNodeFactories.values()) {
-            Optional<RemoteNode> node = nodeFactory.createRemoteNode(config, localNode);
-            node.ifPresent(remoteNodes::add);
-        }
-        remoteNodes.sort(Comparator.comparing(Node::distance));
-
         KeyMapperFactory keyMapperFactory = nameMapperFactories.get(sessionConfig.keyMapper());
         if (keyMapperFactory == null) {
             throw new IllegalStateException("No keyMapper: " + sessionConfig.keyMapper());
@@ -83,13 +66,8 @@ public final class SessionFactoryImpl implements SessionFactory {
             logger.debug("  Name mapper: {}", nameMapper.getClass().getSimpleName());
             logger.debug("  Checksums: {}", localNode.checksumFactories().keySet());
             logger.debug("  Local Node: {}", localNode);
-            logger.debug("  {} remote node(s):", remoteNodes.size());
-            for (RemoteNode node : remoteNodes) {
-                logger.debug("    {} (d={})", node.name(), node.distance());
-            }
         }
 
-        return new SessionImpl(
-                RemoteRepositories.centralDirectOnly(), a -> !a.isSnapshot(), nameMapper, localNode, remoteNodes);
+        return new SessionImpl(RemoteRepositories.centralDirectOnly(), a -> !a.isSnapshot(), nameMapper, localNode);
     }
 }

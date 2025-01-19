@@ -10,9 +10,9 @@ package eu.maveniverse.maven.mimir.node.jgroups;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
+import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.mimir.shared.publisher.PublisherFactory;
 import java.io.IOException;
 import java.util.Map;
@@ -25,17 +25,18 @@ import org.jgroups.JChannel;
 @Singleton
 @Named(JGroupsNodeConfig.NAME)
 public class JGroupsNodeFactory implements RemoteNodeFactory {
+    private final SystemNode systemNode;
     private final Map<String, PublisherFactory> publisherFactories;
 
     @Inject
-    public JGroupsNodeFactory(Map<String, PublisherFactory> publisherFactories) {
+    public JGroupsNodeFactory(SystemNode systemNode, Map<String, PublisherFactory> publisherFactories) {
+        this.systemNode = requireNonNull(systemNode, "systemNode");
         this.publisherFactories = requireNonNull(publisherFactories, "publisherFactories");
     }
 
     @Override
-    public Optional<RemoteNode> createRemoteNode(Config config, LocalNode localNode) throws IOException {
+    public Optional<RemoteNode> createRemoteNode(Config config) throws IOException {
         requireNonNull(config, "config");
-        requireNonNull(localNode, "localNode");
 
         try {
             JGroupsNodeConfig cfg = JGroupsNodeConfig.with(config);
@@ -47,9 +48,9 @@ public class JGroupsNodeFactory implements RemoteNodeFactory {
                 if (publisherFactory == null) {
                     throw new IllegalStateException("No publisher found for transport " + cfg.publisherTransport());
                 }
-                return Optional.of(new JGroupsNode(localNode, createChannel(cfg), config, publisherFactory));
+                return Optional.of(new JGroupsNode(systemNode, createChannel(cfg), config, publisherFactory));
             } else {
-                return Optional.of(new JGroupsNode(localNode, createChannel(cfg)));
+                return Optional.of(new JGroupsNode(systemNode, createChannel(cfg)));
             }
         } catch (Exception e) {
             throw new IOException("Failed to create JChannel", e);

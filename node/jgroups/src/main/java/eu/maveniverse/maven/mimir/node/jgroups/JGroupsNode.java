@@ -12,10 +12,9 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.impl.publisher.PublisherRemoteEntry;
-import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
-import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
+import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
+import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.mimir.shared.publisher.Publisher;
 import eu.maveniverse.maven.mimir.shared.publisher.PublisherFactory;
 import java.io.IOException;
@@ -45,18 +44,18 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
     private static final String RSP_ERROR = "error";
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final LocalNode localNode;
+    private final SystemNode systemNode;
     private final JChannel channel;
     private final MessageDispatcher messageDispatcher;
     private final Publisher publisher;
-    private final ConcurrentHashMap<String, LocalEntry> tx;
+    private final ConcurrentHashMap<String, SystemEntry> tx;
 
     /**
      * Creates JGroups node w/o publisher.
      */
-    public JGroupsNode(LocalNode localNode, JChannel channel) {
+    public JGroupsNode(SystemNode systemNode, JChannel channel) {
         super(JGroupsNodeConfig.NAME, 500);
-        this.localNode = localNode;
+        this.systemNode = systemNode;
         this.channel = channel;
         this.messageDispatcher = new MessageDispatcher(channel);
         this.messageDispatcher.setAsynDispatching(true);
@@ -67,16 +66,16 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
     /**
      * Creates JGroups node with publisher.
      */
-    public JGroupsNode(LocalNode localNode, JChannel channel, Config config, PublisherFactory publisherFactory)
+    public JGroupsNode(SystemNode systemNode, JChannel channel, Config config, PublisherFactory publisherFactory)
             throws IOException {
         super(JGroupsNodeConfig.NAME, 500);
-        this.localNode = localNode;
+        this.systemNode = systemNode;
         this.channel = channel;
         this.messageDispatcher = new MessageDispatcher(channel, this);
         this.messageDispatcher.setAsynDispatching(true);
         this.tx = new ConcurrentHashMap<>();
         this.publisher = publisherFactory.createPublisher(config, txid -> {
-            LocalEntry entry = tx.get(txid);
+            SystemEntry entry = tx.get(txid);
             if (entry == null) {
                 return Optional.empty();
             }
@@ -85,7 +84,7 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
     }
 
     @Override
-    public Optional<Entry> locate(URI key) throws IOException {
+    public Optional<PublisherRemoteEntry> locate(URI key) throws IOException {
         ArrayList<String> req = new ArrayList<>();
         req.add(CMD_LOCATE);
         req.add(key.toASCIIString());
@@ -96,7 +95,7 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
                 Map<String, String> data = responses.get(responder).getValue();
                 if (!data.isEmpty()) {
                     URI handle = URI.create(requireNonNull(data.get(PUBLISHER_HANDLE), PUBLISHER_HANDLE));
-                    return Optional.of(localNode.store(key, new PublisherRemoteEntry(data, handle)));
+                    return Optional.of(new PublisherRemoteEntry(data, handle));
                 }
             }
         } catch (Exception e) {
@@ -120,9 +119,9 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
                 if (req.size() == 2 && CMD_LOCATE.equals(req.getFirst())) {
                     String keyString = req.get(1);
                     URI key = URI.create(keyString);
-                    Optional<LocalEntry> optionalEntry = localNode.locate(key);
+                    Optional<? extends SystemEntry> optionalEntry = systemNode.locate(key);
                     if (optionalEntry.isPresent()) {
-                        LocalEntry entry = optionalEntry.orElseThrow();
+                        SystemEntry entry = optionalEntry.orElseThrow();
                         String txid = UUID.randomUUID().toString();
                         tx.put(txid, entry);
                         URI handle = publisher.createHandle(txid);

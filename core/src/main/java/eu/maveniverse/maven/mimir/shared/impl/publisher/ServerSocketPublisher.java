@@ -9,7 +9,7 @@ package eu.maveniverse.maven.mimir.shared.impl.publisher;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
+import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.publisher.Publisher;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,7 +34,7 @@ public class ServerSocketPublisher implements Publisher {
     private final ExecutorService executor;
 
     public ServerSocketPublisher(
-            InetSocketAddress inetSocketAddress, Function<String, Optional<LocalEntry>> entrySupplier)
+            InetSocketAddress inetSocketAddress, Function<String, Optional<SystemEntry>> entrySupplier)
             throws IOException {
         requireNonNull(inetSocketAddress, "inetSocketAddress");
         requireNonNull(entrySupplier, "entrySupplier");
@@ -52,7 +52,7 @@ public class ServerSocketPublisher implements Publisher {
                             OutputStream out = socket.getOutputStream();
                             if (buf.length == 36) {
                                 String txid = new String(buf, StandardCharsets.UTF_8);
-                                Optional<LocalEntry> entry = entrySupplier.apply(txid);
+                                Optional<SystemEntry> entry = entrySupplier.apply(txid);
                                 if (entry.isPresent()) {
                                     logger.debug("SERVER HIT: {} to {}", txid, socket.getRemoteSocketAddress());
                                     try (InputStream inputStream =

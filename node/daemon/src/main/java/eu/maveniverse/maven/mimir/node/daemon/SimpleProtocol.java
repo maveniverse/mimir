@@ -10,7 +10,9 @@ package eu.maveniverse.maven.mimir.node.daemon;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class SimpleProtocol {
@@ -23,6 +25,8 @@ public final class SimpleProtocol {
 
     public static final String CMD_LOCATE = "LOCATE";
     public static final String CMD_TRANSFER = "TRANSFER";
+    public static final String CMD_LS_CHECKSUMS = "LS_CHECKSUMS";
+    public static final String CMD_STORE_PATH = "STORE_PATH";
 
     // LOCATE command:
     // Request:
@@ -58,14 +62,36 @@ public final class SimpleProtocol {
     // - KO
     // - Message
 
-    // STORE_ENTRY command:
-
-    // STORE_PATH
+    // STORE_PATH command;
+    // Request:
+    // - STORE_PATH
+    // - key
+    // - path
+    // - metadata size > 0
+    // - pair=pair
+    // Response:
+    // - OK
+    // or
+    // - KO
+    // - Message
 
     public static void writeRspKO(DataOutputStream dos, String errorMessage) throws IOException {
         dos.writeUTF(KO);
         dos.writeUTF(errorMessage);
         dos.flush();
+    }
+
+    public static void writeSimpleRspOK(DataOutputStream dos) throws IOException {
+        dos.writeUTF(OK);
+        dos.flush();
+    }
+
+    public static void readSimpleRsp(DataInputStream dis) throws IOException {
+        String result = dis.readUTF();
+        if (!OK.equals(result)) {
+            String errorMessage = dis.readUTF();
+            throw new IOException(errorMessage);
+        }
     }
 
     // LOCATE
@@ -111,15 +137,64 @@ public final class SimpleProtocol {
     }
 
     public static void writeTransferRspOK(DataOutputStream dos) throws IOException {
-        dos.writeUTF(OK);
-        dos.flush();
+        writeSimpleRspOK(dos);
     }
 
     public static void readTransferRsp(DataInputStream dis) throws IOException {
+        readSimpleRsp(dis);
+    }
+
+    // LS_CHECKSUMS
+
+    public static void writeLsChecksumsReq(DataOutputStream dos) throws IOException {
+        dos.writeUTF(CMD_LS_CHECKSUMS);
+        dos.flush();
+    }
+
+    public static void writeLsChecksumsRspOK(DataOutputStream dos, List<String> checksums) throws IOException {
+        dos.writeUTF(OK);
+        dos.writeInt(checksums.size());
+        for (String checksum : checksums) {
+            dos.writeUTF(checksum);
+        }
+        dos.flush();
+    }
+
+    public static List<String> readLsChecksumsRsp(DataInputStream dis) throws IOException {
         String result = dis.readUTF();
-        if (!OK.equals(result)) {
+        if (OK.equals(result)) {
+            int pairs = dis.readInt();
+            ArrayList<String> list = new ArrayList<>(pairs);
+            for (int i = 0; i < pairs; i++) {
+                list.add(dis.readUTF());
+            }
+            return list;
+        } else {
             String errorMessage = dis.readUTF();
             throw new IOException(errorMessage);
         }
+    }
+
+    // STORE_PATH
+
+    public static void writeStorePathReq(DataOutputStream dos, String key, String path, Map<String, String> metadata)
+            throws IOException {
+        dos.writeUTF(CMD_STORE_PATH);
+        dos.writeUTF(key);
+        dos.writeUTF(path);
+        dos.writeInt(metadata.size());
+        for (Map.Entry<String, String> entry : metadata.entrySet()) {
+            dos.writeUTF(entry.getKey());
+            dos.writeUTF(entry.getValue());
+        }
+        dos.flush();
+    }
+
+    public static void writeStorePathRspOK(DataOutputStream dos) throws IOException {
+        writeSimpleRspOK(dos);
+    }
+
+    public static void readStorePathRsp(DataInputStream dis) throws IOException {
+        readSimpleRsp(dis);
     }
 }

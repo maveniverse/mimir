@@ -81,8 +81,8 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
     private void mayResolveDaemonArtifact(
             Config config, RepositorySystemSession session, List<RemoteRepository> remoteRepositories) {
         DaemonConfig daemonConfig = DaemonConfig.with(config);
-        if (!daemonConfig.enabled() || config.mimirVersion().isEmpty()) {
-            logger.debug("Not resolving Mimir daemon; not enabled or version not detected");
+        if (!daemonConfig.autostart() || config.mimirVersion().isEmpty()) {
+            logger.debug("Not resolving Mimir daemon; autostart not enabled or version not detected");
             return;
         }
         Path daemonJarPath = config.basedir().resolve(daemonConfig.daemonJarName());

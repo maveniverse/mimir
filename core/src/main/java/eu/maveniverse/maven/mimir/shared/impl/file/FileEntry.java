@@ -4,18 +4,29 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.impl.Utils;
-import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
+import eu.maveniverse.maven.mimir.shared.node.Entry;
+import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 import org.eclipse.aether.util.FileUtils;
 
-class FileEntry extends EntrySupport implements LocalEntry {
+public final class FileEntry extends EntrySupport implements SystemEntry {
+    public static FileEntry createEntry(Path file) throws IOException {
+        HashMap<String, String> metadata = new HashMap<>();
+        metadata.put(Entry.CONTENT_LENGTH, Long.toString(Files.size(file)));
+        metadata.put(
+                Entry.CONTENT_LAST_MODIFIED,
+                Long.toString(Files.getLastModifiedTime(file).toMillis()));
+        return new FileEntry(metadata, file);
+    }
+
     private final Path path;
 
-    public FileEntry(Map<String, String> metadata, Path path) {
+    private FileEntry(Map<String, String> metadata, Path path) {
         super(metadata);
         this.path = requireNonNull(path, "path");
     }

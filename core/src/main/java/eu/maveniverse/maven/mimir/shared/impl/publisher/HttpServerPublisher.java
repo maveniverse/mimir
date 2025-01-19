@@ -14,7 +14,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
+import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.publisher.Publisher;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,7 +37,7 @@ public class HttpServerPublisher implements Publisher {
     private final HttpServer httpServer;
 
     public HttpServerPublisher(
-            InetSocketAddress inetSocketAddress, Function<String, Optional<LocalEntry>> entrySupplier)
+            InetSocketAddress inetSocketAddress, Function<String, Optional<SystemEntry>> entrySupplier)
             throws IOException {
         requireNonNull(inetSocketAddress, "inetSocketAddress");
         requireNonNull(entrySupplier, "entrySupplier");
@@ -68,13 +68,13 @@ public class HttpServerPublisher implements Publisher {
 
     private static class TxHandler implements HttpHandler {
         private final Logger logger = LoggerFactory.getLogger(getClass());
-        private final Function<String, Optional<LocalEntry>> entrySupplier;
+        private final Function<String, Optional<SystemEntry>> entrySupplier;
 
         private final DateTimeFormatter rfc7231 = DateTimeFormatter.ofPattern(
                         "EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH)
                 .withZone(ZoneId.of("GMT"));
 
-        public TxHandler(Function<String, Optional<LocalEntry>> entrySupplier) {
+        public TxHandler(Function<String, Optional<SystemEntry>> entrySupplier) {
             this.entrySupplier = requireNonNull(entrySupplier, "entrySupplier");
         }
 
@@ -85,13 +85,13 @@ public class HttpServerPublisher implements Publisher {
                 String path = exchange.getRequestURI().getPath();
                 if ("GET".equals(exchange.getRequestMethod()) && path.length() > ctxPath.length()) {
                     String txid = exchange.getRequestURI().getPath().substring(ctxPath.length() + 1);
-                    Optional<LocalEntry> entry = entrySupplier.apply(txid);
+                    Optional<SystemEntry> entry = entrySupplier.apply(txid);
                     if (entry.isPresent()) {
-                        LocalEntry localEntry = entry.orElseThrow();
+                        SystemEntry systemEntry = entry.orElseThrow();
                         long contentLength = Long.parseLong(
-                                requireNonNull(localEntry.metadata().get(Entry.CONTENT_LENGTH), Entry.CONTENT_LENGTH));
+                                requireNonNull(systemEntry.metadata().get(Entry.CONTENT_LENGTH), Entry.CONTENT_LENGTH));
                         Headers headers = exchange.getResponseHeaders();
-                        String contentLastModified = localEntry.metadata().get(Entry.CONTENT_LAST_MODIFIED);
+                        String contentLastModified = systemEntry.metadata().get(Entry.CONTENT_LAST_MODIFIED);
                         if (contentLastModified != null) {
                             headers.add(
                                     "Last-Modified",
@@ -102,7 +102,7 @@ public class HttpServerPublisher implements Publisher {
                         logger.debug("HIT {}", txid);
                         exchange.sendResponseHeaders(200, contentLength);
                         try (OutputStream os = exchange.getResponseBody();
-                                InputStream is = localEntry.openStream()) {
+                                InputStream is = systemEntry.openStream()) {
                             is.transferTo(os);
                         }
                     } else {

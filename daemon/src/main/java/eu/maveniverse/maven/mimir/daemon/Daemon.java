@@ -17,6 +17,7 @@ import eu.maveniverse.maven.mimir.shared.impl.file.FileNode;
 import eu.maveniverse.maven.mimir.shared.impl.file.FileNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
+import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.StandardProtocolFamily;
@@ -35,6 +36,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.eclipse.sisu.space.BeanScanning;
 import org.eclipse.sisu.space.SpaceModule;
@@ -51,41 +53,53 @@ public class Daemon implements Closeable {
                 Config.defaults().propertiesPath(Path.of("daemon.properties")).build();
 
         DaemonConfig daemonConfig = DaemonConfig.with(config);
-        if (daemonConfig.enabled()) {
-            Daemon daemon = Guice.createInjector(new WireModule(
-                            new AbstractModule() {
-                                @Override
-                                protected void configure() {
-                                    bind(Config.class).toInstance(DaemonConfig.toDaemonProcessConfig(config));
-                                    bind(DaemonConfig.class).toInstance(daemonConfig);
-                                }
-                            },
-                            new SpaceModule(
-                                    new URLClassSpace(Daemon.class.getClassLoader()), BeanScanning.INDEX, true)))
-                    .getInstance(Daemon.class);
+        Daemon daemon = Guice.createInjector(new WireModule(
+                        new AbstractModule() {
+                            @Override
+                            protected void configure() {
+                                bind(Config.class).toInstance(DaemonConfig.toDaemonProcessConfig(config));
+                                bind(DaemonConfig.class).toInstance(daemonConfig);
+                            }
+                        },
+                        new SpaceModule(new URLClassSpace(Daemon.class.getClassLoader()), BeanScanning.INDEX, true)))
+                .getInstance(Daemon.class);
 
-            Runtime.getRuntime().addShutdownHook(new Thread(daemon::close));
+        Runtime.getRuntime().addShutdownHook(new Thread(daemon::close));
+    }
+
+    @Named
+    public static class SystemNodeProvider implements Provider<SystemNode> {
+        private final FileNode systemNode;
+
+        @Inject
+        public SystemNodeProvider(Config config, FileNodeFactory fileNodeFactory) throws IOException {
+            this.systemNode = fileNodeFactory.createLocalNode(config);
+        }
+
+        @Override
+        public SystemNode get() {
+            return systemNode;
         }
     }
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ServerSocketChannel serverSocketChannel;
     private final ExecutorService executor;
-    private final FileNode localNode;
+    private final SystemNode systemNode;
     private final List<RemoteNode> remoteNodes;
 
     @Inject
     public Daemon(
             Config config,
             DaemonConfig daemonConfig,
-            FileNodeFactory fileNodeFactory,
+            SystemNode systemNode,
             Map<String, RemoteNodeFactory> remoteNodeFactories)
             throws IOException {
         requireNonNull(config, "config");
-        this.localNode = fileNodeFactory.createLocalNode(config);
+        this.systemNode = requireNonNull(systemNode, "systemNode");
         ArrayList<RemoteNode> nds = new ArrayList<>();
         for (RemoteNodeFactory remoteNodeFactory : remoteNodeFactories.values()) {
-            Optional<RemoteNode> node = remoteNodeFactory.createRemoteNode(config, localNode);
+            Optional<RemoteNode> node = remoteNodeFactory.createRemoteNode(config);
             node.ifPresent(nds::add);
         }
         nds.sort(Comparator.comparing(RemoteNode::distance));
@@ -110,7 +124,7 @@ public class Daemon implements Closeable {
         this.serverSocketChannel = serverSocketChannel;
         logger.info("Mimir Daemon {} started", config.mimirVersion().orElse("UNKNOWN"));
         logger.info("  Socket: {}", socketAddress);
-        logger.info("  Local Node: {}", localNode);
+        logger.info("  System Node: {}", systemNode);
         logger.info("  {} remote node(s):", remoteNodes.size());
         for (RemoteNode node : this.remoteNodes) {
             logger.info("    {}", node);
@@ -120,7 +134,7 @@ public class Daemon implements Closeable {
             try {
                 while (serverSocketChannel.isOpen()) {
                     SocketChannel socketChannel = serverSocketChannel.accept();
-                    executor.submit(new DaemonServer(socketChannel, localNode, remoteNodes));
+                    executor.submit(new DaemonServer(socketChannel, systemNode, remoteNodes));
                 }
             } catch (AsynchronousCloseException ignored) {
                 // we are done
@@ -151,7 +165,7 @@ public class Daemon implements Closeable {
                 }
             }
             try {
-                localNode.close();
+                systemNode.close();
             } catch (IOException e) {
                 logger.warn("Error closing local node", e);
             }

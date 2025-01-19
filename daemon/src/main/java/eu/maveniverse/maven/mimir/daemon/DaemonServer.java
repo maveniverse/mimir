@@ -14,9 +14,9 @@ import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeRspKO;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeTransferRspOK;
 
 import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
-import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
+import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
+import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.net.URI;
@@ -35,14 +35,14 @@ public class DaemonServer implements Runnable {
     private final DataOutputStream dos;
     private final DataInputStream dis;
 
-    private final LocalNode localNode;
+    private final SystemNode systemNode;
     private final List<RemoteNode> remoteNodes;
 
-    public DaemonServer(SocketChannel socketChannel, LocalNode localNode, List<RemoteNode> remoteNodes) {
+    public DaemonServer(SocketChannel socketChannel, SystemNode systemNode, List<RemoteNode> remoteNodes) {
         this.socketChannel = socketChannel;
         this.dos = new DataOutputStream(Channels.newOutputStream(socketChannel));
         this.dis = new DataInputStream(Channels.newInputStream(socketChannel));
-        this.localNode = localNode;
+        this.systemNode = systemNode;
         this.remoteNodes = remoteNodes;
     }
 
@@ -55,12 +55,12 @@ public class DaemonServer implements Runnable {
                     String keyString = dis.readUTF();
                     logger.debug("{} {}", cmd, keyString);
                     URI key = URI.create(keyString);
-                    Optional<? extends Entry> entry = localNode.locate(key);
+                    Optional<? extends Entry> entry = systemNode.locate(key);
                     if (entry.isEmpty()) {
                         for (RemoteNode node : remoteNodes) {
                             entry = node.locate(key);
                             if (entry.isPresent()) {
-                                localNode.store(key, entry.orElseThrow());
+                                systemNode.store(key, entry.orElseThrow());
                                 break;
                             }
                         }
@@ -77,7 +77,7 @@ public class DaemonServer implements Runnable {
                     logger.debug("{} {} {}", cmd, keyString, pathString);
                     URI key = URI.create(keyString);
                     Path path = Path.of(pathString);
-                    Optional<LocalEntry> entry = localNode.locate(key);
+                    Optional<? extends SystemEntry> entry = systemNode.locate(key);
                     if (entry.isPresent()) {
                         entry.orElseThrow().transferTo(path);
                         writeTransferRspOK(dos);

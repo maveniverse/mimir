@@ -13,12 +13,10 @@ import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
-import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,21 +35,18 @@ public final class SessionImpl implements Session {
     private final Predicate<Artifact> artifactPredicate;
     private final BiFunction<RemoteRepository, Artifact, URI> keyMapper;
     private final LocalNode localNode;
-    private final List<RemoteNode> remoteNodes;
     private final Stats stats;
 
     public SessionImpl(
             Predicate<RemoteRepository> repositoryPredicate,
             Predicate<Artifact> artifactPredicate,
             BiFunction<RemoteRepository, Artifact, URI> keyMapper,
-            LocalNode localNode,
-            List<RemoteNode> remoteNodes) {
+            LocalNode localNode) {
         this.closed = new AtomicBoolean(false);
         this.repositoryPredicate = requireNonNull(repositoryPredicate, "repositoryPredicate");
         this.artifactPredicate = requireNonNull(artifactPredicate, "artifactPredicate");
         this.keyMapper = requireNonNull(keyMapper, "nameMapper");
         this.localNode = requireNonNull(localNode, "localNode");
-        this.remoteNodes = requireNonNull(remoteNodes, "remoteNodes");
         this.stats = new Stats();
     }
 
@@ -81,14 +76,6 @@ public final class SessionImpl implements Session {
         if (repositoryPredicate.test(remoteRepository) && artifactPredicate.test(artifact)) {
             URI key = keyMapper.apply(remoteRepository, artifact);
             Optional<? extends Entry> result = localNode.locate(key);
-            if (result.isEmpty()) {
-                for (RemoteNode node : remoteNodes) {
-                    result = node.locate(key);
-                    if (result.isPresent()) {
-                        break;
-                    }
-                }
-            }
             if (result.isPresent()) {
                 stats.query(true);
                 return Optional.of(new CacheEntryImpl(result.orElseThrow()));
@@ -127,13 +114,6 @@ public final class SessionImpl implements Session {
     public void close() throws IOException {
         if (closed.compareAndSet(false, true)) {
             ArrayList<IOException> exceptions = new ArrayList<>();
-            for (RemoteNode node : this.remoteNodes) {
-                try {
-                    node.close();
-                } catch (IOException e) {
-                    exceptions.add(e);
-                }
-            }
             try {
                 localNode.close();
             } catch (IOException e) {

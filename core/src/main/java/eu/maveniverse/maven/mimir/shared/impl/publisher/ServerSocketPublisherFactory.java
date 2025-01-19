@@ -10,7 +10,7 @@ package eu.maveniverse.maven.mimir.shared.impl.publisher;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
+import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.publisher.Publisher;
 import eu.maveniverse.maven.mimir.shared.publisher.PublisherFactory;
 import java.io.IOException;
@@ -26,7 +26,7 @@ public class ServerSocketPublisherFactory implements PublisherFactory {
     public static final String NAME = "socket";
 
     @Override
-    public Publisher createPublisher(Config config, Function<String, Optional<LocalEntry>> entrySupplier)
+    public Publisher createPublisher(Config config, Function<String, Optional<SystemEntry>> entrySupplier)
             throws IOException {
         requireNonNull(config, "config");
         requireNonNull(entrySupplier, "entrySupplier");

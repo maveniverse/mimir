@@ -16,5 +16,5 @@ public interface RemoteNodeFactory {
      * Creates a {@link RemoteNode} instance, or returns empty optional if for any reason cannot
      * contribute a node.
      */
-    Optional<RemoteNode> createRemoteNode(Config config, LocalNode localNode) throws IOException;
+    Optional<RemoteNode> createRemoteNode(Config config) throws IOException;
 }

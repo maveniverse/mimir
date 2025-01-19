@@ -11,10 +11,13 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
 
+/**
+ * Remote node uses some "remote" (remote to the system) backing storage.
+ */
 public interface RemoteNode extends Node {
     /**
      * Locates cache entry by key on this node.
      */
     @Override
-    Optional<Entry> locate(URI key) throws IOException;
+    Optional<? extends RemoteEntry> locate(URI key) throws IOException;
 }

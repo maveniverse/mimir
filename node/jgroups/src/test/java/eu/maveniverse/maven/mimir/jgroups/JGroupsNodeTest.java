@@ -10,7 +10,6 @@ import eu.maveniverse.maven.mimir.shared.impl.file.FileNode;
 import eu.maveniverse.maven.mimir.shared.impl.file.FileNodeConfig;
 import eu.maveniverse.maven.mimir.shared.impl.publisher.ServerSocketPublisherFactory;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.net.InetAddress;
 import java.net.URI;
 import java.nio.file.Files;
@@ -41,7 +40,7 @@ public class JGroupsNodeTest {
 
         FileNodeConfig configOne =
                 FileNodeConfig.of("one", 0, one, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
-        LocalNode nodeOne = new FileNode(
+        FileNode nodeOne = new FileNode(
                 configOne.name(),
                 configOne.distance(),
                 configOne.basedir(),
@@ -49,7 +48,7 @@ public class JGroupsNodeTest {
                 Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()));
         FileNodeConfig configTwo =
                 FileNodeConfig.of("two", 0, two, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
-        LocalNode nodeTwo = new FileNode(
+        FileNode nodeTwo = new FileNode(
                 configTwo.name(),
                 configTwo.distance(),
                 configTwo.basedir(),
@@ -69,7 +68,7 @@ public class JGroupsNodeTest {
         try (JGroupsNode publisher = new JGroupsNode(nodeOne, channelOne, config, new ServerSocketPublisherFactory());
                 JGroupsNode consumer = new JGroupsNode(nodeTwo, channelTwo); ) {
             URI key = URI.create("mimir:file:container:file.txt");
-            Optional<Entry> entry = consumer.locate(key);
+            Optional<? extends Entry> entry = consumer.locate(key);
             assertTrue(entry.isPresent());
 
             Path tmpTarget = Files.createTempFile("tmp", ".tmp");

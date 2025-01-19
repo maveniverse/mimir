@@ -14,6 +14,10 @@ import java.util.Map;
 import java.util.Optional;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
+/**
+ * Local node uses some "local" (local to the system) backing storage.
+ * This type of node is able to back a session.
+ */
 public interface LocalNode extends Node {
     /**
      * Tells checksum factories used by this local node.
@@ -24,15 +28,10 @@ public interface LocalNode extends Node {
      * Locates cache entry by key on this node.
      */
     @Override
-    Optional<LocalEntry> locate(URI key) throws IOException;
+    Optional<? extends LocalEntry> locate(URI key) throws IOException;
 
     /**
-     * Stores cache entry and offers it as own entry.
+     * Stores file as new entry.
      */
-    LocalEntry store(URI key, Entry entry) throws IOException;
-
-    /**
-     * Stores file and offers it as own entry.
-     */
-    LocalEntry store(URI key, Path file, Map<String, String> checksums) throws IOException;
+    void store(URI key, Path file, Map<String, String> checksums) throws IOException;
 }

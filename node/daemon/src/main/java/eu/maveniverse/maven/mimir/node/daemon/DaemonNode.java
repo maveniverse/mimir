@@ -8,15 +8,17 @@
 package eu.maveniverse.maven.mimir.node.daemon;
 
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.readLocateRsp;
+import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.readStorePathRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.readTransferRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeLocateReq;
+import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeStorePathReq;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeTransferReq;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
-import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
+import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
+import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.Closeable;
@@ -30,13 +32,14 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * This node is delegating all the work to daemon via Unix Domain Sockets.
  */
-public class DaemonNode extends NodeSupport implements RemoteNode {
+public class DaemonNode extends NodeSupport implements LocalNode {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Path socketPath;
 
@@ -46,7 +49,12 @@ public class DaemonNode extends NodeSupport implements RemoteNode {
     }
 
     @Override
-    public Optional<Entry> locate(URI key) throws IOException {
+    public Map<String, ChecksumAlgorithmFactory> checksumFactories() {
+        return Map.of();
+    }
+
+    @Override
+    public Optional<LocalEntry> locate(URI key) throws IOException {
         String keyString = key.toASCIIString();
         logger.debug("LOCATE '{}'", keyString);
         try (Handle handle = create()) {
@@ -57,6 +65,17 @@ public class DaemonNode extends NodeSupport implements RemoteNode {
             } else {
                 return Optional.empty();
             }
+        }
+    }
+
+    @Override
+    public void store(URI key, Path file, Map<String, String> checksums) throws IOException {
+        String keyString = key.toASCIIString();
+        String filePath = file.toAbsolutePath().toString();
+        logger.debug("STORE PATH '{}' -> '{}'", keyString, filePath);
+        try (Handle handle = create()) {
+            writeStorePathReq(handle.dos, keyString, filePath, checksums);
+            readStorePathRsp(handle.dis);
         }
     }
 
@@ -86,7 +105,7 @@ public class DaemonNode extends NodeSupport implements RemoteNode {
         }
     }
 
-    private class DaemonEntry extends EntrySupport implements Entry {
+    private class DaemonEntry extends EntrySupport implements LocalEntry {
         private final String keyString;
 
         private DaemonEntry(Map<String, String> metadata, String keyString) {

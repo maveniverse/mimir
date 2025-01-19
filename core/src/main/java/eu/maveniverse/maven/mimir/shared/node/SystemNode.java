@@ -7,27 +7,23 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
 
 /**
- * A node represents some generic storage node.
+ * Local node uses some "local" (local to the system) backing storage.
+ * This type of node is able to back a Mimir session.
  */
-public interface Node extends Closeable {
-    /**
-     * Node name, a label.
-     */
-    String name();
-
-    /**
-     * The "distance" of node. Distance of 0 (zero) is "closest", and positive integers are "further away".
-     */
-    int distance();
-
+public interface SystemNode extends LocalNode {
     /**
      * Locates cache entry by key on this node.
      */
-    Optional<? extends Entry> locate(URI key) throws IOException;
+    @Override
+    Optional<? extends SystemEntry> locate(URI key) throws IOException;
+
+    /**
+     * Stores cache entry and offers it as own entry.
+     */
+    SystemEntry store(URI key, Entry entry) throws IOException;
 }

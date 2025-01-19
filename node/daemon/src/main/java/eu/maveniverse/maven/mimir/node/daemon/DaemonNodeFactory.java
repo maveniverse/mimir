@@ -8,13 +8,10 @@
 package eu.maveniverse.maven.mimir.node.daemon;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.node.LocalNode;
-import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
-import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
+import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -22,27 +19,23 @@ import org.slf4j.LoggerFactory;
 
 @Singleton
 @Named(DaemonConfig.NAME)
-public class DaemonNodeFactory implements RemoteNodeFactory {
+public class DaemonNodeFactory implements LocalNodeFactory {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
-    public Optional<RemoteNode> createRemoteNode(Config config, LocalNode localNode) throws IOException {
+    public DaemonNode createLocalNode(Config config) throws IOException {
         DaemonConfig cfg = DaemonConfig.with(config);
-        if (!cfg.enabled()) {
-            logger.debug("Mimir daemon not enabled");
-            return Optional.empty();
-        }
         if (!Files.exists(cfg.socketPath())) {
             if (cfg.autostart()) {
                 logger.debug("Mimir daemon is not running, starting it");
                 Process daemon = startDaemon(config.basedir(), cfg);
                 if (daemon == null) {
-                    return Optional.empty();
+                    throw new IOException("Mimir daemon could not be started");
                 }
                 logger.info("Mimir daemon started (pid={})", daemon.pid());
             }
         }
-        return Optional.of(new DaemonNode(cfg.socketPath()));
+        return new DaemonNode(cfg.socketPath());
     }
 
     private Process startDaemon(Path basedir, DaemonConfig config) throws IOException {

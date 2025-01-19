@@ -7,4 +7,4 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
-public interface LocalEntry extends Entry {}
+public interface RemoteEntry extends Entry {}
