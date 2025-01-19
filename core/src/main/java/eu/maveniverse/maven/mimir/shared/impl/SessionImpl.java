@@ -48,6 +48,8 @@ public final class SessionImpl implements Session {
         this.keyMapper = requireNonNull(keyMapper, "nameMapper");
         this.localNode = requireNonNull(localNode, "localNode");
         this.stats = new Stats();
+
+        logger.info("Mimir session created");
     }
 
     @Override
