@@ -26,6 +26,7 @@ public abstract class RemoteEntrySupport extends EntrySupport implements RemoteE
     @Override
     public void transferTo(Path file) throws IOException {
         handleContent(inputStream -> {
+            // TODO: ChecksumInputStream
             try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(file)) {
                 Files.copy(inputStream, f.getPath(), StandardCopyOption.REPLACE_EXISTING);
                 Files.setLastModifiedTime(

@@ -66,7 +66,7 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                             CacheEntry ce = entry.orElseThrow(() -> new IllegalStateException("Cache entry not found"));
                             logger.debug("Fetched {} from Mimir cache", artifactDownload.getArtifact());
                             ce.transferTo(artifactDownload.getFile().toPath());
-                            // TODO: hashes?
+                            // TODO: checksums? ask resolver for configured ones and save first configured
                         } else {
                             HashMap<String, ChecksumAlgorithm> checksumAlgorithms = new HashMap<>();
                             for (Map.Entry<String, ChecksumAlgorithmFactory> factories :

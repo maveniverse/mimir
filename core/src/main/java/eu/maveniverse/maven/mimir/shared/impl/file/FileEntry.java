@@ -15,13 +15,13 @@ import java.util.Map;
 import org.eclipse.aether.util.FileUtils;
 
 public final class FileEntry extends EntrySupport implements SystemEntry {
-    public static FileEntry createEntry(Path file) throws IOException {
-        HashMap<String, String> metadata = new HashMap<>();
-        metadata.put(Entry.CONTENT_LENGTH, Long.toString(Files.size(file)));
-        metadata.put(
+    public static FileEntry createEntry(Path file, Map<String, String> metadata) throws IOException {
+        HashMap<String, String> md = new HashMap<>(metadata);
+        md.put(Entry.CONTENT_LENGTH, Long.toString(Files.size(file)));
+        md.put(
                 Entry.CONTENT_LAST_MODIFIED,
                 Long.toString(Files.getLastModifiedTime(file).toMillis()));
-        return new FileEntry(metadata, file);
+        return new FileEntry(md, file);
     }
 
     private final Path path;

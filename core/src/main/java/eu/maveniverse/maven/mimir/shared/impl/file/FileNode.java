@@ -55,7 +55,8 @@ public final class FileNode extends NodeSupport implements SystemNode {
         ensureOpen();
         Path path = resolve(key);
         if (Files.isRegularFile(path)) {
-            return Optional.of(FileEntry.createEntry(path));
+            // TODO: hashes
+            return Optional.of(FileEntry.createEntry(path, Collections.emptyMap()));
         } else {
             return Optional.empty();
         }
@@ -69,7 +70,8 @@ public final class FileNode extends NodeSupport implements SystemNode {
             entry.transferTo(f.getPath());
             f.move();
         }
-        return FileEntry.createEntry(path);
+        // TODO: hashes
+        return FileEntry.createEntry(path, Collections.emptyMap());
     }
 
     @Override

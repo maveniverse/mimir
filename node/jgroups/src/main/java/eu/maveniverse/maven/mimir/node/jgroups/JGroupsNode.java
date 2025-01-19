@@ -94,7 +94,7 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
             for (Address responder : responses.keySet()) {
                 Map<String, String> data = responses.get(responder).getValue();
                 if (!data.isEmpty()) {
-                    URI handle = URI.create(requireNonNull(data.get(PUBLISHER_HANDLE), PUBLISHER_HANDLE));
+                    URI handle = URI.create(requireNonNull(data.remove(PUBLISHER_HANDLE), PUBLISHER_HANDLE));
                     return Optional.of(new PublisherRemoteEntry(data, handle));
                 }
             }
