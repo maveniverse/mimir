@@ -56,3 +56,27 @@ Build requirements:
 Runtime requirements:
 * Java 17+
 * Maven 3.6.3+
+
+## High level design
+
+In Maven process (with extension), a Mimir `Session` is created, that holds one `LocalNode` (there are two local node 
+implementations: `file` and `daemon`). This Mimir via session and connector integrates into Resolver.
+
+If `file` local node is used, Mimir will provide "system-wide caching": no matter how many local repository copies you have,
+you end up with one copy of each artifact on disk (in ideal case).
+
+The `FileNode` is two faced: is also `LocalNode` (usable in Session) but is also `SystemNode` in a way it offers write-through
+caching and content publishing. `DaemonNode` is only `LocalNode`.
+
+The `RemoteNode` are gates to some "remote" (relative to the current system daemon runs on) nodes, like a LAN
+neighbor workstation. They do not have their "own" storage, they usually get from far end `SystemNode` the content, and
+publish locally into corresponding `SystemNode` the content they obtain.
+
+If `daemon` local node is used, Mimir daemon needs to run (is auto started by default). Mimir Daemon process communicates
+via Unix Domain Sockets (UDS) to `daemon` local node, and this node fully delegates all the work to Daemon process.
+Given Daemon process is long living, it incorporates one `SystemNode` and several `RemoteNode`s. Daemon will consult
+`SystemNode` first, and ask `RemoteNode`s for content if it is not present locally. If remote node has it, 
+write-through caching happens via `SystemNode`. Similarly, daemon contained `RemoteNodes` will publish `SystemNode`
+content as well.
+
+
