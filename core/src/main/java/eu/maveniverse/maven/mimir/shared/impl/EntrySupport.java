@@ -17,6 +17,7 @@ public abstract class EntrySupport implements Entry {
     protected final Map<String, String> metadata;
 
     public EntrySupport(Map<String, String> metadata) {
+        // TODO: ordered map?
         this.metadata = Map.copyOf(metadata);
     }
 
