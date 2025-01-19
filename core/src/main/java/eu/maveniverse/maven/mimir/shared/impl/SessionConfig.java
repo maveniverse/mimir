@@ -10,14 +10,13 @@ package eu.maveniverse.maven.mimir.shared.impl;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.impl.file.FileNodeConfig;
 
 public final class SessionConfig {
     public static SessionConfig with(Config config) {
         requireNonNull(config, "config");
 
         String keyMapper = SimpleKeyMapperFactory.NAME;
-        String localNode = FileNodeConfig.NAME;
+        String localNode = "daemon";
 
         if (config.effectiveProperties().containsKey("mimir.session.keyMapper")) {
             keyMapper = config.effectiveProperties().get("mimir.session.keyMapper");

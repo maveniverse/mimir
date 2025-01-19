@@ -126,7 +126,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                             config.mimirVersion());
                 }
             } else {
-                logger.info("Mimir {} is up to date", config.mimirVersion().orElseThrow());
+                logger.debug("Mimir {} is up to date", config.mimirVersion().orElseThrow());
             }
         } catch (Exception e) {
             logger.warn("Failed to check for updates; ignoring it", e);

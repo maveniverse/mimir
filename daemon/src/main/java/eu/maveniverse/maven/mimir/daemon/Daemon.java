@@ -123,6 +123,7 @@ public class Daemon implements Closeable {
 
         this.serverSocketChannel = serverSocketChannel;
         logger.info("Mimir Daemon {} started", config.mimirVersion().orElse("UNKNOWN"));
+        logger.info("  PID: {}", ProcessHandle.current().pid());
         logger.info("  Socket: {}", socketAddress);
         logger.info("  System Node: {}", systemNode);
         logger.info("  {} remote node(s):", remoteNodes.size());
