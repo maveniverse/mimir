@@ -22,6 +22,11 @@ public interface Entry {
     Map<String, String> metadata();
 
     /**
+     * Entry checksums.
+     */
+    Map<String, String> checksums();
+
+    /**
      * Transfers cached entry to given file by best available means and atomically. The file will be overwritten,
      * if existed. It is caller duty to figure out what should happen with existing target file (as this method will
      * delete it).

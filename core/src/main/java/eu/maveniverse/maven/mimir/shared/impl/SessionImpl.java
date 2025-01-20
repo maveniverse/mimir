@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -59,15 +60,21 @@ public final class SessionImpl implements Session {
     }
 
     @Override
-    public Map<String, ChecksumAlgorithmFactory> checksumFactories() throws IOException {
-        checkState();
-        return localNode.checksumFactories();
-    }
-
-    @Override
     public boolean artifactSupported(Artifact artifact) {
         checkState();
         return artifactPredicate.test(artifact);
+    }
+
+    @Override
+    public List<String> checksumAlgorithms() throws IOException {
+        checkState();
+        return localNode.checksumAlgorithms();
+    }
+
+    @Override
+    public Map<String, ChecksumAlgorithmFactory> checksumFactories() throws IOException {
+        checkState();
+        return localNode.checksumFactories();
     }
 
     @Override

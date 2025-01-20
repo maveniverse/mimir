@@ -19,8 +19,8 @@ import java.util.Map;
 import org.eclipse.aether.util.FileUtils;
 
 public abstract class RemoteEntrySupport extends EntrySupport implements RemoteEntry {
-    public RemoteEntrySupport(Map<String, String> metadata) {
-        super(metadata);
+    public RemoteEntrySupport(Map<String, String> metadata, Map<String, String> checksums) {
+        super(metadata, checksums);
     }
 
     @Override

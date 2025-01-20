@@ -10,6 +10,7 @@ package eu.maveniverse.maven.mimir.shared;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.eclipse.aether.artifact.Artifact;
@@ -26,6 +27,11 @@ public interface Session extends Closeable {
      * Tells whether session is configured to support given artifact.
      */
     boolean artifactSupported(Artifact artifact);
+
+    /**
+     * Provides list of checksum algorithm names configured to be used by this node.
+     */
+    List<String> checksumAlgorithms() throws IOException;
 
     /**
      * Tells session configured checksum factories.

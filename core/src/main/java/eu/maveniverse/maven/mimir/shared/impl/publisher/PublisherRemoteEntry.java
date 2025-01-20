@@ -21,8 +21,8 @@ import java.util.Map;
 public class PublisherRemoteEntry extends RemoteEntrySupport {
     private final URI handle;
 
-    public PublisherRemoteEntry(Map<String, String> metadata, URI handle) {
-        super(metadata);
+    public PublisherRemoteEntry(Map<String, String> metadata, Map<String, String> checksums, URI handle) {
+        super(metadata, checksums);
         this.handle = requireNonNull(handle, "handle");
     }
 

@@ -13,41 +13,18 @@ import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
 
 public final class CacheEntryImpl implements CacheEntry {
     private final Entry entry;
-    private final CacheEntry.Metadata metadata;
 
     public CacheEntryImpl(Entry entry) {
         this.entry = requireNonNull(entry, "entry");
-        this.metadata = new Metadata() {
-            @Override
-            public long contentLength() {
-                return Long.parseLong(requireNonNull(entry.metadata().get(Entry.CONTENT_LENGTH), Entry.CONTENT_LENGTH));
-            }
-
-            @Override
-            public Optional<Instant> lastModified() {
-                String contentLastModified = entry.metadata().get(Entry.CONTENT_LAST_MODIFIED);
-                if (contentLastModified == null) {
-                    return Optional.empty();
-                }
-                return Optional.of(Instant.ofEpochMilli(Long.parseLong(contentLastModified)));
-            }
-
-            @Override
-            public Map<String, String> checksums() {
-                return Map.of();
-            }
-        };
     }
 
     @Override
-    public Metadata metadata() {
-        return metadata;
+    public Map<String, String> checksums() {
+        return entry.checksums();
     }
 
     @Override

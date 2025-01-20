@@ -15,7 +15,7 @@ import eu.maveniverse.maven.mimir.shared.naming.KeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
 import java.io.IOException;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -54,7 +54,7 @@ public final class FileNodeFactory implements LocalNodeFactory, SystemNodeFactor
             throw new IllegalArgumentException("Unknown keyResolver: " + fileNodeConfig.keyResolver());
         }
         KeyResolver keyResolver = requireNonNull(keyResolverFactory.createKeyResolver(config), "keyResolver");
-        LinkedHashMap<String, ChecksumAlgorithmFactory> localChecksumFactories = new LinkedHashMap<>();
+        HashMap<String, ChecksumAlgorithmFactory> localChecksumFactories = new HashMap<>();
         for (String alg : fileNodeConfig.checksumAlgorithms()) {
             ChecksumAlgorithmFactory checksumAlgorithmFactory = checksumFactories.get(alg);
             if (checksumAlgorithmFactory == null) {
@@ -67,6 +67,7 @@ public final class FileNodeFactory implements LocalNodeFactory, SystemNodeFactor
                 fileNodeConfig.distance(),
                 fileNodeConfig.basedir(),
                 keyResolver,
+                fileNodeConfig.checksumAlgorithms(),
                 localChecksumFactories);
     }
 }

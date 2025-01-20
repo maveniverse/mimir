@@ -15,6 +15,8 @@ import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeLocateR
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeLsChecksumsReq;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeStorePathReq;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeTransferReq;
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
@@ -34,7 +36,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,21 +59,26 @@ public class DaemonNode extends NodeSupport implements LocalNode {
     }
 
     @Override
-    public Map<String, ChecksumAlgorithmFactory> checksumFactories() throws IOException {
+    public List<String> checksumAlgorithms() throws IOException {
         logger.debug("LS_CHECKSUMS");
         try (Handle handle = create()) {
             writeLsChecksumsReq(handle.dos);
-            List<String> algorithms = readLsChecksumsRsp(handle.dis);
-            LinkedHashMap<String, ChecksumAlgorithmFactory> result = new LinkedHashMap<>(algorithms.size());
-            for (String algorithm : algorithms) {
-                ChecksumAlgorithmFactory factory = checksumFactories.get(algorithm);
-                if (factory == null) {
-                    throw new IllegalArgumentException("Unknown daemon checksum algorithm: " + algorithm);
-                }
-                result.put(algorithm, factory);
-            }
-            return result;
+            return readLsChecksumsRsp(handle.dis);
         }
+    }
+
+    @Override
+    public Map<String, ChecksumAlgorithmFactory> checksumFactories() throws IOException {
+        List<String> algorithms = checksumAlgorithms();
+        HashMap<String, ChecksumAlgorithmFactory> result = new HashMap<>(algorithms.size());
+        for (String algorithm : algorithms) {
+            ChecksumAlgorithmFactory factory = checksumFactories.get(algorithm);
+            if (factory == null) {
+                throw new IllegalArgumentException("Unknown daemon checksum algorithm: " + algorithm);
+            }
+            result.put(algorithm, factory);
+        }
+        return result;
     }
 
     @Override
@@ -82,7 +89,7 @@ public class DaemonNode extends NodeSupport implements LocalNode {
             writeLocateReq(handle.dos, keyString);
             Map<String, String> response = readLocateRsp(handle.dis);
             if (!response.isEmpty()) {
-                return Optional.of(new DaemonEntry(response, keyString));
+                return Optional.of(new DaemonEntry(splitMetadata(response), splitChecksums(response), keyString));
             } else {
                 return Optional.empty();
             }
@@ -129,8 +136,8 @@ public class DaemonNode extends NodeSupport implements LocalNode {
     private class DaemonEntry extends EntrySupport implements LocalEntry {
         private final String keyString;
 
-        private DaemonEntry(Map<String, String> metadata, String keyString) {
-            super(metadata);
+        private DaemonEntry(Map<String, String> metadata, Map<String, String> checksums, String keyString) {
+            super(metadata, checksums);
             this.keyString = keyString;
         }
 

@@ -17,6 +17,7 @@ import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeLsCheck
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeRspKO;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeStorePathRspOK;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeTransferRspOK;
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeMetadataAndChecksums;
 
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
@@ -74,7 +75,8 @@ public class DaemonServer implements Runnable {
                         }
                     }
                     if (entry.isPresent()) {
-                        writeLocateRspOK(dos, entry.orElseThrow().metadata());
+                        Entry entryValue = entry.orElseThrow();
+                        writeLocateRspOK(dos, mergeMetadataAndChecksums(entryValue.metadata(), entryValue.checksums()));
                     } else {
                         writeLocateRspOK(dos, Collections.emptyMap());
                     }

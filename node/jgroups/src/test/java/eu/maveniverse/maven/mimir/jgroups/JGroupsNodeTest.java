@@ -15,6 +15,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.eclipse.aether.internal.impl.checksum.Sha1ChecksumAlgorithmFactory;
@@ -45,6 +46,7 @@ public class JGroupsNodeTest {
                 configOne.distance(),
                 configOne.basedir(),
                 new SimpleKeyResolverFactory().createKeyResolver(config),
+                List.of(Sha1ChecksumAlgorithmFactory.NAME),
                 Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()));
         FileNodeConfig configTwo =
                 FileNodeConfig.of("two", 0, two, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
@@ -53,6 +55,7 @@ public class JGroupsNodeTest {
                 configTwo.distance(),
                 configTwo.basedir(),
                 new SimpleKeyResolverFactory().createKeyResolver(config),
+                List.of(Sha1ChecksumAlgorithmFactory.NAME),
                 Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()));
 
         JChannel channelOne = new JChannel("udp-new.xml")

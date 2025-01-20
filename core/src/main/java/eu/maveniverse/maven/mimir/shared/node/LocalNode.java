@@ -10,6 +10,7 @@ package eu.maveniverse.maven.mimir.shared.node;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
@@ -20,7 +21,12 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
  */
 public interface LocalNode extends Node {
     /**
-     * Tells checksum factories used by this local node.
+     * Provides list of checksum algorithm names configured to be used by this node.
+     */
+    List<String> checksumAlgorithms() throws IOException;
+
+    /**
+     * Provides checksum factories keyed by algorithm name, usable by this local node.
      */
     Map<String, ChecksumAlgorithmFactory> checksumFactories() throws IOException;
 

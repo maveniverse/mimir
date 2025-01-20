@@ -19,6 +19,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -28,6 +29,7 @@ import org.eclipse.aether.util.FileUtils;
 public final class FileNode extends NodeSupport implements SystemNode {
     private final Path basedir;
     private final BiFunction<Path, URI, Path> keyResolver;
+    private final List<String> checksumAlgorithms;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
     public FileNode(
@@ -35,14 +37,21 @@ public final class FileNode extends NodeSupport implements SystemNode {
             int distance,
             Path basedir,
             KeyResolver keyResolver,
+            List<String> checksumAlgorithms,
             Map<String, ChecksumAlgorithmFactory> checksumFactories)
             throws IOException {
         super(requireNonNull(name, "name"), distance);
         this.basedir = basedir;
         this.keyResolver = requireNonNull(keyResolver, "keyResolver");
-        this.checksumFactories = Collections.unmodifiableMap(requireNonNull(checksumFactories, "checksumFactories"));
+        this.checksumAlgorithms = List.copyOf(checksumFactories.keySet());
+        this.checksumFactories = Map.copyOf(checksumFactories);
 
         Files.createDirectories(basedir);
+    }
+
+    @Override
+    public List<String> checksumAlgorithms() {
+        return checksumAlgorithms;
     }
 
     @Override
@@ -56,7 +65,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
         Path path = resolve(key);
         if (Files.isRegularFile(path)) {
             // TODO: hashes
-            return Optional.of(FileEntry.createEntry(path, Collections.emptyMap()));
+            return Optional.of(FileEntry.createEntry(path, Collections.emptyMap(), Collections.emptyMap()));
         } else {
             return Optional.empty();
         }
@@ -71,7 +80,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
             f.move();
         }
         // TODO: hashes
-        return FileEntry.createEntry(path, Collections.emptyMap());
+        return FileEntry.createEntry(path, Collections.emptyMap(), Collections.emptyMap());
     }
 
     @Override

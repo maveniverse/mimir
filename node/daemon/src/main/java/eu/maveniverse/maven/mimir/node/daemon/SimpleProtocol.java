@@ -11,7 +11,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -96,7 +96,7 @@ public final class SimpleProtocol {
 
     public static Map<String, String> readMap(DataInputStream dis) throws IOException {
         int pairs = dis.readInt();
-        Map<String, String> map = new LinkedHashMap<>();
+        Map<String, String> map = new HashMap<>();
         for (int i = 0; i < pairs; i++) {
             map.put(dis.readUTF(), dis.readUTF());
         }

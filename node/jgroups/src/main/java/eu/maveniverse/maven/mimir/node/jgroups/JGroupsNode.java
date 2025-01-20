@@ -7,6 +7,9 @@
  */
 package eu.maveniverse.maven.mimir.node.jgroups;
 
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeMetadataAndChecksums;
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
@@ -94,8 +97,12 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
             for (Address responder : responses.keySet()) {
                 Map<String, String> data = responses.get(responder).getValue();
                 if (!data.isEmpty()) {
-                    URI handle = URI.create(requireNonNull(data.remove(PUBLISHER_HANDLE), PUBLISHER_HANDLE));
-                    return Optional.of(new PublisherRemoteEntry(data, handle));
+                    if (data.containsKey(PUBLISHER_HANDLE)) {
+                        URI handle = URI.create(requireNonNull(data.remove(PUBLISHER_HANDLE), PUBLISHER_HANDLE));
+                        return Optional.of(new PublisherRemoteEntry(splitMetadata(data), splitChecksums(data), handle));
+                    } else {
+                        throw new IOException(data.remove(RSP_ERROR));
+                    }
                 }
             }
         } catch (Exception e) {
@@ -124,9 +131,9 @@ public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandl
                         SystemEntry entry = optionalEntry.orElseThrow();
                         String txid = UUID.randomUUID().toString();
                         tx.put(txid, entry);
-                        URI handle = publisher.createHandle(txid);
-                        responseMap.putAll(entry.metadata());
-                        responseMap.put(PUBLISHER_HANDLE, handle.toASCIIString());
+                        responseMap.putAll(mergeMetadataAndChecksums(entry.metadata(), entry.checksums()));
+                        responseMap.put(
+                                PUBLISHER_HANDLE, publisher.createHandle(txid).toASCIIString());
                         logger.info("OK: {} asked {}", msg.getSrc(), keyString);
                     } else {
                         logger.info("KO: {} asked {}", msg.getSrc(), keyString);

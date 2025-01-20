@@ -15,14 +15,20 @@ import org.slf4j.LoggerFactory;
 public abstract class EntrySupport implements Entry {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final Map<String, String> metadata;
+    protected final Map<String, String> checksums;
 
-    public EntrySupport(Map<String, String> metadata) {
-        // TODO: ordered map?
+    public EntrySupport(Map<String, String> metadata, Map<String, String> checksums) {
         this.metadata = Map.copyOf(metadata);
+        this.checksums = Map.copyOf(checksums);
     }
 
     @Override
     public Map<String, String> metadata() {
         return metadata;
+    }
+
+    @Override
+    public Map<String, String> checksums() {
+        return checksums;
     }
 }
