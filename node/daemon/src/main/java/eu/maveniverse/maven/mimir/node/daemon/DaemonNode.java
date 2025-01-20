@@ -53,7 +53,7 @@ public class DaemonNode extends NodeSupport implements LocalNode {
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
     public DaemonNode(Path socketPath, Map<String, ChecksumAlgorithmFactory> checksumFactories) {
-        super(DaemonConfig.NAME, 10);
+        super(DaemonConfig.NAME);
         this.socketPath = requireNonNull(socketPath, "socketPath");
         this.checksumFactories = Collections.unmodifiableMap(requireNonNull(checksumFactories, "checksumFactories"));
     }
@@ -109,7 +109,7 @@ public class DaemonNode extends NodeSupport implements LocalNode {
 
     @Override
     public String toString() {
-        return "daemon (distance=" + distance + " socketPath=" + socketPath + ")";
+        return "daemon (socketPath=" + socketPath + ")";
     }
 
     private Handle create() throws IOException {

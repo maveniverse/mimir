@@ -10,9 +10,10 @@ package eu.maveniverse.maven.mimir.shared.node;
 import eu.maveniverse.maven.mimir.shared.Config;
 import java.io.IOException;
 
-public interface SystemNodeFactory {
+public interface SystemNodeFactory extends LocalNodeFactory {
     /**
      * Creates a {@link SystemNode} instance.
      */
-    SystemNode createSystemNode(Config config) throws IOException;
+    @Override
+    SystemNode createNode(Config config) throws IOException;
 }

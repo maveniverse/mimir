@@ -18,23 +18,16 @@ import org.slf4j.LoggerFactory;
 public abstract class NodeSupport implements Node {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final String name;
-    protected final int distance;
     protected final AtomicBoolean closed;
 
-    public NodeSupport(String name, int distance) {
+    public NodeSupport(String name) {
         this.name = requireNonNull(name, "name");
-        this.distance = distance;
         this.closed = new AtomicBoolean(false);
     }
 
     @Override
     public String name() {
         return name;
-    }
-
-    @Override
-    public int distance() {
-        return distance;
     }
 
     @Override

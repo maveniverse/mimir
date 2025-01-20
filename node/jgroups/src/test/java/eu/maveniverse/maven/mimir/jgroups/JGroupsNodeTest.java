@@ -3,11 +3,11 @@ package eu.maveniverse.maven.mimir.jgroups;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import eu.maveniverse.maven.mimir.node.file.FileNode;
+import eu.maveniverse.maven.mimir.node.file.FileNodeConfig;
 import eu.maveniverse.maven.mimir.node.jgroups.JGroupsNode;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.impl.SimpleKeyResolverFactory;
-import eu.maveniverse.maven.mimir.shared.impl.file.FileNode;
-import eu.maveniverse.maven.mimir.shared.impl.file.FileNodeConfig;
 import eu.maveniverse.maven.mimir.shared.impl.publisher.ServerSocketPublisherFactory;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import java.net.InetAddress;
@@ -40,19 +40,17 @@ public class JGroupsNodeTest {
         Files.writeString(contentPath, content);
 
         FileNodeConfig configOne =
-                FileNodeConfig.of("one", 0, one, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
+                FileNodeConfig.of("one", one, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
         FileNode nodeOne = new FileNode(
                 configOne.name(),
-                configOne.distance(),
                 configOne.basedir(),
                 new SimpleKeyResolverFactory().createKeyResolver(config),
                 List.of(Sha1ChecksumAlgorithmFactory.NAME),
                 Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()));
         FileNodeConfig configTwo =
-                FileNodeConfig.of("two", 0, two, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
+                FileNodeConfig.of("two", two, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
         FileNode nodeTwo = new FileNode(
                 configTwo.name(),
-                configTwo.distance(),
                 configTwo.basedir(),
                 new SimpleKeyResolverFactory().createKeyResolver(config),
                 List.of(Sha1ChecksumAlgorithmFactory.NAME),

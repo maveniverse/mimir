@@ -12,12 +12,12 @@ import static java.util.Objects.requireNonNull;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import eu.maveniverse.maven.mimir.node.daemon.DaemonConfig;
+import eu.maveniverse.maven.mimir.node.file.FileNodeConfig;
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.impl.file.FileNode;
-import eu.maveniverse.maven.mimir.shared.impl.file.FileNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
+import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.StandardProtocolFamily;
@@ -69,11 +69,13 @@ public class Daemon implements Closeable {
 
     @Named
     public static class SystemNodeProvider implements Provider<SystemNode> {
-        private final FileNode systemNode;
+        private final SystemNode systemNode;
 
+        // TODO: this is just shortcut for now
         @Inject
-        public SystemNodeProvider(Config config, FileNodeFactory fileNodeFactory) throws IOException {
-            this.systemNode = fileNodeFactory.createLocalNode(config);
+        public SystemNodeProvider(Config config, @Named(FileNodeConfig.NAME) SystemNodeFactory systemNodeFactory)
+                throws IOException {
+            this.systemNode = systemNodeFactory.createNode(config);
         }
 
         @Override
@@ -99,7 +101,7 @@ public class Daemon implements Closeable {
         this.systemNode = requireNonNull(systemNode, "systemNode");
         ArrayList<RemoteNode> nds = new ArrayList<>();
         for (RemoteNodeFactory remoteNodeFactory : remoteNodeFactories.values()) {
-            Optional<RemoteNode> node = remoteNodeFactory.createRemoteNode(config);
+            Optional<? extends RemoteNode> node = remoteNodeFactory.createNode(config);
             node.ifPresent(nds::add);
         }
         nds.sort(Comparator.comparing(RemoteNode::distance));

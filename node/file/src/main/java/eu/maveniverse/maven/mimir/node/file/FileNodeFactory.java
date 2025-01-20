@@ -5,14 +5,13 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.shared.impl.file;
+package eu.maveniverse.maven.mimir.node.file;
 
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolverFactory;
-import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
 import java.io.IOException;
 import java.util.HashMap;
@@ -24,7 +23,7 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 @Singleton
 @Named(FileNodeConfig.NAME)
-public final class FileNodeFactory implements LocalNodeFactory, SystemNodeFactory {
+public final class FileNodeFactory implements SystemNodeFactory {
     private final Map<String, KeyResolverFactory> keyResolverFactories;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
@@ -37,16 +36,7 @@ public final class FileNodeFactory implements LocalNodeFactory, SystemNodeFactor
     }
 
     @Override
-    public FileNode createLocalNode(Config config) throws IOException {
-        return doCreateFileNode(config);
-    }
-
-    @Override
-    public FileNode createSystemNode(Config config) throws IOException {
-        return doCreateFileNode(config);
-    }
-
-    private FileNode doCreateFileNode(Config config) throws IOException {
+    public FileNode createNode(Config config) throws IOException {
         requireNonNull(config, "config");
         FileNodeConfig fileNodeConfig = FileNodeConfig.with(config);
         KeyResolverFactory keyResolverFactory = keyResolverFactories.get(fileNodeConfig.keyResolver());
@@ -64,7 +54,6 @@ public final class FileNodeFactory implements LocalNodeFactory, SystemNodeFactor
         }
         return new FileNode(
                 fileNodeConfig.name(),
-                fileNodeConfig.distance(),
                 fileNodeConfig.basedir(),
                 keyResolver,
                 fileNodeConfig.checksumAlgorithms(),

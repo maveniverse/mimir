@@ -10,7 +10,6 @@ package eu.maveniverse.maven.mimir.node.jgroups;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.mimir.shared.publisher.PublisherFactory;
@@ -35,7 +34,7 @@ public class JGroupsNodeFactory implements RemoteNodeFactory {
     }
 
     @Override
-    public Optional<RemoteNode> createRemoteNode(Config config) throws IOException {
+    public Optional<JGroupsNode> createNode(Config config) throws IOException {
         requireNonNull(config, "config");
 
         try {

@@ -7,17 +7,12 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.Optional;
-
 /**
- * Remote node uses some "remote" (remote to the system) backing storage.
+ * A node represents some generic storage node.
  */
 public interface RemoteNode extends Node {
     /**
-     * Locates cache entry by key on this node.
+     * The "distance" of node. Distance of 0 (zero) is "closest", and positive integers are "further away".
      */
-    @Override
-    Optional<? extends RemoteEntry> locate(URI key) throws IOException;
+    int distance();
 }

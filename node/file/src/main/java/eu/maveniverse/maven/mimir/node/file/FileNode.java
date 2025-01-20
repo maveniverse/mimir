@@ -5,13 +5,13 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.shared.impl.file;
+package eu.maveniverse.maven.mimir.node.file;
 
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.impl.Utils;
-import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
+import eu.maveniverse.maven.mimir.shared.naming.Key;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import java.io.IOException;
@@ -22,28 +22,27 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 import org.eclipse.aether.util.FileUtils;
 
 public final class FileNode extends NodeSupport implements SystemNode {
     private final Path basedir;
-    private final BiFunction<Path, URI, Path> keyResolver;
+    private final Function<URI, Key> keyResolver;
     private final List<String> checksumAlgorithms;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
     public FileNode(
             String name,
-            int distance,
             Path basedir,
-            KeyResolver keyResolver,
+            Function<URI, Key> keyResolver,
             List<String> checksumAlgorithms,
             Map<String, ChecksumAlgorithmFactory> checksumFactories)
             throws IOException {
-        super(requireNonNull(name, "name"), distance);
+        super(requireNonNull(name, "name"));
         this.basedir = basedir;
         this.keyResolver = requireNonNull(keyResolver, "keyResolver");
-        this.checksumAlgorithms = List.copyOf(checksumFactories.keySet());
+        this.checksumAlgorithms = List.copyOf(checksumAlgorithms);
         this.checksumFactories = Map.copyOf(checksumFactories);
 
         Files.createDirectories(basedir);
@@ -62,7 +61,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
     @Override
     public Optional<FileEntry> locate(URI key) throws IOException {
         ensureOpen();
-        Path path = keyResolver.apply(basedir, key);
+        Path path = resolveKey(key);
         if (Files.isRegularFile(path)) {
             // TODO: hashes
             return Optional.of(FileEntry.createEntry(path, Collections.emptyMap(), Collections.emptyMap()));
@@ -74,7 +73,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
     @Override
     public FileEntry store(URI key, Entry entry) throws IOException {
         ensureOpen();
-        Path path = keyResolver.apply(basedir, key);
+        Path path = resolveKey(key);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
             entry.transferTo(f.getPath());
             f.move();
@@ -86,7 +85,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
     @Override
     public void store(URI key, Path file, Map<String, String> checksums) throws IOException {
         ensureOpen();
-        Path path = keyResolver.apply(basedir, key);
+        Path path = resolveKey(key);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
             Utils.copyOrLink(file, f.getPath());
             // TODO: hashes
@@ -94,8 +93,13 @@ public final class FileNode extends NodeSupport implements SystemNode {
         }
     }
 
+    private Path resolveKey(URI key) {
+        Key resolved = keyResolver.apply(key);
+        return basedir.resolve(resolved.container()).resolve(resolved.name());
+    }
+
     @Override
     public String toString() {
-        return name + " (distance=" + distance + " basedir=" + basedir + ")";
+        return name + " (basedir=" + basedir + ")";
     }
 }

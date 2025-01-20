@@ -22,11 +22,6 @@ public interface Node extends Closeable {
     String name();
 
     /**
-     * The "distance" of node. Distance of 0 (zero) is "closest", and positive integers are "further away".
-     */
-    int distance();
-
-    /**
      * Locates cache entry by key on this node.
      */
     Optional<? extends Entry> locate(URI key) throws IOException;

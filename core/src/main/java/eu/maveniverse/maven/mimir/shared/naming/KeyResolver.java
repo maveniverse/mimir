@@ -8,12 +8,11 @@
 package eu.maveniverse.maven.mimir.shared.naming;
 
 import java.net.URI;
-import java.nio.file.Path;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 
-public interface KeyResolver extends BiFunction<Path, URI, Path> {
+public interface KeyResolver extends Function<URI, Key> {
     /**
      * Provides "path" for artifact.
      */
@@ -31,7 +30,7 @@ public interface KeyResolver extends BiFunction<Path, URI, Path> {
      * Resolves a cache key according to naming strategy.
      */
     @Override
-    default Path apply(Path basedir, URI key) {
+    default Key apply(URI key) {
         if (key.isOpaque()) {
             if ("mimir".equals(key.getScheme())) {
                 String ssp = key.getSchemeSpecificPart();
@@ -40,14 +39,14 @@ public interface KeyResolver extends BiFunction<Path, URI, Path> {
                     if (bits.length == 2) {
                         String container = bits[0];
                         Artifact artifact = new DefaultArtifact(bits[1]);
-                        return basedir.resolve(container).resolve(artifactPath(artifact));
+                        return Key.of(container, artifactPath(artifact));
                     }
                 } else if (ssp.startsWith("file:")) {
                     String[] bits = ssp.substring(5).split(":", 2);
                     if (bits.length == 2) {
                         String container = bits[0];
                         String path = bits[1];
-                        return basedir.resolve(container).resolve(path);
+                        return Key.of(container, path);
                     }
                 }
             }

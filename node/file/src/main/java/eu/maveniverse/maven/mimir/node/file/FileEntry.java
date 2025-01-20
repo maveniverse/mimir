@@ -1,4 +1,4 @@
-package eu.maveniverse.maven.mimir.shared.impl.file;
+package eu.maveniverse.maven.mimir.node.file;
 
 import static java.util.Objects.requireNonNull;
 

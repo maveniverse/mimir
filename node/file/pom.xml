@@ -17,7 +17,7 @@
     <version>0.2.4-SNAPSHOT</version>
   </parent>
 
-  <artifactId>jgroups</artifactId>
+  <artifactId>file</artifactId>
 
   <name>${project.groupId}:${project.artifactId}</name>
 
@@ -26,11 +26,6 @@
       <groupId>eu.maveniverse.maven.mimir</groupId>
       <artifactId>core</artifactId>
       <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jgroups</groupId>
-      <artifactId>jgroups</artifactId>
     </dependency>
 
     <dependency>
@@ -79,13 +74,6 @@
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-impl</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>eu.maveniverse.maven.mimir.node</groupId>
-      <artifactId>file</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

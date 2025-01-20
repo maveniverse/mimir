@@ -13,9 +13,8 @@ import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
+import eu.maveniverse.maven.mimir.shared.impl.RemoteNodeSupport;
 import eu.maveniverse.maven.mimir.shared.impl.publisher.PublisherRemoteEntry;
-import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.mimir.shared.publisher.Publisher;
@@ -41,7 +40,7 @@ import org.jgroups.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JGroupsNode extends NodeSupport implements RemoteNode, RequestHandler {
+public class JGroupsNode extends RemoteNodeSupport implements RequestHandler {
     private static final String PUBLISHER_HANDLE = "handle";
     private static final String CMD_LOCATE = "locate";
     private static final String RSP_ERROR = "error";

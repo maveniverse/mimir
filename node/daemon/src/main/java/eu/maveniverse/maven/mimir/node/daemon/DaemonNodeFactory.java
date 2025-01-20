@@ -35,7 +35,7 @@ public class DaemonNodeFactory implements LocalNodeFactory {
     }
 
     @Override
-    public DaemonNode createLocalNode(Config config) throws IOException {
+    public DaemonNode createNode(Config config) throws IOException {
         DaemonConfig cfg = DaemonConfig.with(config);
         if (!Files.exists(cfg.socketPath())) {
             if (cfg.autostart()) {
