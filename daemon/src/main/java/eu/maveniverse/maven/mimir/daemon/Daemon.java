@@ -137,7 +137,7 @@ public class Daemon implements Closeable {
             try {
                 while (serverSocketChannel.isOpen()) {
                     SocketChannel socketChannel = serverSocketChannel.accept();
-                    executor.submit(new DaemonServer(socketChannel, systemNode, remoteNodes));
+                    executor.submit(new DaemonServer(socketChannel, systemNode, remoteNodes, this::close));
                 }
             } catch (AsynchronousCloseException ignored) {
                 // we are done

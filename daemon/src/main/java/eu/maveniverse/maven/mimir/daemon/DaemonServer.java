@@ -9,12 +9,14 @@ package eu.maveniverse.maven.mimir.daemon;
 
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.CMD_LOCATE;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.CMD_LS_CHECKSUMS;
+import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.CMD_SHUTDOWN;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.CMD_STORE_PATH;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.CMD_TRANSFER;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.readMap;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeLocateRspOK;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeLsChecksumsRspOK;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeRspKO;
+import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeSimpleRspOK;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeStorePathRspOK;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeTransferRspOK;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeMetadataAndChecksums;
@@ -39,7 +41,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DaemonServer implements Runnable {
+final class DaemonServer implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final SocketChannel socketChannel;
     private final DataOutputStream dos;
@@ -47,13 +49,16 @@ public class DaemonServer implements Runnable {
 
     private final SystemNode systemNode;
     private final List<RemoteNode> remoteNodes;
+    private final Runnable shutdownHook;
 
-    public DaemonServer(SocketChannel socketChannel, SystemNode systemNode, List<RemoteNode> remoteNodes) {
+    DaemonServer(
+            SocketChannel socketChannel, SystemNode systemNode, List<RemoteNode> remoteNodes, Runnable shutdownHook) {
         this.socketChannel = socketChannel;
         this.dos = new DataOutputStream(Channels.newOutputStream(socketChannel));
         this.dis = new DataInputStream(Channels.newInputStream(socketChannel));
         this.systemNode = systemNode;
         this.remoteNodes = remoteNodes;
+        this.shutdownHook = shutdownHook;
     }
 
     @Override
@@ -110,6 +115,10 @@ public class DaemonServer implements Runnable {
                     Path path = Path.of(pathString);
                     systemNode.store(key, path, checksums);
                     writeStorePathRspOK(dos);
+                }
+                case CMD_SHUTDOWN -> {
+                    writeSimpleRspOK(dos);
+                    shutdownHook.run();
                 }
                 default -> {
                     writeRspKO(dos, "Bad command");

@@ -27,6 +27,7 @@ public final class SimpleProtocol {
     public static final String CMD_TRANSFER = "TRANSFER";
     public static final String CMD_LS_CHECKSUMS = "LS_CHECKSUMS";
     public static final String CMD_STORE_PATH = "STORE_PATH";
+    public static final String CMD_SHUTDOWN = "SHUTDOWN";
 
     // LOCATE command:
     // Request:
