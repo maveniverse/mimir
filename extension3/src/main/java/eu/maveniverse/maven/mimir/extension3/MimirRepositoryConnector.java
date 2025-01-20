@@ -7,15 +7,21 @@
  */
 package eu.maveniverse.maven.mimir.extension3;
 
+import static java.util.Objects.requireNonNull;
+
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.Session;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.spi.connector.ArtifactDownload;
@@ -26,6 +32,7 @@ import org.eclipse.aether.spi.connector.RepositoryConnector;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithm;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 import org.eclipse.aether.transfer.ArtifactTransferException;
+import org.eclipse.aether.util.FileUtils;
 import org.eclipse.aether.util.listener.ChainedTransferListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,12 +45,17 @@ public class MimirRepositoryConnector implements RepositoryConnector {
     private final Session mimirSession;
     private final RemoteRepository remoteRepository;
     private final RepositoryConnector delegate;
+    private final List<ChecksumAlgorithmFactory> resolverChecksumAlgorithms;
 
     public MimirRepositoryConnector(
-            Session mimirSession, RemoteRepository remoteRepository, RepositoryConnector delegate) {
-        this.mimirSession = mimirSession;
-        this.remoteRepository = remoteRepository;
-        this.delegate = delegate;
+            Session mimirSession,
+            RemoteRepository remoteRepository,
+            RepositoryConnector delegate,
+            List<ChecksumAlgorithmFactory> resolverChecksumAlgorithms) {
+        this.mimirSession = requireNonNull(mimirSession, "mimirSession");
+        this.remoteRepository = requireNonNull(remoteRepository, "remoteRepository");
+        this.delegate = requireNonNull(delegate, "delegate");
+        this.resolverChecksumAlgorithms = requireNonNull(resolverChecksumAlgorithms, "resolverChecksumAlgorithms");
     }
 
     @Override
@@ -65,8 +77,31 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                         if (entry.isPresent()) {
                             CacheEntry ce = entry.orElseThrow(() -> new IllegalStateException("Cache entry not found"));
                             logger.debug("Fetched {} from Mimir cache", artifactDownload.getArtifact());
-                            ce.transferTo(artifactDownload.getFile().toPath());
-                            // TODO: checksums? ask resolver for configured ones and save first configured
+                            Path artifactFile = artifactDownload.getFile().toPath();
+                            ce.transferTo(artifactFile);
+                            Optional<String> checksum = Optional.empty();
+                            for (ChecksumAlgorithmFactory checksumAlgorithmFactory : resolverChecksumAlgorithms) {
+                                checksum = Optional.ofNullable(ce.checksums().get(checksumAlgorithmFactory.getName()));
+                                if (checksum.isPresent()) {
+                                    String chk = checksum.orElseThrow();
+                                    FileUtils.writeFile(
+                                            artifactFile
+                                                    .getParent()
+                                                    .resolve(artifactFile.getFileName() + "."
+                                                            + checksumAlgorithmFactory.getFileExtension()),
+                                            p -> Files.writeString(p, chk, StandardCharsets.UTF_8));
+                                    break;
+                                }
+                            }
+                            if (checksum.isEmpty()) {
+                                logger.warn(
+                                        "No checksum written for {}; resolver={} vs entry={}",
+                                        artifactDownload.getArtifact(),
+                                        resolverChecksumAlgorithms.stream()
+                                                .map(ChecksumAlgorithmFactory::getName)
+                                                .collect(Collectors.joining(",")),
+                                        String.join(",", ce.checksums().keySet()));
+                            }
                         } else {
                             HashMap<String, ChecksumAlgorithm> checksumAlgorithms = new HashMap<>();
                             for (Map.Entry<String, ChecksumAlgorithmFactory> factories :
