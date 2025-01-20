@@ -23,7 +23,7 @@ public interface SystemNode extends LocalNode {
     Optional<? extends SystemEntry> locate(URI key) throws IOException;
 
     /**
-     * Stores remote entry and provides new local entry for stored content.
+     * Stores entry and provides new local entry for stored content.
      */
-    SystemEntry store(URI key, RemoteEntry remoteEntry) throws IOException;
+    SystemEntry store(URI key, Entry entry) throws IOException;
 }
