@@ -7,45 +7,66 @@
  */
 package eu.maveniverse.maven.mimir.node.minio;
 
+import static java.util.Objects.requireNonNull;
+
 import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
+import eu.maveniverse.maven.mimir.shared.naming.Key;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
+import io.minio.MinioClient;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 public final class MinioNode extends NodeSupport implements SystemNode {
-    public MinioNode(String name) {
-        super(name);
+    private final MinioClient minioClient;
+    private final Function<URI, Key> keyResolver;
+    private final List<String> checksumAlgorithms;
+    private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
+
+    public MinioNode(
+            MinioClient minioClient,
+            Function<URI, Key> keyResolver,
+            List<String> checksumAlgorithms,
+            Map<String, ChecksumAlgorithmFactory> checksumFactories) {
+        super(MinioNodeConfig.NAME);
+        this.minioClient = requireNonNull(minioClient, "minioClient");
+        this.keyResolver = requireNonNull(keyResolver, "keyResolver");
+        this.checksumAlgorithms = requireNonNull(checksumAlgorithms, "checksumAlgorithms");
+        this.checksumFactories = requireNonNull(checksumFactories, "checksumFactories");
     }
 
     @Override
-    public List<String> checksumAlgorithms() throws IOException {
-        return List.of();
+    public List<String> checksumAlgorithms() {
+        return checksumAlgorithms;
     }
 
     @Override
-    public Map<String, ChecksumAlgorithmFactory> checksumFactories() throws IOException {
-        return Map.of();
+    public Map<String, ChecksumAlgorithmFactory> checksumFactories() {
+        return checksumFactories;
     }
 
     @Override
-    public Optional<? extends SystemEntry> locate(URI key) throws IOException {
+    public Optional<MinioEntry> locate(URI key) throws IOException {
+        ensureOpen();
         return Optional.empty();
     }
 
     @Override
-    public SystemEntry store(URI key, Entry entry) throws IOException {
+    public MinioEntry store(URI key, Entry entry) throws IOException {
+        ensureOpen();
         return null;
     }
 
     @Override
-    public void store(URI key, Path file, Map<String, String> checksums) throws IOException {}
+    public void store(URI key, Path file, Map<String, String> checksums) throws IOException {
+        ensureOpen();
+    }
 
     @Override
     public String toString() {
