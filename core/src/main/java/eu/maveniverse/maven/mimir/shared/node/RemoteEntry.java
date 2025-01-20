@@ -8,13 +8,16 @@
 package eu.maveniverse.maven.mimir.shared.node;
 
 import java.io.IOException;
-import java.nio.file.Path;
+import java.io.InputStream;
 
-public interface LocalEntry extends Entry {
+public interface RemoteEntry extends Entry {
+    @FunctionalInterface
+    interface IOConsumer {
+        void accept(InputStream stream) throws IOException;
+    }
+
     /**
-     * Transfers cached entry to given file by best available means and atomically. The file will be overwritten,
-     * if existed. It is caller duty to figure out what should happen with existing target file (as this method will
-     * delete it).
+     * Provides cache entry content as input stream to consumer.
      */
-    void transferTo(Path file) throws IOException;
+    void handleContent(IOConsumer consumer) throws IOException;
 }

@@ -9,11 +9,12 @@ import eu.maveniverse.maven.mimir.node.jgroups.JGroupsNode;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.impl.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.impl.publisher.ServerSocketPublisherFactory;
-import eu.maveniverse.maven.mimir.shared.node.Entry;
+import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import java.net.InetAddress;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -67,13 +68,12 @@ public class JGroupsNodeTest {
         Thread.sleep(1000);
 
         try (JGroupsNode publisher = new JGroupsNode(nodeOne, channelOne, config, new ServerSocketPublisherFactory());
-                JGroupsNode consumer = new JGroupsNode(nodeTwo, channelTwo); ) {
+                JGroupsNode consumer = new JGroupsNode(nodeTwo, channelTwo)) {
             URI key = URI.create("mimir:file:container:file.txt");
-            Optional<? extends Entry> entry = consumer.locate(key);
+            Optional<? extends RemoteEntry> entry = consumer.locate(key);
             assertTrue(entry.isPresent());
-
             Path tmpTarget = Files.createTempFile("tmp", ".tmp");
-            entry.orElseThrow().transferTo(tmpTarget);
+            entry.orElseThrow().handleContent(is -> Files.copy(is, tmpTarget, StandardCopyOption.REPLACE_EXISTING));
 
             assertEquals(content, Files.readString(tmpTarget));
         }

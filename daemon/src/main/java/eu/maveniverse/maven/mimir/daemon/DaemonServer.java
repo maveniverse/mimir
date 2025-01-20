@@ -20,6 +20,7 @@ import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeTransfe
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeMetadataAndChecksums;
 
 import eu.maveniverse.maven.mimir.shared.node.Entry;
+import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
@@ -67,9 +68,9 @@ public class DaemonServer implements Runnable {
                     Optional<? extends Entry> entry = systemNode.locate(key);
                     if (entry.isEmpty()) {
                         for (RemoteNode node : remoteNodes) {
-                            entry = node.locate(key);
-                            if (entry.isPresent()) {
-                                systemNode.store(key, entry.orElseThrow());
+                            Optional<? extends RemoteEntry> remoteEntry = node.locate(key);
+                            if (remoteEntry.isPresent()) {
+                                entry = Optional.of(systemNode.store(key, remoteEntry.orElseThrow()));
                                 break;
                             }
                         }

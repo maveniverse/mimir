@@ -10,15 +10,15 @@ package eu.maveniverse.maven.mimir.shared.impl;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
-import eu.maveniverse.maven.mimir.shared.node.Entry;
+import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 
 public final class CacheEntryImpl implements CacheEntry {
-    private final Entry entry;
+    private final LocalEntry entry;
 
-    public CacheEntryImpl(Entry entry) {
+    public CacheEntryImpl(LocalEntry entry) {
         this.entry = requireNonNull(entry, "entry");
     }
 

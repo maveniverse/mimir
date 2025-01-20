@@ -11,7 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.naming.Key;
-import eu.maveniverse.maven.mimir.shared.node.Entry;
+import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import io.minio.MinioClient;
 import java.io.IOException;
@@ -58,7 +58,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
     }
 
     @Override
-    public MinioEntry store(URI key, Entry entry) throws IOException {
+    public MinioEntry store(URI key, RemoteEntry entry) throws IOException {
         ensureOpen();
         return null;
     }

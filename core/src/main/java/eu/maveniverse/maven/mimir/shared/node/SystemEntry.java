@@ -12,7 +12,7 @@ import java.io.InputStream;
 
 public interface SystemEntry extends LocalEntry {
     /**
-     * Provides cache entry content as input stream.
+     * Provides stream to entry content.
      */
-    InputStream openStream() throws IOException;
+    InputStream inputStream() throws IOException;
 }

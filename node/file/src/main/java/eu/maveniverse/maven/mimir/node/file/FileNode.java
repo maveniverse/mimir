@@ -12,7 +12,7 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.impl.Utils;
 import eu.maveniverse.maven.mimir.shared.naming.Key;
-import eu.maveniverse.maven.mimir.shared.node.Entry;
+import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import java.io.IOException;
 import java.net.URI;
@@ -71,11 +71,12 @@ public final class FileNode extends NodeSupport implements SystemNode {
     }
 
     @Override
-    public FileEntry store(URI key, Entry entry) throws IOException {
+    public FileEntry store(URI key, RemoteEntry entry) throws IOException {
         ensureOpen();
         Path path = resolveKey(key);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
-            entry.transferTo(f.getPath());
+            entry.handleContent(is -> Files.copy(is, f.getPath()));
+            // TODO: ts
             f.move();
         }
         // TODO: hashes

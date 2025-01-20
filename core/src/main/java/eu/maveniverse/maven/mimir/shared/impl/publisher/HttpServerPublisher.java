@@ -102,7 +102,7 @@ public class HttpServerPublisher implements Publisher {
                         logger.debug("HIT {}", txid);
                         exchange.sendResponseHeaders(200, contentLength);
                         try (OutputStream os = exchange.getResponseBody();
-                                InputStream is = systemEntry.openStream()) {
+                                InputStream is = systemEntry.inputStream()) {
                             is.transferTo(os);
                         }
                     } else {
@@ -112,8 +112,9 @@ public class HttpServerPublisher implements Publisher {
                 } else {
                     exchange.sendResponseHeaders(405, -1);
                 }
-            } catch (Exception e) {
+            } catch (IOException e) {
                 logger.error(e.getMessage(), e);
+                throw e;
             }
         }
     }

@@ -9,11 +9,13 @@ package eu.maveniverse.maven.mimir.shared.node;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
 
 /**
  * Local node uses some "local" (local to the system) backing storage.
- * This type of node is able to back a Mimir session.
+ * This type of node is able to back a session.
  */
 public interface SystemNode extends LocalNode {
     /**
@@ -23,7 +25,13 @@ public interface SystemNode extends LocalNode {
     Optional<? extends SystemEntry> locate(URI key) throws IOException;
 
     /**
-     * Stores cache entry and offers it as own entry.
+     * Stores file as new entry.
      */
-    SystemEntry store(URI key, Entry entry) throws IOException;
+    @Override
+    void store(URI key, Path file, Map<String, String> checksums) throws IOException;
+
+    /**
+     * Stores remote entry and provides new local entry for stored content.
+     */
+    SystemEntry store(URI key, RemoteEntry remoteEntry) throws IOException;
 }

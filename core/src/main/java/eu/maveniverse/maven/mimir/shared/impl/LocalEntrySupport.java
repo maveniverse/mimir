@@ -7,11 +7,11 @@
  */
 package eu.maveniverse.maven.mimir.shared.impl;
 
-import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
+import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import java.util.Map;
 
-public abstract class RemoteEntrySupport extends EntrySupport implements RemoteEntry {
-    public RemoteEntrySupport(Map<String, String> metadata, Map<String, String> checksums) {
+public abstract class LocalEntrySupport extends EntrySupport implements LocalEntry {
+    public LocalEntrySupport(Map<String, String> metadata, Map<String, String> checksums) {
         super(metadata, checksums);
     }
 }

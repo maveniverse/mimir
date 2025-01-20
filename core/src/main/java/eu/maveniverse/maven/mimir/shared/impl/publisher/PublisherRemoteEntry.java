@@ -27,7 +27,7 @@ public class PublisherRemoteEntry extends RemoteEntrySupport {
     }
 
     @Override
-    protected void handleContent(IOConsumer consumer) throws IOException {
+    public void handleContent(IOConsumer consumer) throws IOException {
         String schema = handle.getScheme();
         if ("http".equals(schema)) {
             try (InputStream inputStream = handle.toURL().openConnection().getInputStream()) {

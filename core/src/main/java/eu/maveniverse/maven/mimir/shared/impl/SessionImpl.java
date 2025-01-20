@@ -11,7 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.Session;
-import eu.maveniverse.maven.mimir.shared.node.Entry;
+import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.io.IOException;
 import java.net.URI;
@@ -84,7 +84,7 @@ public final class SessionImpl implements Session {
         requireNonNull(artifact, "artifact");
         if (repositoryPredicate.test(remoteRepository) && artifactPredicate.test(artifact)) {
             URI key = keyMapper.apply(remoteRepository, artifact);
-            Optional<? extends Entry> result = localNode.locate(key);
+            Optional<? extends LocalEntry> result = localNode.locate(key);
             if (result.isPresent()) {
                 stats.query(true);
                 return Optional.of(new CacheEntryImpl(result.orElseThrow()));

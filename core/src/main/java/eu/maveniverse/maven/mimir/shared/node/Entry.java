@@ -7,8 +7,6 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Map;
 
 public interface Entry {
@@ -25,11 +23,4 @@ public interface Entry {
      * Entry checksums.
      */
     Map<String, String> checksums();
-
-    /**
-     * Transfers cached entry to given file by best available means and atomically. The file will be overwritten,
-     * if existed. It is caller duty to figure out what should happen with existing target file (as this method will
-     * delete it).
-     */
-    void transferTo(Path file) throws IOException;
 }

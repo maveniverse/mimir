@@ -33,7 +33,7 @@ public final class MinioEntry extends EntrySupport implements SystemEntry {
     }
 
     @Override
-    public InputStream openStream() throws IOException {
+    public InputStream inputStream() throws IOException {
         return Files.newInputStream(path);
     }
 

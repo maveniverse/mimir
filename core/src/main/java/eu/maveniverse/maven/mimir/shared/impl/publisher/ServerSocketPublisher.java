@@ -55,9 +55,8 @@ public class ServerSocketPublisher implements Publisher {
                                 Optional<SystemEntry> entry = entrySupplier.apply(txid);
                                 if (entry.isPresent()) {
                                     logger.debug("SERVER HIT: {} to {}", txid, socket.getRemoteSocketAddress());
-                                    try (InputStream inputStream =
-                                            entry.orElseThrow().openStream()) {
-                                        inputStream.transferTo(out);
+                                    try (InputStream is = entry.orElseThrow().inputStream()) {
+                                        is.transferTo(out);
                                     }
                                 } else {
                                     logger.warn("SERVER MISS: {} to {}", txid, socket.getRemoteSocketAddress());
