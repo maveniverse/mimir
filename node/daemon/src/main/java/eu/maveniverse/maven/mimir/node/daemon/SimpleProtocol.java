@@ -94,6 +94,30 @@ public final class SimpleProtocol {
         }
     }
 
+    public static void writeList(DataOutputStream dos, List<String> list) throws IOException {
+        dos.writeInt(list.size());
+        for (String elem : list) {
+            dos.writeUTF(elem);
+        }
+    }
+
+    public static List<String> readList(DataInputStream dis) throws IOException {
+        int elems = dis.readInt();
+        ArrayList<String> list = new ArrayList<>();
+        for (int i = 0; i < elems; i++) {
+            list.add(dis.readUTF());
+        }
+        return list;
+    }
+
+    public static void writeMap(DataOutputStream dos, Map<String, String> map) throws IOException {
+        dos.writeInt(map.size());
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            dos.writeUTF(entry.getKey());
+            dos.writeUTF(entry.getValue());
+        }
+    }
+
     public static Map<String, String> readMap(DataInputStream dis) throws IOException {
         int pairs = dis.readInt();
         Map<String, String> map = new HashMap<>();
@@ -113,11 +137,7 @@ public final class SimpleProtocol {
 
     public static void writeLocateRspOK(DataOutputStream dos, Map<String, String> data) throws IOException {
         dos.writeUTF(OK);
-        dos.writeInt(data.size());
-        for (Map.Entry<String, String> entry : data.entrySet()) {
-            dos.writeUTF(entry.getKey());
-            dos.writeUTF(entry.getValue());
-        }
+        writeMap(dos, data);
         dos.flush();
     }
 
@@ -157,22 +177,14 @@ public final class SimpleProtocol {
 
     public static void writeLsChecksumsRspOK(DataOutputStream dos, List<String> checksums) throws IOException {
         dos.writeUTF(OK);
-        dos.writeInt(checksums.size());
-        for (String checksum : checksums) {
-            dos.writeUTF(checksum);
-        }
+        writeList(dos, checksums);
         dos.flush();
     }
 
     public static List<String> readLsChecksumsRsp(DataInputStream dis) throws IOException {
         String result = dis.readUTF();
         if (OK.equals(result)) {
-            int pairs = dis.readInt();
-            ArrayList<String> list = new ArrayList<>(pairs);
-            for (int i = 0; i < pairs; i++) {
-                list.add(dis.readUTF());
-            }
-            return list;
+            return readList(dis);
         } else {
             String errorMessage = dis.readUTF();
             throw new IOException(errorMessage);
@@ -186,11 +198,7 @@ public final class SimpleProtocol {
         dos.writeUTF(CMD_STORE_PATH);
         dos.writeUTF(key);
         dos.writeUTF(path);
-        dos.writeInt(checksums.size());
-        for (Map.Entry<String, String> entry : checksums.entrySet()) {
-            dos.writeUTF(entry.getKey());
-            dos.writeUTF(entry.getValue());
-        }
+        writeMap(dos, checksums);
         dos.flush();
     }
 

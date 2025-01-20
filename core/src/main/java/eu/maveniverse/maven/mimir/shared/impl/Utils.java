@@ -23,7 +23,7 @@ public final class Utils {
     private Utils() {}
 
     private static final String METADATA_PREFIX = "m.";
-    private static final String CHECKSUM_PREFIX = "c,";
+    private static final String CHECKSUM_PREFIX = "c.";
 
     public static Map<String, String> mergeMetadataAndChecksums(
             Map<String, String> metadata, Map<String, String> checksums) {
