@@ -25,12 +25,6 @@ public interface SystemNode extends LocalNode {
     Optional<? extends SystemEntry> locate(URI key) throws IOException;
 
     /**
-     * Stores file as new entry.
-     */
-    @Override
-    void store(URI key, Path file, Map<String, String> checksums) throws IOException;
-
-    /**
      * Stores remote entry and provides new local entry for stored content.
      */
     SystemEntry store(URI key, RemoteEntry remoteEntry) throws IOException;
