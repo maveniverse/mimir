@@ -62,7 +62,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
     @Override
     public Optional<FileEntry> locate(URI key) throws IOException {
         ensureOpen();
-        Path path = resolve(key);
+        Path path = keyResolver.apply(basedir, key);
         if (Files.isRegularFile(path)) {
             // TODO: hashes
             return Optional.of(FileEntry.createEntry(path, Collections.emptyMap(), Collections.emptyMap()));
@@ -74,7 +74,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
     @Override
     public FileEntry store(URI key, Entry entry) throws IOException {
         ensureOpen();
-        Path path = resolve(key);
+        Path path = keyResolver.apply(basedir, key);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
             entry.transferTo(f.getPath());
             f.move();
@@ -86,9 +86,10 @@ public final class FileNode extends NodeSupport implements SystemNode {
     @Override
     public void store(URI key, Path file, Map<String, String> checksums) throws IOException {
         ensureOpen();
-        Path path = resolve(key);
+        Path path = keyResolver.apply(basedir, key);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
             Utils.copyOrLink(file, f.getPath());
+            // TODO: hashes
             f.move();
         }
     }
@@ -96,9 +97,5 @@ public final class FileNode extends NodeSupport implements SystemNode {
     @Override
     public String toString() {
         return name + " (distance=" + distance + " basedir=" + basedir + ")";
-    }
-
-    private Path resolve(URI key) {
-        return keyResolver.apply(basedir, key);
     }
 }
