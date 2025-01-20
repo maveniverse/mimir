@@ -3,46 +3,59 @@ package eu.maveniverse.maven.mimir.node.minio;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.LocalEntrySupport;
-import eu.maveniverse.maven.mimir.shared.impl.Utils;
-import eu.maveniverse.maven.mimir.shared.node.Entry;
+import eu.maveniverse.maven.mimir.shared.naming.Key;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
+import io.minio.DownloadObjectArgs;
+import io.minio.GetObjectArgs;
+import io.minio.MinioClient;
+import io.minio.errors.MinioException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.Map;
 import org.eclipse.aether.util.FileUtils;
 
 public final class MinioEntry extends LocalEntrySupport implements SystemEntry {
-    public static MinioEntry createEntry(Path file, Map<String, String> metadata, Map<String, String> checksums)
-            throws IOException {
-        HashMap<String, String> md = new HashMap<>(metadata);
-        md.put(Entry.CONTENT_LENGTH, Long.toString(Files.size(file)));
-        md.put(
-                Entry.CONTENT_LAST_MODIFIED,
-                Long.toString(Files.getLastModifiedTime(file).toMillis()));
-        return new MinioEntry(md, checksums, file);
-    }
+    private final MinioClient minioClient;
+    private final Key key;
 
-    private final Path path;
-
-    private MinioEntry(Map<String, String> metadata, Map<String, String> checksums, Path path) {
+    MinioEntry(Map<String, String> metadata, Map<String, String> checksums, MinioClient minioClient, Key key) {
         super(metadata, checksums);
-        this.path = requireNonNull(path, "path");
+        this.minioClient = requireNonNull(minioClient, "minioClient");
+        this.key = requireNonNull(key, "key");
     }
 
     @Override
     public InputStream inputStream() throws IOException {
-        return Files.newInputStream(path);
+        try {
+            return minioClient.getObject(GetObjectArgs.builder()
+                    .bucket(key.container())
+                    .object(key.name())
+                    .build());
+        } catch (MinioException e) {
+            logger.debug(e.httpTrace());
+            throw new IOException("inputStream()", e);
+        } catch (Exception e) {
+            throw new IOException("inputStream()", e);
+        }
     }
 
     @Override
     public void transferTo(Path file) throws IOException {
         Files.deleteIfExists(file);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(file)) {
-            Utils.copyOrLink(path, f.getPath());
+            minioClient.downloadObject(DownloadObjectArgs.builder()
+                    .bucket(key.container())
+                    .object(key.name())
+                    .filename(f.getPath().toString())
+                    .build());
             f.move();
+        } catch (MinioException e) {
+            logger.debug(e.httpTrace());
+            throw new IOException("transferTo()", e);
+        } catch (Exception e) {
+            throw new IOException("transferTo()", e);
         }
     }
 }

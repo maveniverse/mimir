@@ -7,16 +7,28 @@
  */
 package eu.maveniverse.maven.mimir.node.minio;
 
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeMetadataAndChecksums;
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.naming.Key;
+import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
+import io.minio.StatObjectArgs;
+import io.minio.StatObjectResponse;
+import io.minio.errors.ErrorResponseException;
+import io.minio.errors.MinioException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -54,22 +66,80 @@ public final class MinioNode extends NodeSupport implements SystemNode {
     @Override
     public Optional<MinioEntry> locate(URI key) throws IOException {
         ensureOpen();
-        return Optional.empty();
+        Key localKey = keyResolver.apply(key);
+        try {
+            StatObjectResponse stat = minioClient.statObject(StatObjectArgs.builder()
+                    .bucket(localKey.container())
+                    .object(localKey.name())
+                    .build());
+            Map<String, String> metadata = splitMetadata(stat.userMetadata());
+            Map<String, String> checksums = splitChecksums(stat.userMetadata());
+            return Optional.of(new MinioEntry(metadata, checksums, minioClient, localKey));
+        } catch (ErrorResponseException e) {
+            return Optional.empty();
+        } catch (MinioException e) {
+            logger.debug(e.httpTrace());
+            throw new IOException("inputStream()", e);
+        } catch (Exception e) {
+            throw new IOException("inputStream()", e);
+        }
     }
 
     @Override
     public MinioEntry store(URI key, RemoteEntry entry) throws IOException {
         ensureOpen();
-        return null;
+        Key localKey = keyResolver.apply(key);
+        long size = Long.parseLong(entry.metadata().get(Entry.CONTENT_LENGTH));
+        entry.handleContent(inputStream -> {
+            try {
+                Map<String, String> userMetadata = mergeMetadataAndChecksums(entry.metadata(), entry.checksums());
+                minioClient.putObject(
+                        PutObjectArgs.builder()
+                                .bucket(localKey.container())
+                                .object(localKey.name())
+                                .userMetadata(userMetadata)
+                                .stream(inputStream, size, -1)
+                                .build());
+            } catch (MinioException e) {
+                logger.debug(e.httpTrace());
+                throw new IOException("inputStream()", e);
+            } catch (Exception e) {
+                throw new IOException("inputStream()", e);
+            }
+        });
+        return new MinioEntry(entry.metadata(), entry.checksums(), minioClient, localKey);
     }
 
     @Override
     public void store(URI key, Path file, Map<String, String> checksums) throws IOException {
         ensureOpen();
+        Key localKey = keyResolver.apply(key);
+        long size = Files.size(file);
+        long lastModified = Files.getLastModifiedTime(file).toMillis();
+        HashMap<String, String> metadata = new HashMap<>();
+        metadata.put(Entry.CONTENT_LENGTH, Long.toString(size));
+        metadata.put(Entry.CONTENT_LAST_MODIFIED, Long.toString(lastModified));
+        try {
+            Map<String, String> userMetadata = mergeMetadataAndChecksums(metadata, checksums);
+            try (InputStream inputStream = Files.newInputStream(file)) {
+                minioClient.putObject(
+                        PutObjectArgs.builder()
+                                .bucket(localKey.container())
+                                .object(localKey.name())
+                                .userMetadata(userMetadata)
+                                .stream(inputStream, size, -1)
+                                .build());
+            }
+        } catch (MinioException e) {
+            logger.debug(e.httpTrace());
+            throw new IOException("inputStream()", e);
+        } catch (Exception e) {
+            throw new IOException("inputStream()", e);
+        }
     }
 
     @Override
     public String toString() {
-        return "";
+        return getClass().getSimpleName();
     }
 }

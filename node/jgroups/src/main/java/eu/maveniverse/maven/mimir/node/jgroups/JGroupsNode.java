@@ -149,7 +149,8 @@ public class JGroupsNode extends RemoteNodeSupport implements RequestHandler {
 
     @Override
     public String toString() {
-        return "jgroups (distance=" + distance + " channel=" + channel.getAddress() + " publisher=" + publisher + ")";
+        return getClass().getSimpleName() + " (distance=" + distance + " channel=" + channel.getAddress()
+                + " publisher=" + publisher + ")";
     }
 
     @Override

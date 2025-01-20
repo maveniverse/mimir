@@ -8,84 +8,80 @@
 package eu.maveniverse.maven.mimir.node.minio;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toList;
 
 import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.impl.SimpleKeyResolverFactory;
 import java.io.IOException;
-import java.net.InetAddress;
+import java.util.Arrays;
+import java.util.List;
 
 public class MinioNodeConfig {
     public static MinioNodeConfig with(Config config) throws IOException {
         requireNonNull(config, "config");
 
-        boolean enabled = true;
         boolean publisherEnabled = true;
         String publisherTransport = "socket";
-        String jgroupsProps = "udp-new.xml";
-        String jgroupsNodeName = InetAddress.getLocalHost().getHostName();
-        String jgroupsClusterName = "mimir-jgroups";
-        String jgroupsInterface = null;
+        String endpoint = "http://127.0.0.1:9000";
+        String accessKey = "minioadmin";
+        String secretKey = "minioadmin";
+        List<String> checksumAlgorithms = Arrays.asList("SHA-1", "SHA-512");
+        String keyResolver = SimpleKeyResolverFactory.NAME;
 
-        if (config.effectiveProperties().containsKey("mimir.jgroups.enabled")) {
-            enabled = Boolean.parseBoolean(config.effectiveProperties().get("mimir.jgroups.enabled"));
+        if (config.effectiveProperties().containsKey("mimir.minio.publisher.enabled")) {
+            publisherEnabled = Boolean.parseBoolean(config.effectiveProperties().get("mimir.minio.publisher.enabled"));
         }
-        if (config.effectiveProperties().containsKey("mimir.jgroups.publisher.enabled")) {
-            publisherEnabled =
-                    Boolean.parseBoolean(config.effectiveProperties().get("mimir.jgroups.publisher.enabled"));
+        if (config.effectiveProperties().containsKey("mimir.minio.publisher.transport")) {
+            publisherTransport = config.effectiveProperties().get("mimir.minio.publisher.transport");
         }
-        if (config.effectiveProperties().containsKey("mimir.jgroups.publisher.transport")) {
-            publisherTransport = config.effectiveProperties().get("mimir.jgroups.publisher.transport");
+        if (config.effectiveProperties().containsKey("mimir.minio.endpoint")) {
+            endpoint = config.effectiveProperties().get("mimir.minio.endpoint");
         }
-        if (config.effectiveProperties().containsKey("mimir.jgroups.props")) {
-            jgroupsProps = config.effectiveProperties().get("mimir.jgroups.props");
+        if (config.effectiveProperties().containsKey("mimir.minio.accessKey")) {
+            accessKey = config.effectiveProperties().get("mimir.minio.accessKey");
         }
-        if (config.effectiveProperties().containsKey("mimir.jgroups.nodeName")) {
-            jgroupsNodeName = config.effectiveProperties().get("mimir.jgroups.nodeName");
+        if (config.effectiveProperties().containsKey("mimir.minio.secretKey")) {
+            secretKey = config.effectiveProperties().get("mimir.minio.secretKey");
         }
-        if (config.effectiveProperties().containsKey("mimir.jgroups.clusterName")) {
-            jgroupsClusterName = config.effectiveProperties().get("mimir.jgroups.clusterName");
+        if (config.effectiveProperties().containsKey("mimir.minio.checksumAlgorithms")) {
+            checksumAlgorithms = Arrays.stream(config.effectiveProperties()
+                            .get("mimir.minio.checksumAlgorithms")
+                            .split(","))
+                    .filter(s -> !s.trim().isEmpty())
+                    .collect(toList());
         }
-        if (config.effectiveProperties().containsKey("mimir.jgroups.interface")) {
-            jgroupsInterface = config.effectiveProperties().get("mimir.jgroups.interface");
+        if (config.effectiveProperties().containsKey("mimir.minio.keyResolver")) {
+            keyResolver = config.effectiveProperties().get("mimir.minio.keyResolver");
         }
         return new MinioNodeConfig(
-                enabled,
-                publisherEnabled,
-                publisherTransport,
-                jgroupsProps,
-                jgroupsNodeName,
-                jgroupsClusterName,
-                jgroupsInterface);
+                publisherEnabled, publisherTransport, endpoint, accessKey, secretKey, checksumAlgorithms, keyResolver);
     }
 
     public static final String NAME = "minio";
 
-    private final boolean enabled;
     private final boolean publisherEnabled;
     private final String publisherTransport;
-    private final String jgroupsProps;
-    private final String jgroupsNodeName;
-    private final String jgroupsClusterName;
-    private final String jgroupsInterface;
+    private final String endpoint;
+    private final String accessKey;
+    private final String secretKey;
+    private final List<String> checksumAlgorithms;
+    private final String keyResolver;
 
     private MinioNodeConfig(
-            boolean enabled,
             boolean publisherEnabled,
             String publisherTransport,
-            String jgroupsProps,
-            String jgroupsNodeName,
-            String jgroupsClusterName,
-            String jgroupsInterface) {
-        this.enabled = enabled;
+            String endpoint,
+            String accessKey,
+            String secretKey,
+            List<String> checksumAlgorithms,
+            String keyResolver) {
         this.publisherEnabled = publisherEnabled;
         this.publisherTransport = publisherTransport;
-        this.jgroupsProps = jgroupsProps;
-        this.jgroupsNodeName = jgroupsNodeName;
-        this.jgroupsClusterName = jgroupsClusterName;
-        this.jgroupsInterface = jgroupsInterface;
-    }
-
-    public boolean enabled() {
-        return enabled;
+        this.endpoint = endpoint;
+        this.accessKey = accessKey;
+        this.secretKey = secretKey;
+        this.checksumAlgorithms = checksumAlgorithms;
+        this.keyResolver = keyResolver;
     }
 
     public boolean publisherEnabled() {
@@ -96,19 +92,23 @@ public class MinioNodeConfig {
         return publisherTransport;
     }
 
-    public String jgroupsProps() {
-        return jgroupsProps;
+    public String endpoint() {
+        return endpoint;
     }
 
-    public String jgroupsNodeName() {
-        return jgroupsNodeName;
+    public String accessKey() {
+        return accessKey;
     }
 
-    public String jgroupsClusterName() {
-        return jgroupsClusterName;
+    public String secretKey() {
+        return secretKey;
     }
 
-    public String jgroupsInterface() {
-        return jgroupsInterface;
+    public List<String> checksumAlgorithms() {
+        return checksumAlgorithms;
+    }
+
+    public String keyResolver() {
+        return keyResolver;
     }
 }

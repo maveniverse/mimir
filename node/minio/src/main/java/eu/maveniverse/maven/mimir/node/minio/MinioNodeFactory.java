@@ -7,17 +7,59 @@
  */
 package eu.maveniverse.maven.mimir.node.minio;
 
+import static java.util.Objects.requireNonNull;
+
 import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
+import eu.maveniverse.maven.mimir.shared.naming.KeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
+import io.minio.MinioClient;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 @Singleton
 @Named(MinioNodeConfig.NAME)
 public class MinioNodeFactory implements SystemNodeFactory {
+    private final Map<String, KeyResolverFactory> keyResolverFactories;
+    private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
+
+    @Inject
+    public MinioNodeFactory(
+            Map<String, KeyResolverFactory> keyResolverFactories,
+            Map<String, ChecksumAlgorithmFactory> checksumFactories) {
+        this.keyResolverFactories = requireNonNull(keyResolverFactories, "keyResolverFactories");
+        this.checksumFactories = requireNonNull(checksumFactories, "checksumFactories");
+    }
+
     @Override
     public MinioNode createNode(Config config) throws IOException {
-        throw new UnsupportedOperationException("not implemented");
+        MinioNodeConfig minioNodeConfig = MinioNodeConfig.with(config);
+        KeyResolverFactory keyResolverFactory = keyResolverFactories.get(minioNodeConfig.keyResolver());
+        if (keyResolverFactory == null) {
+            throw new IllegalArgumentException("Unknown keyResolver: " + minioNodeConfig.keyResolver());
+        }
+        KeyResolver keyResolver = requireNonNull(keyResolverFactory.createKeyResolver(config), "keyResolver");
+        HashMap<String, ChecksumAlgorithmFactory> localChecksumFactories = new HashMap<>();
+        for (String alg : minioNodeConfig.checksumAlgorithms()) {
+            ChecksumAlgorithmFactory checksumAlgorithmFactory = checksumFactories.get(alg);
+            if (checksumAlgorithmFactory == null) {
+                throw new IllegalArgumentException("Unknown checksumAlgorithmFactory: " + alg);
+            }
+            localChecksumFactories.put(alg, checksumAlgorithmFactory);
+        }
+        MinioClient minioClient = createMinioClient(minioNodeConfig);
+        return new MinioNode(minioClient, keyResolver, minioNodeConfig.checksumAlgorithms(), localChecksumFactories);
+    }
+
+    private MinioClient createMinioClient(MinioNodeConfig minioNodeConfig) {
+        return MinioClient.builder()
+                .endpoint(minioNodeConfig.endpoint())
+                .credentials(minioNodeConfig.accessKey(), minioNodeConfig.secretKey())
+                .build();
     }
 }

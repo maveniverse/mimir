@@ -106,7 +106,7 @@ public class DaemonNode extends NodeSupport implements LocalNode {
 
     @Override
     public String toString() {
-        return "daemon (socketPath=" + socketPath + ")";
+        return getClass().getSimpleName() + " (socketPath=" + socketPath + ")";
     }
 
     private Handle create() throws IOException {
