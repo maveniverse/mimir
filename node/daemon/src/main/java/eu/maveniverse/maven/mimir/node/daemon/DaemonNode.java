@@ -41,14 +41,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This node is delegating all the work to daemon via Unix Domain Sockets.
  */
 public class DaemonNode extends NodeSupport implements LocalNode {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Path socketPath;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 

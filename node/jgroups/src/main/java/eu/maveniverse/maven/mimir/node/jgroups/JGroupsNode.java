@@ -37,15 +37,12 @@ import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.Response;
 import org.jgroups.util.RspList;
 import org.jgroups.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class JGroupsNode extends RemoteNodeSupport implements RequestHandler {
     private static final String PUBLISHER_HANDLE = "handle";
     private static final String CMD_LOCATE = "locate";
     private static final String RSP_ERROR = "error";
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final SystemNode systemNode;
     private final JChannel channel;
     private final MessageDispatcher messageDispatcher;
