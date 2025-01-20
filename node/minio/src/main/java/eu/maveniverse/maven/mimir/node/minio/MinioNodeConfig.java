@@ -20,6 +20,7 @@ public class MinioNodeConfig {
     public static MinioNodeConfig with(Config config) throws IOException {
         requireNonNull(config, "config");
 
+        int distance = 100;
         boolean publisherEnabled = true;
         String publisherTransport = "socket";
         String endpoint = "http://127.0.0.1:9000";
@@ -28,6 +29,9 @@ public class MinioNodeConfig {
         List<String> checksumAlgorithms = Arrays.asList("SHA-1", "SHA-512");
         String keyResolver = SimpleKeyResolverFactory.NAME;
 
+        if (config.effectiveProperties().containsKey("mimir.minio.distance")) {
+            distance = Integer.parseInt(config.effectiveProperties().get("mimir.minio.distance"));
+        }
         if (config.effectiveProperties().containsKey("mimir.minio.publisher.enabled")) {
             publisherEnabled = Boolean.parseBoolean(config.effectiveProperties().get("mimir.minio.publisher.enabled"));
         }
@@ -54,11 +58,19 @@ public class MinioNodeConfig {
             keyResolver = config.effectiveProperties().get("mimir.minio.keyResolver");
         }
         return new MinioNodeConfig(
-                publisherEnabled, publisherTransport, endpoint, accessKey, secretKey, checksumAlgorithms, keyResolver);
+                distance,
+                publisherEnabled,
+                publisherTransport,
+                endpoint,
+                accessKey,
+                secretKey,
+                checksumAlgorithms,
+                keyResolver);
     }
 
     public static final String NAME = "minio";
 
+    private final int distance;
     private final boolean publisherEnabled;
     private final String publisherTransport;
     private final String endpoint;
@@ -68,6 +80,7 @@ public class MinioNodeConfig {
     private final String keyResolver;
 
     private MinioNodeConfig(
+            int distance,
             boolean publisherEnabled,
             String publisherTransport,
             String endpoint,
@@ -75,6 +88,7 @@ public class MinioNodeConfig {
             String secretKey,
             List<String> checksumAlgorithms,
             String keyResolver) {
+        this.distance = distance;
         this.publisherEnabled = publisherEnabled;
         this.publisherTransport = publisherTransport;
         this.endpoint = endpoint;
@@ -82,6 +96,10 @@ public class MinioNodeConfig {
         this.secretKey = secretKey;
         this.checksumAlgorithms = checksumAlgorithms;
         this.keyResolver = keyResolver;
+    }
+
+    public int getDistance() {
+        return distance;
     }
 
     public boolean publisherEnabled() {
