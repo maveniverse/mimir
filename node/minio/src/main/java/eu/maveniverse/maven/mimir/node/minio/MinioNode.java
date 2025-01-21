@@ -26,6 +26,7 @@ import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import io.minio.CopyObjectArgs;
 import io.minio.CopySource;
+import io.minio.Directive;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
@@ -215,6 +216,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
             minioClient.copyObject(CopyObjectArgs.builder()
                     .bucket(localKey.container())
                     .object(localKey.name())
+                    .metadataDirective(Directive.REPLACE)
                     .userMetadata(pushMap(mergeEntry(metadata, checksumEnforcer.getChecksums())))
                     .source(CopySource.builder()
                             .bucket(localKey.container())
