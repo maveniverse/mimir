@@ -127,12 +127,10 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                                 .build());
                         throw e;
                     }
-                    Map<String, String> userMetadata =
-                            pushMap(mergeEntry(entry.metadata(), checksumEnforcer.getChecksums()));
                     minioClient.copyObject(CopyObjectArgs.builder()
                             .bucket(localKey.container())
                             .object(localKey.name())
-                            .userMetadata(userMetadata)
+                            .userMetadata(pushMap(mergeEntry(entry.metadata(), checksumEnforcer.getChecksums())))
                             .source(CopySource.builder()
                                     .bucket(localKey.container())
                                     .object(localKey.name())
@@ -194,16 +192,35 @@ public final class MinioNode extends NodeSupport implements SystemNode {
         metadata.put(Entry.CONTENT_LENGTH, Long.toString(size));
         metadata.put(Entry.CONTENT_LAST_MODIFIED, Long.toString(lastModified));
         try {
-            Map<String, String> userMetadata = pushMap(mergeEntry(metadata, checksums));
-            try (InputStream inputStream = Files.newInputStream(file)) {
+            ChecksumEnforcer checksumEnforcer;
+            try (InputStream enforced = new ChecksumInputStream(
+                    Files.newInputStream(file),
+                    checksumAlgorithms().stream()
+                            .map(a -> new AbstractMap.SimpleEntry<>(
+                                    a, checksumFactories.get(a).getAlgorithm()))
+                            .collect(Collectors.toMap(
+                                    AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)),
+                    checksumEnforcer = new ChecksumEnforcer(checksums))) {
                 minioClient.putObject(
-                        PutObjectArgs.builder()
-                                .bucket(localKey.container())
-                                .object(localKey.name())
-                                .userMetadata(userMetadata)
-                                .stream(inputStream, size, -1)
+                        PutObjectArgs.builder().bucket(localKey.container()).object(localKey.name()).stream(
+                                        enforced, size, -1)
                                 .build());
+            } catch (ChecksumEnforcer.ChecksumEnforcerException e) {
+                minioClient.removeObject(RemoveObjectArgs.builder()
+                        .bucket(localKey.container())
+                        .object(localKey.name())
+                        .build());
+                throw e;
             }
+            minioClient.copyObject(CopyObjectArgs.builder()
+                    .bucket(localKey.container())
+                    .object(localKey.name())
+                    .userMetadata(pushMap(mergeEntry(metadata, checksumEnforcer.getChecksums())))
+                    .source(CopySource.builder()
+                            .bucket(localKey.container())
+                            .object(localKey.name())
+                            .build())
+                    .build());
         } catch (MinioException e) {
             logger.debug(e.httpTrace());
             throw new IOException("inputStream()", e);
