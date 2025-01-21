@@ -3,17 +3,24 @@ package eu.maveniverse.maven.mimir.jgroups;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import eu.maveniverse.maven.mimir.node.file.FileNode;
+import eu.maveniverse.maven.mimir.node.file.FileNodeConfig;
 import eu.maveniverse.maven.mimir.node.jgroups.JGroupsNode;
-import eu.maveniverse.maven.mimir.shared.CacheEntry;
-import eu.maveniverse.maven.mimir.shared.CacheKey;
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.impl.LocalNodeConfig;
-import eu.maveniverse.maven.mimir.shared.impl.LocalNodeImpl;
-import eu.maveniverse.maven.mimir.shared.node.LocalNode;
+import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumAlgorithmFactoryAdapter;
+import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
+import eu.maveniverse.maven.mimir.shared.impl.publisher.ServerSocketPublisherFactory;
+import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import java.net.InetAddress;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import org.eclipse.aether.internal.impl.checksum.Sha1ChecksumAlgorithmFactory;
 import org.jgroups.JChannel;
 import org.junit.jupiter.api.Test;
 
@@ -34,8 +41,26 @@ public class JGroupsNodeTest {
         Files.createDirectories(contentPath.getParent());
         Files.writeString(contentPath, content);
 
-        LocalNode nodeOne = new LocalNodeImpl(LocalNodeConfig.of("one", 0, one));
-        LocalNode nodeTwo = new LocalNodeImpl(LocalNodeConfig.of("two", 0, two));
+        FileNodeConfig configOne =
+                FileNodeConfig.of("one", one, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
+        FileNode nodeOne = new FileNode(
+                configOne.name(),
+                configOne.basedir(),
+                new SimpleKeyResolverFactory().createKeyResolver(config),
+                List.of(Sha1ChecksumAlgorithmFactory.NAME),
+                Map.of(
+                        Sha1ChecksumAlgorithmFactory.NAME,
+                        new ChecksumAlgorithmFactoryAdapter(new Sha1ChecksumAlgorithmFactory())));
+        FileNodeConfig configTwo =
+                FileNodeConfig.of("two", two, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
+        FileNode nodeTwo = new FileNode(
+                configTwo.name(),
+                configTwo.basedir(),
+                new SimpleKeyResolverFactory().createKeyResolver(config),
+                List.of(Sha1ChecksumAlgorithmFactory.NAME),
+                Map.of(
+                        Sha1ChecksumAlgorithmFactory.NAME,
+                        new ChecksumAlgorithmFactoryAdapter(new Sha1ChecksumAlgorithmFactory())));
 
         JChannel channelOne = new JChannel("udp-new.xml")
                 .name(InetAddress.getLocalHost().getHostName() + "-one")
@@ -47,14 +72,14 @@ public class JGroupsNodeTest {
                 .connect("mimir-jgroups");
         Thread.sleep(1000);
 
-        try (JGroupsNode publisher = new JGroupsNode(nodeOne, channelOne, true);
-                JGroupsNode consumer = new JGroupsNode(nodeTwo, channelTwo, false); ) {
-            CacheKey key = CacheKey.of("container", "file.txt");
-            Optional<CacheEntry> entry = consumer.locate(key);
+        try (JGroupsNode publisher = new JGroupsNode(
+                        channelOne, new ServerSocketPublisherFactory().createPublisher(config, nodeOne));
+                JGroupsNode consumer = new JGroupsNode(channelTwo)) {
+            URI key = URI.create("mimir:file:container:file.txt");
+            Optional<? extends RemoteEntry> entry = consumer.locate(key);
             assertTrue(entry.isPresent());
-
             Path tmpTarget = Files.createTempFile("tmp", ".tmp");
-            entry.orElseThrow().transferTo(tmpTarget);
+            entry.orElseThrow().handleContent(is -> Files.copy(is, tmpTarget, StandardCopyOption.REPLACE_EXISTING));
 
             assertEquals(content, Files.readString(tmpTarget));
         }

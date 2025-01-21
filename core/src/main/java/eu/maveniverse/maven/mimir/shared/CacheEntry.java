@@ -9,12 +9,13 @@ package eu.maveniverse.maven.mimir.shared;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
 
 public interface CacheEntry {
     /**
-     * The origin of cache entry, a label.
+     * Entry checksums.
      */
-    String origin();
+    Map<String, String> checksums();
 
     /**
      * Transfers cached entry to given file by best available means and atomically. The file will be overwritten,

@@ -63,18 +63,19 @@
     <project.build.outputTimestamp>2025-01-08T16:14:35Z</project.build.outputTimestamp>
 
     <!--
-    Build time: latest stable Maven and latest Java LTS.
-    Run time: "not so old" Maven (3.6.3+) and latest Java LTS.
+    Build time: latest stable Maven and Java 21+
+    Run time: current Maven (3.9+) and Java 21+
     -->
-    <maven.compiler.release>17</maven.compiler.release>
+    <maven.compiler.release>21</maven.compiler.release>
     <requireBuildtimeJavaVersion.version>[21.0.3,)</requireBuildtimeJavaVersion.version>
     <requireBuildtimeMavenVersion.version>[3.9.9,)</requireBuildtimeMavenVersion.version>
-    <requireRuntimeMavenVersion.version>[3.6.3,)</requireRuntimeMavenVersion.version>
+    <requireRuntimeMavenVersion.version>[3.9.9,)</requireRuntimeMavenVersion.version>
 
     <!-- Dependency versions -->
     <version.maven>3.9.9</version.maven>
     <version.resolver>1.9.22</version.resolver>
     <version.slf4j>2.0.16</version.slf4j>
+    <version.mavenPluginTools>3.15.1</version.mavenPluginTools>
   </properties>
 
   <dependencyManagement>
@@ -110,11 +111,22 @@
         <groupId>com.google.inject</groupId>
         <artifactId>guice</artifactId>
         <version>5.1.0</version>
+        <classifier>classes</classifier>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>33.4.0-jre</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>failureaccess</artifactId>
+        <version>1.0.2</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm</artifactId>
+        <version>9.7.1</version>
       </dependency>
 
       <!-- Resolver + Maven -->
@@ -140,7 +152,22 @@
       </dependency>
       <dependency>
         <groupId>org.apache.maven.resolver</groupId>
+        <artifactId>maven-resolver-named-locks</artifactId>
+        <version>${version.resolver}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.resolver</groupId>
         <artifactId>maven-resolver-connector-basic</artifactId>
+        <version>${version.resolver}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.resolver</groupId>
+        <artifactId>maven-resolver-transport-file</artifactId>
+        <version>${version.resolver}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.resolver</groupId>
+        <artifactId>maven-resolver-transport-http</artifactId>
         <version>${version.resolver}</version>
       </dependency>
       <dependency>
@@ -165,15 +192,40 @@
       </dependency>
 
       <dependency>
+        <groupId>org.apache.maven.plugin-tools</groupId>
+        <artifactId>maven-plugin-annotations</artifactId>
+        <version>${version.mavenPluginTools}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.msgpack</groupId>
+        <artifactId>msgpack-core</artifactId>
+        <version>0.9.9</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.jgroups</groupId>
         <artifactId>jgroups</artifactId>
         <version>5.4.1.Final</version>
       </dependency>
 
       <dependency>
+        <groupId>io.minio</groupId>
+        <artifactId>minio</artifactId>
+        <version>8.5.17</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>
         <version>5.11.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>1.20.4</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>

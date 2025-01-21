@@ -19,6 +19,7 @@ public class JGroupsNodeConfig {
 
         boolean enabled = true;
         boolean publisherEnabled = true;
+        String publisherTransport = "socket";
         String jgroupsProps = "udp-new.xml";
         String jgroupsNodeName = InetAddress.getLocalHost().getHostName();
         String jgroupsClusterName = "mimir-jgroups";
@@ -30,6 +31,9 @@ public class JGroupsNodeConfig {
         if (config.effectiveProperties().containsKey("mimir.jgroups.publisher.enabled")) {
             publisherEnabled =
                     Boolean.parseBoolean(config.effectiveProperties().get("mimir.jgroups.publisher.enabled"));
+        }
+        if (config.effectiveProperties().containsKey("mimir.jgroups.publisher.transport")) {
+            publisherTransport = config.effectiveProperties().get("mimir.jgroups.publisher.transport");
         }
         if (config.effectiveProperties().containsKey("mimir.jgroups.props")) {
             jgroupsProps = config.effectiveProperties().get("mimir.jgroups.props");
@@ -44,11 +48,20 @@ public class JGroupsNodeConfig {
             jgroupsInterface = config.effectiveProperties().get("mimir.jgroups.interface");
         }
         return new JGroupsNodeConfig(
-                enabled, publisherEnabled, jgroupsProps, jgroupsNodeName, jgroupsClusterName, jgroupsInterface);
+                enabled,
+                publisherEnabled,
+                publisherTransport,
+                jgroupsProps,
+                jgroupsNodeName,
+                jgroupsClusterName,
+                jgroupsInterface);
     }
+
+    public static final String NAME = "jgroups";
 
     private final boolean enabled;
     private final boolean publisherEnabled;
+    private final String publisherTransport;
     private final String jgroupsProps;
     private final String jgroupsNodeName;
     private final String jgroupsClusterName;
@@ -57,12 +70,14 @@ public class JGroupsNodeConfig {
     private JGroupsNodeConfig(
             boolean enabled,
             boolean publisherEnabled,
+            String publisherTransport,
             String jgroupsProps,
             String jgroupsNodeName,
             String jgroupsClusterName,
             String jgroupsInterface) {
         this.enabled = enabled;
         this.publisherEnabled = publisherEnabled;
+        this.publisherTransport = publisherTransport;
         this.jgroupsProps = jgroupsProps;
         this.jgroupsNodeName = jgroupsNodeName;
         this.jgroupsClusterName = jgroupsClusterName;
@@ -75,6 +90,10 @@ public class JGroupsNodeConfig {
 
     public boolean publisherEnabled() {
         return publisherEnabled;
+    }
+
+    public String publisherTransport() {
+        return publisherTransport;
     }
 
     public String jgroupsProps() {

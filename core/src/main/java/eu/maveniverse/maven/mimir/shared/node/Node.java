@@ -7,24 +7,22 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
-import eu.maveniverse.maven.mimir.shared.CacheEntry;
-import eu.maveniverse.maven.mimir.shared.CacheKey;
+import java.io.Closeable;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Optional;
 
-public interface Node extends AutoCloseable {
+/**
+ * A node represents some generic storage node.
+ */
+public interface Node extends Closeable {
     /**
      * Node name, a label.
      */
     String name();
 
     /**
-     * The "distance" of node. Distance of 0 (zero) is "closest", and positive integers are "further away".
-     */
-    int distance();
-
-    /**
      * Locates cache entry by key on this node.
      */
-    Optional<CacheEntry> locate(CacheKey key) throws IOException;
+    Optional<? extends Entry> locate(URI key) throws IOException;
 }

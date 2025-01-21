@@ -56,3 +56,30 @@ Build requirements:
 Runtime requirements:
 * Java 17+
 * Maven 3.6.3+
+
+## High level design
+
+Mimir defines "node" as basic building block. A node can be "remote" or "local". A "remote" node is getting content
+from remote origin (as relative to current workstation). Mimir provides simple "publisher" abstraction, that allows
+a "remote" node to become also a publisher (for remote nodes on other workstations).
+
+A "local" node have one specialization, the "system" node. A system node is really a storage that is backed by
+some storage tech (Mimir offers two system nodes: file system backed one and Minio backed one). Given system node
+is local specialization, this means that Mimir offers two local nodes as well. And there is third local node (that
+is NOT system node, as it is not backed by storage) the "daemon" node. Daemon node delegates all the node work
+to a long-running daemon process, hence daemon node itself does not have storage.
+
+In Maven process (with extension), a Mimir `Session` is created, that needs one `LocalNode`. This Mimir via session 
+and connector integrates into Resolver.
+
+If `file` local node is used, Mimir will provide "system-wide caching": no matter how many local repository copies you have,
+you end up with one copy of each artifact on disk (in ideal case). Same stands for `minio` when used as local node.
+
+If `daemon` local node is used, Mimir daemon needs to run (is auto started by default). Mimir Daemon process communicates
+via Unix Domain Sockets (UDS) to `daemon` local node, and this node fully delegates all the work to Daemon process.
+Given Daemon process is long living, it incorporates one `SystemNode` and several `RemoteNode`s. Daemon will consult
+`SystemNode` first, and ask `RemoteNode`s for content if it is not present locally. If remote node has it, 
+write-through caching happens via `SystemNode`. Similarly, daemon contained `RemoteNodes` will publish `SystemNode`
+content as well.
+
+

@@ -7,24 +7,37 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
-import eu.maveniverse.maven.mimir.shared.CacheEntry;
-import eu.maveniverse.maven.mimir.shared.CacheKey;
+import eu.maveniverse.maven.mimir.shared.checksum.ChecksumAlgorithmFactory;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
+/**
+ * Local node uses some "local" (local to the system) backing storage.
+ * This type of node is able to back a session.
+ */
 public interface LocalNode extends Node {
     /**
-     * Tells the basedir local node uses.
+     * Provides list of checksum algorithm names configured to be used by this node.
      */
-    Path basedir();
+    List<String> checksumAlgorithms() throws IOException;
 
     /**
-     * Stores content under given cache key on this node.
+     * Provides checksum factories keyed by algorithm name, usable by this local node.
      */
-    LocalCacheEntry store(CacheKey key, Path content) throws IOException;
+    Map<String, ChecksumAlgorithmFactory> checksumFactories() throws IOException;
 
     /**
-     * Stores cache entry and offers it as own entry.
+     * Locates cache entry by key on this node.
      */
-    LocalCacheEntry store(CacheKey key, CacheEntry entry) throws IOException;
+    @Override
+    Optional<? extends LocalEntry> locate(URI key) throws IOException;
+
+    /**
+     * Stores file as new entry.
+     */
+    void store(URI key, Path file, Map<String, String> checksums) throws IOException;
 }

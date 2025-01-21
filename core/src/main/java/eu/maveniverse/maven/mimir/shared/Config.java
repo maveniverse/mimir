@@ -16,18 +16,16 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 /**
  * Simple Mimir configuration.
  */
 public interface Config {
-    String UNKNOWN = "n/a";
-
-    String mimirVersion();
+    Optional<String> mimirVersion();
 
     Path basedir();
 
@@ -40,11 +38,18 @@ public interface Config {
     Map<String, String> effectiveProperties();
 
     default Builder toBuilder() {
-        return new Builder(mimirVersion(), basedir(), propertiesPath(), userProperties(), systemProperties());
+        return new Builder(
+                mimirVersion().orElse(null), basedir(), propertiesPath(), userProperties(), systemProperties());
     }
 
     static Builder defaults() {
-        return new Builder();
+        return new Builder(
+                Utils.discoverArtifactVersion(
+                        Config.class.getClassLoader(), "eu.maveniverse.maven.mimir", "core", null),
+                discoverBaseDirectory(),
+                Path.of("mimir.properties"),
+                new HashMap<>(),
+                toMap(System.getProperties()));
     }
 
     class Builder {
@@ -53,15 +58,6 @@ public interface Config {
         private Path propertiesPath;
         private Map<String, String> userProperties;
         private Map<String, String> systemProperties;
-
-        private Builder() {
-            this.mimirVersion = Utils.discoverArtifactVersion(
-                    Config.class.getClassLoader(), "eu.maveniverse.maven.mimir", "core", UNKNOWN);
-            this.basedir = discoverBaseDirectory();
-            this.propertiesPath = Path.of("mimir.properties");
-            this.userProperties = new HashMap<>();
-            this.systemProperties = toMap(System.getProperties());
-        }
 
         private Builder(
                 String mimirVersion,
@@ -72,8 +68,8 @@ public interface Config {
             this.mimirVersion = mimirVersion;
             this.basedir = basedir;
             this.propertiesPath = propertiesPath;
-            this.userProperties = userProperties;
-            this.systemProperties = systemProperties;
+            this.userProperties = new HashMap<>(userProperties);
+            this.systemProperties = new HashMap<>(systemProperties);
         }
 
         public Builder basedir(Path basedir) {
@@ -128,7 +124,7 @@ public interface Config {
                     Path propertiesPath,
                     Map<String, String> userProperties,
                     Map<String, String> systemProperties) {
-                this.mimirVersion = requireNonNull(mimirVersion, "mimirVersion");
+                this.mimirVersion = mimirVersion;
                 this.basedir = requireNonNull(basedir, "basedir");
                 requireNonNull(propertiesPath, "propertiesPath");
                 this.propertiesPath = getCanonicalPath(basedir.resolve(propertiesPath));
@@ -142,19 +138,18 @@ public interface Config {
                     }
                 }
 
-                this.userProperties = Collections.unmodifiableMap(requireNonNull(userProperties, "userProperties"));
-                this.systemProperties =
-                        Collections.unmodifiableMap(requireNonNull(systemProperties, "systemProperties"));
+                this.userProperties = Map.copyOf(requireNonNull(userProperties, "userProperties"));
+                this.systemProperties = Map.copyOf(requireNonNull(systemProperties, "systemProperties"));
                 HashMap<String, String> eff = new HashMap<>();
                 eff.putAll(systemProperties);
                 eff.putAll(toMap(mimirProperties));
                 eff.putAll(userProperties);
-                this.effectiveProperties = Collections.unmodifiableMap(eff);
+                this.effectiveProperties = Map.copyOf(eff);
             }
 
             @Override
-            public String mimirVersion() {
-                return mimirVersion;
+            public Optional<String> mimirVersion() {
+                return Optional.ofNullable(mimirVersion);
             }
 
             @Override

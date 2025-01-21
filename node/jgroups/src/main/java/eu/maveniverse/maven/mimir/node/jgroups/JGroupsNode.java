@@ -7,31 +7,23 @@
  */
 package eu.maveniverse.maven.mimir.node.jgroups;
 
-import eu.maveniverse.maven.mimir.shared.CacheEntry;
-import eu.maveniverse.maven.mimir.shared.CacheKey;
-import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.impl.LocalNodeFactoryImpl;
-import eu.maveniverse.maven.mimir.shared.node.LocalCacheEntry;
-import eu.maveniverse.maven.mimir.shared.node.LocalNode;
-import eu.maveniverse.maven.mimir.shared.node.Node;
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeEntry;
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
+import static java.util.Objects.requireNonNull;
+
+import eu.maveniverse.maven.mimir.shared.impl.node.RemoteNodeSupport;
+import eu.maveniverse.maven.mimir.shared.impl.publisher.PublisherRemoteEntry;
+import eu.maveniverse.maven.mimir.shared.node.Entry;
+import eu.maveniverse.maven.mimir.shared.publisher.Publisher;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.nio.channels.Channels;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ObjectMessage;
@@ -40,136 +32,54 @@ import org.jgroups.blocks.RequestHandler;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.Response;
 import org.jgroups.util.RspList;
-import org.jgroups.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class JGroupsNode implements Node, RequestHandler {
-    public static void main(String... args) throws Exception {
-        Logger logger = LoggerFactory.getLogger(JGroupsNode.class);
+public class JGroupsNode extends RemoteNodeSupport implements RequestHandler {
+    private static final String PUBLISHER_HANDLE = "handle";
+    private static final String CMD_LOCATE = "locate";
+    private static final String RSP_ERROR = "error";
 
-        Path basedir = null;
-        String nodeName = null;
-        if (args.length > 0) {
-            basedir = Config.getCanonicalPath(Path.of(args[0]));
-        }
-        if (args.length > 1) {
-            nodeName = args[1];
-        }
-
-        HashMap<String, String> config = new HashMap<>();
-        if (basedir != null) {
-            config.put("mimir.local.basedir", basedir.toString());
-        }
-        if (nodeName != null) {
-            config.put("mimir.local.name", nodeName);
-        }
-        Config conf = Config.defaults()
-                .userProperties(config)
-                .propertiesPath(Path.of("mimir-publisher.properties"))
-                .build();
-        LocalNode localNode = new LocalNodeFactoryImpl().createLocalNode(conf);
-        Node publisher = new JGroupsNodeFactory()
-                .createNode(conf, localNode)
-                .orElseThrow(() -> new IllegalStateException("Publisher configured to not publish; bailing out"));
-
-        logger.info("");
-        logger.info("JGroupsNode publisher started (Ctrl+C to exit)");
-        logger.info("Publishing:");
-        logger.info("* {} ({})", localNode.name(), localNode.basedir());
-        try {
-            new CountDownLatch(1).await(); // this is merely to get interrupt
-        } catch (InterruptedException e) {
-            publisher.close();
-        }
-    }
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final LocalNode localNode;
     private final JChannel channel;
     private final MessageDispatcher messageDispatcher;
+    private final Publisher publisher;
 
-    private final ServerSocket serverSocket;
-    private final ConcurrentHashMap<String, LocalCacheEntry> tx;
-    private final ExecutorService executor;
-
-    public JGroupsNode(LocalNode localNode, JChannel channel, boolean publisher) throws IOException {
-        this.localNode = localNode;
+    /**
+     * Creates JGroups node w/o publisher.
+     */
+    public JGroupsNode(JChannel channel) {
+        super(JGroupsNodeConfig.NAME, 500);
         this.channel = channel;
-        if (publisher) {
-            this.messageDispatcher = new MessageDispatcher(channel, this);
-            this.serverSocket = new ServerSocket(0, 50, InetAddress.getLocalHost());
-            this.tx = new ConcurrentHashMap<>();
-            this.executor = Executors.newFixedThreadPool(6);
+        this.messageDispatcher = new MessageDispatcher(channel);
+        this.messageDispatcher.setAsynDispatching(true);
+        this.publisher = null;
+    }
 
-            Thread serverThread = new Thread(() -> {
-                try {
-                    while (true) {
-                        Socket accepted = serverSocket.accept();
-                        executor.submit(() -> {
-                            try (Socket socket = accepted) {
-                                byte[] buf = socket.getInputStream().readNBytes(36);
-                                OutputStream out = socket.getOutputStream();
-                                if (buf.length == 36) {
-                                    String txid = new String(buf, StandardCharsets.UTF_8);
-                                    LocalCacheEntry cacheEntry = tx.remove(txid);
-                                    if (cacheEntry != null) {
-                                        logger.debug("SERVER HIT: {} to {}", txid, socket.getRemoteSocketAddress());
-                                        Channels.newInputStream(cacheEntry.getReadFileChannel())
-                                                .transferTo(out);
-                                    } else {
-                                        logger.warn("SERVER MISS: {} to {}", txid, socket.getRemoteSocketAddress());
-                                    }
-                                }
-                                out.flush();
-                            } catch (Exception e) {
-                                logger.error("Error while serving a client", e);
-                            }
-                        });
-                    }
-                } catch (Exception e) {
-                    logger.error("Error while accepting client connection", e);
-                    try {
-                        close();
-                    } catch (Exception ignore) {
-                    }
-                }
-            });
-            serverThread.setDaemon(true);
-            serverThread.start();
-        } else {
-            this.messageDispatcher = new MessageDispatcher(channel);
-            this.serverSocket = null;
-            this.tx = null;
-            this.executor = null;
-        }
+    /**
+     * Creates JGroups node with publisher.
+     */
+    public JGroupsNode(JChannel channel, Publisher publisher) {
+        super(JGroupsNodeConfig.NAME, 500);
+        this.channel = channel;
+        this.messageDispatcher = new MessageDispatcher(channel, this);
+        this.messageDispatcher.setAsynDispatching(true);
+        this.publisher = publisher;
     }
 
     @Override
-    public String name() {
-        return JGroupsNodeFactory.NAME;
-    }
-
-    @Override
-    public int distance() {
-        return 500;
-    }
-
-    @Override
-    public Optional<CacheEntry> locate(CacheKey key) throws IOException {
-        String cmd = CMD_LOOKUP + CacheKey.toKeyString(key);
+    public Optional<PublisherRemoteEntry> locate(URI key) throws IOException {
+        ArrayList<String> req = new ArrayList<>();
+        req.add(CMD_LOCATE);
+        req.add(key.toASCIIString());
         try {
-            RspList<String> responses =
-                    messageDispatcher.castMessage(null, new ObjectMessage(null, cmd), RequestOptions.SYNC());
-            for (String response : responses.getResults()) {
-                if (response != null && response.startsWith(RSP_LOOKUP_OK)) {
-                    String body = response.substring(RSP_LOOKUP_OK.length());
-                    String[] parts = body.split(" ");
-                    if (parts.length == 2) {
-                        int colon = parts[0].indexOf(':');
-                        String host = parts[0].substring(0, colon);
-                        int port = Integer.parseInt(parts[0].substring(colon + 1));
-                        return Optional.of(localNode.store(key, new JGroupsCacheEntry(name(), host, port, parts[1])));
+            RspList<Map<String, String>> responses =
+                    messageDispatcher.castMessage(null, new ObjectMessage(null, req), RequestOptions.SYNC());
+            for (Address responder : responses.keySet()) {
+                Map<String, String> data = responses.get(responder).getValue();
+                if (!data.isEmpty()) {
+                    if (data.containsKey(PUBLISHER_HANDLE)) {
+                        URI handle = URI.create(requireNonNull(data.remove(PUBLISHER_HANDLE), PUBLISHER_HANDLE));
+                        return Optional.of(new PublisherRemoteEntry(splitMetadata(data), splitChecksums(data), handle));
+                    } else {
+                        throw new IOException(data.remove(RSP_ERROR));
                     }
                 }
             }
@@ -179,81 +89,57 @@ public class JGroupsNode implements Node, RequestHandler {
         return Optional.empty();
     }
 
-    public static final String CMD_LOOKUP = "LOOKUP ";
-    public static final String RSP_LOOKUP_OK = "OK ";
-    public static final String RSP_LOOKUP_KO = "KO ";
-
     @Override
-    public Object handle(Message msg) throws Exception {
-        AtomicReference<Object> resp = new AtomicReference<>(null);
-        AtomicBoolean respIsException = new AtomicBoolean(false);
-        Response response = new Response() {
-            @Override
-            public void send(Object reply, boolean is_exception) {
-                resp.set(reply);
-                respIsException.set(is_exception);
-            }
-
-            @Override
-            public void send(Message reply, boolean is_exception) {
-                resp.set(reply);
-                respIsException.set(is_exception);
-            }
-        };
-        handle(msg, response);
-        if (respIsException.get()) {
-            throw new IllegalArgumentException(String.valueOf(resp.get()));
-        }
-        return resp.get();
+    public Object handle(Message msg) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void handle(Message msg, Response response) throws Exception {
-        String cmd = msg.getObject();
-        if (cmd != null && cmd.startsWith(CMD_LOOKUP)) {
-            String keyString = cmd.substring(CMD_LOOKUP.length());
-            CacheKey key = CacheKey.fromKeyString(keyString);
-            Optional<CacheEntry> entry = localNode.locate(key);
-            if (entry.isPresent()) {
-                String txid = UUID.randomUUID().toString();
-                tx.put(txid, (LocalCacheEntry) entry.orElseThrow());
-                response.send(
-                        RSP_LOOKUP_OK + serverSocket.getInetAddress().getHostAddress() + ":"
-                                + serverSocket.getLocalPort() + " " + txid,
-                        false);
-                logger.info("LOOKUP OK: {} asked {}", msg.getSrc(), keyString);
-                return;
-            } else {
-                response.send(RSP_LOOKUP_KO, false);
-                logger.info("LOOKUP KO: {} asked {}", msg.getSrc(), keyString);
-                return;
+    public void handle(Message msg, Response response) {
+        Thread.startVirtualThread(() -> {
+            HashMap<String, String> responseMap = new HashMap<>();
+            boolean responseException = false;
+            try {
+                List<String> req = msg.getObject();
+                if (req.size() == 2 && CMD_LOCATE.equals(req.getFirst())) {
+                    String keyString = req.get(1);
+                    URI key = URI.create(keyString);
+                    Optional<Publisher.Handle> handle = publisher.createHandle(key);
+                    if (handle.isPresent()) {
+                        Publisher.Handle publisherHandle = handle.orElseThrow();
+                        Entry publishedEntry = publisherHandle.publishedEntry();
+                        URI publishedHandle = publisherHandle.handle();
+                        responseMap.putAll(mergeEntry(publishedEntry));
+                        responseMap.put(PUBLISHER_HANDLE, publishedHandle.toASCIIString());
+                        logger.info("OK: {} asked {}", msg.getSrc(), keyString);
+                    } else {
+                        logger.info("KO: {} asked {}", msg.getSrc(), keyString);
+                    }
+                } else {
+                    responseMap.put(RSP_ERROR, "Unknown command");
+                    responseException = true;
+                    logger.info("UNKNOWN COMMAND: {}", req);
+                }
+                response.send(responseMap, responseException);
+            } catch (IOException e) {
+                responseMap.put(RSP_ERROR, e.getMessage());
+                response.send(responseMap, true);
             }
-        }
-        logger.info("UNKNOWN COMMAND: {}", cmd);
-        response.send("Unknown command", true);
+        });
     }
 
     @Override
-    public void close() throws Exception {
-        if (executor != null) {
-            executor.shutdown();
-        }
-        if (serverSocket != null) {
-            serverSocket.close();
+    public String toString() {
+        return getClass().getSimpleName() + " (distance=" + distance + " channel=" + channel.getAddress()
+                + " publisher=" + publisher + ")";
+    }
+
+    @Override
+    protected void doClose() throws IOException {
+        if (publisher != null) {
+            publisher.close();
         }
         messageDispatcher.close();
         channel.close();
-    }
-
-    private record JGroupsCacheEntry(String origin, String host, int port, String txid) implements CacheEntry {
-        @Override
-        public void transferTo(Path file) throws IOException {
-            try (Socket socket = new Socket(host, port)) {
-                OutputStream os = socket.getOutputStream();
-                os.write(txid.getBytes(StandardCharsets.UTF_8));
-                os.flush();
-                Files.copy(socket.getInputStream(), file, StandardCopyOption.REPLACE_EXISTING);
-            }
-        }
     }
 }

@@ -24,8 +24,10 @@
   <name>${project.groupId}:${project.artifactId}</name>
 
   <modules>
-    <module>jgroups</module>
     <module>daemon</module>
+    <module>file</module>
+    <module>jgroups</module>
+    <module>minio</module>
   </modules>
 
 </project>

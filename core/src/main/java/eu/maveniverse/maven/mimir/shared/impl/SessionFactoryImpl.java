@@ -12,71 +12,62 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
-import eu.maveniverse.maven.mimir.shared.naming.NameMapper;
-import eu.maveniverse.maven.mimir.shared.naming.NameMapperFactory;
+import eu.maveniverse.maven.mimir.shared.naming.KeyMapperFactory;
+import eu.maveniverse.maven.mimir.shared.naming.RemoteRepositories;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
-import eu.maveniverse.maven.mimir.shared.node.Node;
-import eu.maveniverse.maven.mimir.shared.node.NodeFactory;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.net.URI;
 import java.util.Map;
-import java.util.Optional;
+import java.util.function.BiFunction;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.repository.RemoteRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Singleton
 @Named
-public class SessionFactoryImpl implements SessionFactory {
+public final class SessionFactoryImpl implements SessionFactory {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final LocalNodeFactory localNodeFactory;
-    private final Map<String, NodeFactory> nodeFactories;
-    private final Map<String, NameMapperFactory> nameMapperFactories;
+    private final Map<String, LocalNodeFactory> localNodeFactories;
+    private final Map<String, KeyMapperFactory> nameMapperFactories;
 
     @Inject
     public SessionFactoryImpl(
-            LocalNodeFactory localNodeFactory,
-            Map<String, NodeFactory> nodeFactories,
-            Map<String, NameMapperFactory> nameMapperFactories) {
-        this.localNodeFactory = localNodeFactory;
-        this.nodeFactories = nodeFactories;
-        this.nameMapperFactories = nameMapperFactories;
+            Map<String, LocalNodeFactory> localNodeFactories, Map<String, KeyMapperFactory> nameMapperFactories) {
+        this.localNodeFactories = requireNonNull(localNodeFactories, "localNodeFactories");
+        this.nameMapperFactories = requireNonNull(nameMapperFactories, "nameMapperFactories");
     }
 
     @Override
     public Session createSession(Config config) throws IOException {
         requireNonNull(config, "config");
-        LocalNode localNode = localNodeFactory.createLocalNode(config);
-        ArrayList<Node> nodes = new ArrayList<>();
-        for (NodeFactory nodeFactory : this.nodeFactories.values()) {
-            Optional<Node> node = nodeFactory.createNode(config, localNode);
-            node.ifPresent(nodes::add);
+
+        SessionConfig sessionConfig = SessionConfig.with(config);
+
+        LocalNodeFactory localNodeFactory = localNodeFactories.get(sessionConfig.localNode());
+        if (localNodeFactory == null) {
+            throw new IllegalArgumentException("Unknown local node: " + sessionConfig.localNode());
         }
-        nodes.sort(Comparator.comparing(Node::distance));
-        NameMapper nameMapper = NameMapper.NOP;
-        for (NameMapperFactory nameMapperFactory : this.nameMapperFactories.values()) {
-            Optional<NameMapper> optional = nameMapperFactory.createNameMapper(config);
-            if (optional.isPresent()) {
-                nameMapper = optional.orElseThrow();
-                break;
-            }
+        LocalNode localNode = localNodeFactory.createNode(config);
+
+        KeyMapperFactory keyMapperFactory = nameMapperFactories.get(sessionConfig.keyMapper());
+        if (keyMapperFactory == null) {
+            throw new IllegalStateException("No keyMapper: " + sessionConfig.keyMapper());
         }
-        logger.info("Mimir {} session created", config.mimirVersion());
+        BiFunction<RemoteRepository, Artifact, URI> nameMapper =
+                requireNonNull(keyMapperFactory.createKeyMapper(config), "keyMapper");
+
         if (logger.isDebugEnabled()) {
-            logger.debug(
-                    "  Name mapper: {}",
-                    nameMapper == NameMapper.NOP ? "NOP" : nameMapper.getClass().getSimpleName());
-            logger.debug(
-                    "  Local Node: {} (basedir={}, d={})", localNode.name(), localNode.basedir(), localNode.distance());
-            logger.debug("  {} node(s):", nodes.size());
-            for (Node node : nodes) {
-                logger.debug("    {} (d={})", node.name(), node.distance());
-            }
+            logger.debug("Mimir {} session created", config.mimirVersion().orElse("UNKNOWN"));
+            logger.debug("  Name mapper: {}", nameMapper.getClass().getSimpleName());
+            logger.debug("  Checksums: {}", localNode.checksumFactories().keySet());
+            logger.debug("  Local Node: {}", localNode);
         }
-        return new SessionImpl(nameMapper, localNode, nodes);
+
+        return new SessionImpl(RemoteRepositories.centralDirectOnly(), a -> !a.isSnapshot(), nameMapper, localNode);
     }
 }

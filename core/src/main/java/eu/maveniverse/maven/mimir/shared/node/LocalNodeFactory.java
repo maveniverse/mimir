@@ -12,7 +12,7 @@ import java.io.IOException;
 
 public interface LocalNodeFactory {
     /**
-     * Creates a {@link Node} instance.
+     * Creates a {@link LocalNode} instance.
      */
-    LocalNode createLocalNode(Config config) throws IOException;
+    LocalNode createNode(Config config) throws IOException;
 }

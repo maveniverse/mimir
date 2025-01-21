@@ -7,13 +7,14 @@
  */
 package eu.maveniverse.maven.mimir.extension3;
 
-import eu.maveniverse.maven.mimir.node.daemon.UdsNodeConfig;
+import eu.maveniverse.maven.mimir.node.daemon.DaemonConfig;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
 import eu.maveniverse.maven.mimir.shared.impl.Utils;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -60,7 +61,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                     .build();
             List<RemoteRepository> remoteRepositories =
                     RepositoryUtils.toRepos(session.getProjectBuildingRequest().getRemoteRepositories());
-            checkForUpdates(config, repoSession, remoteRepositories);
+            mayCheckForUpdates(config, repoSession, remoteRepositories);
             mayResolveDaemonArtifact(config, repoSession, remoteRepositories);
             MimirUtils.setSession(session.getRepositorySession(), sessionFactory.createSession(config));
         } catch (Exception e) {
@@ -79,17 +80,19 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
 
     private void mayResolveDaemonArtifact(
             Config config, RepositorySystemSession session, List<RemoteRepository> remoteRepositories) {
-        UdsNodeConfig udsConfig = UdsNodeConfig.with(config);
-        Path daemonJarPath = config.basedir().resolve(udsConfig.daemonJarName());
+        DaemonConfig daemonConfig = DaemonConfig.with(config);
+        if (!daemonConfig.autostart() || config.mimirVersion().isEmpty()) {
+            logger.debug("Not resolving Mimir daemon; autostart not enabled or version not detected");
+            return;
+        }
+        Path daemonJarPath = config.basedir().resolve(daemonConfig.daemonJarName());
         if (!Files.exists(daemonJarPath)) {
-            if (!udsConfig.enabled()) {
-                logger.debug("Not resolving Mimir daemon; not enabled");
-                return;
-            }
             try {
-                logger.info("Resolving Mimir daemon version {}", config.mimirVersion());
+                logger.info(
+                        "Resolving Mimir daemon version {}",
+                        config.mimirVersion().orElseThrow());
                 ArtifactRequest artifactRequest =
-                        new ArtifactRequest(new DefaultArtifact(udsConfig.daemonGav()), remoteRepositories, "mimir");
+                        new ArtifactRequest(new DefaultArtifact(daemonConfig.daemonGav()), remoteRepositories, "mimir");
                 ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, artifactRequest);
                 Utils.copyOrLink(artifactResult.getArtifact().getFile().toPath(), daemonJarPath);
             } catch (Exception e) {
@@ -98,30 +101,32 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
         }
     }
 
-    private void checkForUpdates(
+    private void mayCheckForUpdates(
             Config config, RepositorySystemSession session, List<RemoteRepository> remoteRepositories) {
-        if (!Boolean.parseBoolean(
-                config.effectiveProperties().getOrDefault("mimir.checkupdates", Boolean.TRUE.toString()))) {
-            logger.debug("Not checking for Mimir updates; not enabled");
+        DaemonConfig daemonConfig = DaemonConfig.with(config);
+        if (!daemonConfig.autoupdate() || config.mimirVersion().isEmpty()) {
+            logger.debug("Not checking for Mimir updates; not enabled or version not detected");
             return;
         }
         try {
-            UdsNodeConfig udsConfig = UdsNodeConfig.with(config);
             logger.debug("Checking for Mimir updates...");
             VersionRangeRequest versionRangeRequest = new VersionRangeRequest(
-                    new DefaultArtifact(udsConfig.daemonGav()).setVersion("[" + config.mimirVersion() + ",)"),
+                    new DefaultArtifact(daemonConfig.daemonGav())
+                            .setVersion("[" + config.mimirVersion().orElseThrow() + ",)"),
                     remoteRepositories,
                     "mimir");
             VersionRangeResult rangeResult = repositorySystem.resolveVersionRange(session, versionRangeRequest);
             List<Version> versions = rangeResult.getVersions();
             if (versions.size() > 1) {
                 String latest = versions.get(versions.size() - 1).toString();
-                if (!config.mimirVersion().equals(latest)) {
+                if (!Objects.equals(config.mimirVersion().orElse(null), latest)) {
                     logger.info(
                             "Please upgrade to Mimir version {} (you are using version {})",
                             latest,
                             config.mimirVersion());
                 }
+            } else {
+                logger.debug("Mimir {} is up to date", config.mimirVersion().orElseThrow());
             }
         } catch (Exception e) {
             logger.warn("Failed to check for updates; ignoring it", e);
