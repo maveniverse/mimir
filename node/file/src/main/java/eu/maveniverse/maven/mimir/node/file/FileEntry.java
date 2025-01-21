@@ -2,7 +2,7 @@ package eu.maveniverse.maven.mimir.node.file;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.impl.LocalEntrySupport;
+import eu.maveniverse.maven.mimir.shared.impl.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.impl.Utils;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.eclipse.aether.util.FileUtils;
 
-public final class FileEntry extends LocalEntrySupport implements SystemEntry {
+public final class FileEntry extends EntrySupport implements SystemEntry {
     public static FileEntry createEntry(Path file, Map<String, String> metadata, Map<String, String> checksums)
             throws IOException {
         HashMap<String, String> md = new HashMap<>(metadata);

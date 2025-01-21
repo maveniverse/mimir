@@ -12,12 +12,11 @@ import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.impl.RemoteNodeSupport;
+import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.naming.Key;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
-import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import io.minio.MinioClient;
@@ -38,19 +37,18 @@ import java.util.Optional;
 import java.util.function.Function;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
-public final class MinioNode extends RemoteNodeSupport implements RemoteNode, SystemNode {
+public final class MinioNode extends NodeSupport implements SystemNode {
     private final MinioClient minioClient;
     private final Function<URI, Key> keyResolver;
     private final List<String> checksumAlgorithms;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
     public MinioNode(
-            int distance,
             MinioClient minioClient,
             Function<URI, Key> keyResolver,
             List<String> checksumAlgorithms,
             Map<String, ChecksumAlgorithmFactory> checksumFactories) {
-        super(MinioNodeConfig.NAME, distance);
+        super(MinioNodeConfig.NAME);
         this.minioClient = requireNonNull(minioClient, "minioClient");
         this.keyResolver = requireNonNull(keyResolver, "keyResolver");
         this.checksumAlgorithms = requireNonNull(checksumAlgorithms, "checksumAlgorithms");

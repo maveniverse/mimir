@@ -53,12 +53,7 @@ public class MinioNodeFactory implements SystemNodeFactory {
             localChecksumFactories.put(alg, checksumAlgorithmFactory);
         }
         MinioClient minioClient = createMinioClient(minioNodeConfig);
-        return new MinioNode(
-                minioNodeConfig.getDistance(),
-                minioClient,
-                keyResolver,
-                minioNodeConfig.checksumAlgorithms(),
-                localChecksumFactories);
+        return new MinioNode(minioClient, keyResolver, minioNodeConfig.checksumAlgorithms(), localChecksumFactories);
     }
 
     private MinioClient createMinioClient(MinioNodeConfig minioNodeConfig) {

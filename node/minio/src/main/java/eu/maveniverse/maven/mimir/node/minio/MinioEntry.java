@@ -2,9 +2,8 @@ package eu.maveniverse.maven.mimir.node.minio;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.impl.LocalEntrySupport;
+import eu.maveniverse.maven.mimir.shared.impl.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.naming.Key;
-import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import io.minio.DownloadObjectArgs;
 import io.minio.GetObjectArgs;
@@ -17,7 +16,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import org.eclipse.aether.util.FileUtils;
 
-public final class MinioEntry extends LocalEntrySupport implements RemoteEntry, SystemEntry {
+public final class MinioEntry extends EntrySupport implements SystemEntry {
     private final MinioClient minioClient;
     private final Key key;
 
@@ -39,13 +38,6 @@ public final class MinioEntry extends LocalEntrySupport implements RemoteEntry, 
             throw new IOException("inputStream()", e);
         } catch (Exception e) {
             throw new IOException("inputStream()", e);
-        }
-    }
-
-    @Override
-    public void handleContent(IOConsumer consumer) throws IOException {
-        try (InputStream stream = inputStream()) {
-            consumer.accept(stream);
         }
     }
 

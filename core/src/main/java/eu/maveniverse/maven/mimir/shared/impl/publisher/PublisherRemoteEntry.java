@@ -9,7 +9,8 @@ package eu.maveniverse.maven.mimir.shared.impl.publisher;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.impl.RemoteEntrySupport;
+import eu.maveniverse.maven.mimir.shared.impl.EntrySupport;
+import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -18,7 +19,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-public class PublisherRemoteEntry extends RemoteEntrySupport {
+public class PublisherRemoteEntry extends EntrySupport implements RemoteEntry {
     private final URI handle;
 
     public PublisherRemoteEntry(Map<String, String> metadata, Map<String, String> checksums, URI handle) {
