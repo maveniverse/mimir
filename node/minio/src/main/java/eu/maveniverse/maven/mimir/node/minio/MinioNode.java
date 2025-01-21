@@ -33,9 +33,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class MinioNode extends NodeSupport implements SystemNode {
     private final MinioNodeConfig config;
@@ -77,9 +79,10 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                     .bucket(localKey.container())
                     .object(localKey.name())
                     .build());
-            Map<String, String> metadata = splitMetadata(stat.userMetadata());
-            Map<String, String> checksums = splitChecksums(stat.userMetadata());
-            return Optional.of(new MinioEntry(metadata, checksums, minioClient, localKey));
+            // TODO: this is a hack but works for now
+            Map<String, String> checksums = splitChecksums(stat.userMetadata()).entrySet().stream()
+                    .collect(Collectors.toMap(e -> e.getKey().toUpperCase(Locale.ENGLISH), Map.Entry::getValue));
+            return Optional.of(new MinioEntry(splitMetadata(stat.userMetadata()), checksums, minioClient, localKey));
         } catch (ErrorResponseException e) {
             return Optional.empty();
         } catch (MinioException e) {
