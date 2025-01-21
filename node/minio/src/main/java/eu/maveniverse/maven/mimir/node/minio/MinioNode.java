@@ -148,6 +148,8 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                     throw new IOException("inputStream()", e);
                 } catch (Exception e) {
                     throw new IOException("inputStream()", e);
+                } finally {
+                    Files.deleteIfExists(tempFile);
                 }
             }
             default -> throw new UnsupportedOperationException("Unsupported entry type: " + entry.getClass());
