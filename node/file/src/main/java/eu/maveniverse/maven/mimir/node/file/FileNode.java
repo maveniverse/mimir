@@ -111,7 +111,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
         ensureOpen();
         Path path = resolveKey(key);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
-            Utils.copyOrLink(file, f.getPath());
+            Files.copy(file, f.getPath());
             HashMap<String, String> metadata = new HashMap<>();
             metadata.put(Entry.CONTENT_LENGTH, Long.toString(Files.size(file)));
             metadata.put(

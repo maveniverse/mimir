@@ -11,13 +11,16 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public interface RemoteEntry extends Entry {
+    /**
+     * Consumer of remote entry content.
+     */
     @FunctionalInterface
     interface IOConsumer {
         void accept(InputStream stream) throws IOException;
     }
 
     /**
-     * Provides cache entry content as input stream to consumer.
+     * Provides remote cache entry content as input stream to consumer.
      */
     void handleContent(IOConsumer consumer) throws IOException;
 }
