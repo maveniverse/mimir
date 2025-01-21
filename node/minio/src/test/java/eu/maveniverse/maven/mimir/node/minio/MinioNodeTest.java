@@ -58,11 +58,11 @@ public class MinioNodeTest {
                                         Sha512ChecksumAlgorithmFactory.NAME,
                                         new ChecksumAlgorithmFactoryAdapter(new Sha512ChecksumAlgorithmFactory())))
                         .createNode(config)) {
-                    Optional<? extends SystemEntry> entry = minioNode.locate(keyMapper.apply(central, junit));
+                    Optional<MinioEntry> entry = minioNode.locate(keyMapper.apply(central, junit));
                     assertFalse(entry.isPresent());
 
                     byte[] data = "Hello World!".getBytes(StandardCharsets.UTF_8);
-                    Path temp = Files.createTempFile("minio", "tmp");
+                    Path temp = Files.createTempFile("mimir", "tmp");
                     Files.write(temp, data, StandardOpenOption.TRUNCATE_EXISTING);
                     Map<String, String> checksums = ChecksumAlgorithmHelper.calculate(
                             data,

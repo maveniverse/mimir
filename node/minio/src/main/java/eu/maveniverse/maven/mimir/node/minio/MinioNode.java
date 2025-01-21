@@ -100,6 +100,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
         Map<String, String> userMetadata = pushMap(mergeEntry(entry));
         switch (entry) {
             case RemoteEntry remoteEntry -> remoteEntry.handleContent(
+                    // TODO: checksums are here; validate publisher content stream against it
                     inputStream -> {
                         try {
                             minioClient.putObject(PutObjectArgs.builder()
