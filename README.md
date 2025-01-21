@@ -54,8 +54,8 @@ Build requirements:
 * Maven 3.9.9+
 
 Runtime requirements:
-* Java 17+
-* Maven 3.6.3+
+* Java 21+
+* Maven 3.9.9+
 
 ## High level design
 
