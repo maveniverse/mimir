@@ -13,6 +13,7 @@ import static org.eclipse.aether.internal.impl.Maven2RepositoryLayoutFactory.CON
 import eu.maveniverse.maven.mimir.shared.Session;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Named;
 import org.eclipse.aether.RepositorySystemSession;
@@ -60,7 +61,13 @@ public class MimirRepositoryConnectorFactory implements RepositoryConnectorFacto
         if (mimirSessionOptional.isPresent()) {
             Session mimirSession = mimirSessionOptional.orElseThrow();
             if (mimirSession.repositorySupported(repository)) {
-                return new MimirRepositoryConnector(mimirSession, repository, repositoryConnector, checksumsAlgorithms);
+                return new MimirRepositoryConnector(
+                        mimirSession,
+                        repository,
+                        repositoryConnector,
+                        checksumsAlgorithms,
+                        checksumAlgorithmFactorySelector.getChecksumAlgorithmFactories().stream()
+                                .collect(Collectors.toMap(ChecksumAlgorithmFactory::getName, f -> f)));
             }
         }
         return repositoryConnector;

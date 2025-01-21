@@ -45,20 +45,22 @@ public class MimirRepositoryConnector implements RepositoryConnector {
     private final Session mimirSession;
     private final RemoteRepository remoteRepository;
     private final RepositoryConnector delegate;
-    private final List<ChecksumAlgorithmFactory> checksumAlgorithmFactories;
-    private final Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactoryMap;
+    private final List<ChecksumAlgorithmFactory> resolverChecksumAlgorithmFactories;
+    private final Map<String, ChecksumAlgorithmFactory> allChecksumAlgorithmFactoryMap;
 
     public MimirRepositoryConnector(
             Session mimirSession,
             RemoteRepository remoteRepository,
             RepositoryConnector delegate,
-            List<ChecksumAlgorithmFactory> checksumAlgorithmFactories) {
+            List<ChecksumAlgorithmFactory> resolverChecksumAlgorithmFactories,
+            Map<String, ChecksumAlgorithmFactory> allChecksumAlgorithmFactoryMap) {
         this.mimirSession = requireNonNull(mimirSession, "mimirSession");
         this.remoteRepository = requireNonNull(remoteRepository, "remoteRepository");
         this.delegate = requireNonNull(delegate, "delegate");
-        this.checksumAlgorithmFactories = requireNonNull(checksumAlgorithmFactories, "checksumAlgorithmFactories");
-        this.checksumAlgorithmFactoryMap = checksumAlgorithmFactories.stream()
-                .collect(Collectors.toMap(ChecksumAlgorithmFactory::getName, f -> f));
+        this.resolverChecksumAlgorithmFactories =
+                requireNonNull(resolverChecksumAlgorithmFactories, "resolverChecksumAlgorithmFactories");
+        this.allChecksumAlgorithmFactoryMap =
+                requireNonNull(allChecksumAlgorithmFactoryMap, "allChecksumAlgorithmFactoryMap");
     }
 
     @Override
@@ -83,7 +85,8 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                             Path artifactFile = artifactDownload.getFile().toPath();
                             ce.transferTo(artifactFile);
                             Optional<String> checksum = Optional.empty();
-                            for (ChecksumAlgorithmFactory checksumAlgorithmFactory : checksumAlgorithmFactories) {
+                            for (ChecksumAlgorithmFactory checksumAlgorithmFactory :
+                                    resolverChecksumAlgorithmFactories) {
                                 checksum = Optional.ofNullable(ce.checksums().get(checksumAlgorithmFactory.getName()));
                                 if (checksum.isPresent()) {
                                     String chk = checksum.orElseThrow();
@@ -100,7 +103,7 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                                 logger.warn(
                                         "No checksum written for {}; resolver={} vs entry={}",
                                         artifactDownload.getArtifact(),
-                                        checksumAlgorithmFactories.stream()
+                                        resolverChecksumAlgorithmFactories.stream()
                                                 .map(ChecksumAlgorithmFactory::getName)
                                                 .collect(Collectors.joining(",")),
                                         String.join(",", ce.checksums().keySet()));
@@ -108,9 +111,10 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                         } else {
                             HashMap<String, ChecksumAlgorithm> checksumAlgorithms = new HashMap<>();
                             for (String algorithm : mimirSession.checksumAlgorithms()) {
-                                ChecksumAlgorithmFactory factory = checksumAlgorithmFactoryMap.get(algorithm);
+                                ChecksumAlgorithmFactory factory = allChecksumAlgorithmFactoryMap.get(algorithm);
                                 if (factory == null) {
-                                    throw new IllegalStateException("Checksum algorithm mismatch: " + algorithm);
+                                    throw new IllegalStateException(
+                                            "Required checksum algorithm unavailable: " + algorithm);
                                 }
                                 checksumAlgorithms.put(factory.getName(), factory.getAlgorithm());
                             }
