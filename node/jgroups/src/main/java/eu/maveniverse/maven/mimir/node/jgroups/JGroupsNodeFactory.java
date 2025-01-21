@@ -47,9 +47,10 @@ public class JGroupsNodeFactory implements RemoteNodeFactory {
                 if (publisherFactory == null) {
                     throw new IllegalStateException("No publisher found for transport " + cfg.publisherTransport());
                 }
-                return Optional.of(new JGroupsNode(systemNode, createChannel(cfg), config, publisherFactory));
+                return Optional.of(
+                        new JGroupsNode(createChannel(cfg), publisherFactory.createPublisher(config, systemNode)));
             } else {
-                return Optional.of(new JGroupsNode(systemNode, createChannel(cfg)));
+                return Optional.of(new JGroupsNode(createChannel(cfg)));
             }
         } catch (Exception e) {
             throw new IOException("Failed to create JChannel", e);

@@ -29,6 +29,8 @@ public class DaemonConfig {
         String daemonLogName = "daemon-" + config.mimirVersion().orElse("UNKNOWN") + ".log";
         String daemonGav = "eu.maveniverse.maven.mimir:daemon:jar:daemon:"
                 + config.mimirVersion().orElse("UNKNOWN");
+        String systemNode = "file";
+
         if (config.effectiveProperties().containsKey("mimir.daemon.socketPath")) {
             socketPath =
                     Config.getCanonicalPath(Path.of(config.effectiveProperties().get("mimir.daemon.socketPath")));
@@ -48,7 +50,10 @@ public class DaemonConfig {
         if (config.effectiveProperties().containsKey("mimir.daemon.daemonGav")) {
             daemonGav = config.effectiveProperties().get("mimir.daemon.daemonGav");
         }
-        return new DaemonConfig(socketPath, autoupdate, autostart, daemonJarName, daemonLogName, daemonGav);
+        if (config.effectiveProperties().containsKey("mimir.daemon.systemNode")) {
+            systemNode = config.effectiveProperties().get("mimir.daemon.systemNode");
+        }
+        return new DaemonConfig(socketPath, autoupdate, autostart, daemonJarName, daemonLogName, daemonGav, systemNode);
     }
 
     public static final String NAME = "daemon";
@@ -59,6 +64,7 @@ public class DaemonConfig {
     private final String daemonJarName;
     private final String daemonLogName;
     private final String daemonGav;
+    private final String systemNode;
 
     private DaemonConfig(
             Path socketPath,
@@ -66,13 +72,15 @@ public class DaemonConfig {
             boolean autostart,
             String daemonJarName,
             String daemonLogName,
-            String daemonGav) {
+            String daemonGav,
+            String systemNode) {
         this.socketPath = socketPath;
         this.autoupdate = autoupdate;
         this.autostart = autostart;
         this.daemonJarName = daemonJarName;
         this.daemonLogName = daemonLogName;
         this.daemonGav = daemonGav;
+        this.systemNode = systemNode;
     }
 
     public Path socketPath() {
@@ -97,5 +105,9 @@ public class DaemonConfig {
 
     public String daemonGav() {
         return daemonGav;
+    }
+
+    public String systemNode() {
+        return systemNode;
     }
 }

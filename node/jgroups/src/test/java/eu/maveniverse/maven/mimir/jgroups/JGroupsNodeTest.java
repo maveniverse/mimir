@@ -67,8 +67,9 @@ public class JGroupsNodeTest {
                 .connect("mimir-jgroups");
         Thread.sleep(1000);
 
-        try (JGroupsNode publisher = new JGroupsNode(nodeOne, channelOne, config, new ServerSocketPublisherFactory());
-                JGroupsNode consumer = new JGroupsNode(nodeTwo, channelTwo)) {
+        try (JGroupsNode publisher = new JGroupsNode(
+                        channelOne, new ServerSocketPublisherFactory().createPublisher(config, nodeOne));
+                JGroupsNode consumer = new JGroupsNode(channelTwo)) {
             URI key = URI.create("mimir:file:container:file.txt");
             Optional<? extends RemoteEntry> entry = consumer.locate(key);
             assertTrue(entry.isPresent());

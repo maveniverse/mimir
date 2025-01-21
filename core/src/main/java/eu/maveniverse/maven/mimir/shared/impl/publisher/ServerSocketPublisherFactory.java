@@ -10,13 +10,11 @@ package eu.maveniverse.maven.mimir.shared.impl.publisher;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
+import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.mimir.shared.publisher.Publisher;
 import eu.maveniverse.maven.mimir.shared.publisher.PublisherFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.Optional;
-import java.util.function.Function;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
@@ -26,10 +24,9 @@ public class ServerSocketPublisherFactory implements PublisherFactory {
     public static final String NAME = "socket";
 
     @Override
-    public Publisher createPublisher(Config config, Function<String, Optional<SystemEntry>> entrySupplier)
-            throws IOException {
+    public Publisher createPublisher(Config config, SystemNode systemNode) throws IOException {
         requireNonNull(config, "config");
-        requireNonNull(entrySupplier, "entrySupplier");
-        return new ServerSocketPublisher(new InetSocketAddress(0), entrySupplier);
+        requireNonNull(systemNode, "systemNode");
+        return new ServerSocketPublisher(systemNode, new InetSocketAddress(0));
     }
 }

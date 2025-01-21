@@ -12,7 +12,6 @@ import static java.util.Objects.requireNonNull;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import eu.maveniverse.maven.mimir.node.daemon.DaemonConfig;
-import eu.maveniverse.maven.mimir.node.file.FileNodeConfig;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
@@ -48,33 +47,46 @@ import org.slf4j.LoggerFactory;
 @Named
 @Singleton
 public class Daemon implements Closeable {
+    private static final Logger logger = LoggerFactory.getLogger(Daemon.class);
+
     public static void main(String[] args) {
-        Config config =
-                Config.defaults().propertiesPath(Path.of("daemon.properties")).build();
+        try {
+            Config config = Config.defaults()
+                    .propertiesPath(Path.of("daemon.properties"))
+                    .build();
 
-        DaemonConfig daemonConfig = DaemonConfig.with(config);
-        Daemon daemon = Guice.createInjector(new WireModule(
-                        new AbstractModule() {
-                            @Override
-                            protected void configure() {
-                                bind(Config.class).toInstance(DaemonConfig.toDaemonProcessConfig(config));
-                                bind(DaemonConfig.class).toInstance(daemonConfig);
-                            }
-                        },
-                        new SpaceModule(new URLClassSpace(Daemon.class.getClassLoader()), BeanScanning.INDEX, true)))
-                .getInstance(Daemon.class);
+            DaemonConfig daemonConfig = DaemonConfig.with(config);
+            Daemon daemon = Guice.createInjector(new WireModule(
+                            new AbstractModule() {
+                                @Override
+                                protected void configure() {
+                                    bind(Config.class).toInstance(DaemonConfig.toDaemonProcessConfig(config));
+                                    bind(DaemonConfig.class).toInstance(daemonConfig);
+                                }
+                            },
+                            new SpaceModule(
+                                    new URLClassSpace(Daemon.class.getClassLoader()), BeanScanning.INDEX, true)))
+                    .getInstance(Daemon.class);
 
-        Runtime.getRuntime().addShutdownHook(new Thread(daemon::close));
+            Runtime.getRuntime().addShutdownHook(new Thread(daemon::close));
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
     @Named
-    public static class SystemNodeProvider implements Provider<SystemNode> {
+    public static final class SystemNodeProvider implements Provider<SystemNode> {
         private final SystemNode systemNode;
 
-        // TODO: this is just shortcut for now
         @Inject
-        public SystemNodeProvider(Config config, @Named(FileNodeConfig.NAME) SystemNodeFactory systemNodeFactory)
+        public SystemNodeProvider(
+                Config config, DaemonConfig daemonConfig, Map<String, SystemNodeFactory> systemNodeFactories)
                 throws IOException {
+            requireNonNull(systemNodeFactories, "systemNodeFactories");
+            SystemNodeFactory systemNodeFactory = systemNodeFactories.get(daemonConfig.systemNode());
+            if (systemNodeFactory == null) {
+                throw new IllegalArgumentException("Unknown system node: " + daemonConfig.systemNode());
+            }
             this.systemNode = systemNodeFactory.createNode(config);
         }
 
@@ -84,7 +96,6 @@ public class Daemon implements Closeable {
         }
     }
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ServerSocketChannel serverSocketChannel;
     private final ExecutorService executor;
     private final SystemNode systemNode;
@@ -98,7 +109,11 @@ public class Daemon implements Closeable {
             Map<String, RemoteNodeFactory> remoteNodeFactories)
             throws IOException {
         requireNonNull(config, "config");
-        this.systemNode = requireNonNull(systemNode, "systemNode");
+        requireNonNull(daemonConfig, "daemonConfig");
+        requireNonNull(systemNode, "systemNode");
+        requireNonNull(remoteNodeFactories, "remoteNodeFactories");
+
+        this.systemNode = systemNode;
         ArrayList<RemoteNode> nds = new ArrayList<>();
         for (RemoteNodeFactory remoteNodeFactory : remoteNodeFactories.values()) {
             Optional<? extends RemoteNode> node = remoteNodeFactory.createNode(config);

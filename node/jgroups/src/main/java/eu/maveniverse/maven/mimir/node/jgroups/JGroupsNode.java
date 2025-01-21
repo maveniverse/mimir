@@ -12,13 +12,10 @@ import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.impl.node.RemoteNodeSupport;
 import eu.maveniverse.maven.mimir.shared.impl.publisher.PublisherRemoteEntry;
-import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
-import eu.maveniverse.maven.mimir.shared.node.SystemNode;
+import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.publisher.Publisher;
-import eu.maveniverse.maven.mimir.shared.publisher.PublisherFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -26,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
@@ -36,50 +32,36 @@ import org.jgroups.blocks.RequestHandler;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.Response;
 import org.jgroups.util.RspList;
-import org.jgroups.util.UUID;
 
 public class JGroupsNode extends RemoteNodeSupport implements RequestHandler {
     private static final String PUBLISHER_HANDLE = "handle";
     private static final String CMD_LOCATE = "locate";
     private static final String RSP_ERROR = "error";
 
-    private final SystemNode systemNode;
     private final JChannel channel;
     private final MessageDispatcher messageDispatcher;
     private final Publisher publisher;
-    private final ConcurrentHashMap<String, SystemEntry> tx;
 
     /**
      * Creates JGroups node w/o publisher.
      */
-    public JGroupsNode(SystemNode systemNode, JChannel channel) {
+    public JGroupsNode(JChannel channel) {
         super(JGroupsNodeConfig.NAME, 500);
-        this.systemNode = systemNode;
         this.channel = channel;
         this.messageDispatcher = new MessageDispatcher(channel);
         this.messageDispatcher.setAsynDispatching(true);
-        this.tx = null;
         this.publisher = null;
     }
 
     /**
      * Creates JGroups node with publisher.
      */
-    public JGroupsNode(SystemNode systemNode, JChannel channel, Config config, PublisherFactory publisherFactory)
-            throws IOException {
+    public JGroupsNode(JChannel channel, Publisher publisher) {
         super(JGroupsNodeConfig.NAME, 500);
-        this.systemNode = systemNode;
         this.channel = channel;
         this.messageDispatcher = new MessageDispatcher(channel, this);
         this.messageDispatcher.setAsynDispatching(true);
-        this.tx = new ConcurrentHashMap<>();
-        this.publisher = publisherFactory.createPublisher(config, txid -> {
-            SystemEntry entry = tx.get(txid);
-            if (entry == null) {
-                return Optional.empty();
-            }
-            return Optional.of(entry);
-        });
+        this.publisher = publisher;
     }
 
     @Override
@@ -122,14 +104,14 @@ public class JGroupsNode extends RemoteNodeSupport implements RequestHandler {
                 if (req.size() == 2 && CMD_LOCATE.equals(req.getFirst())) {
                     String keyString = req.get(1);
                     URI key = URI.create(keyString);
-                    Optional<? extends SystemEntry> optionalEntry = systemNode.locate(key);
-                    if (optionalEntry.isPresent()) {
-                        SystemEntry entry = optionalEntry.orElseThrow();
-                        String txid = UUID.randomUUID().toString();
-                        tx.put(txid, entry);
-                        responseMap.putAll(mergeMetadataAndChecksums(entry.metadata(), entry.checksums()));
-                        responseMap.put(
-                                PUBLISHER_HANDLE, publisher.createHandle(txid).toASCIIString());
+                    Optional<Publisher.Handle> handle = publisher.createHandle(key);
+                    if (handle.isPresent()) {
+                        Publisher.Handle publisherHandle = handle.orElseThrow();
+                        Entry publishedEntry = publisherHandle.publishedEntry();
+                        URI publishedHandle = publisherHandle.handle();
+                        responseMap.putAll(
+                                mergeMetadataAndChecksums(publishedEntry.metadata(), publishedEntry.checksums()));
+                        responseMap.put(PUBLISHER_HANDLE, publishedHandle.toASCIIString());
                         logger.info("OK: {} asked {}", msg.getSrc(), keyString);
                     } else {
                         logger.info("KO: {} asked {}", msg.getSrc(), keyString);

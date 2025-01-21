@@ -111,11 +111,22 @@
         <groupId>com.google.inject</groupId>
         <artifactId>guice</artifactId>
         <version>5.1.0</version>
+        <classifier>classes</classifier>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>33.4.0-jre</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>failureaccess</artifactId>
+        <version>1.0.2</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm</artifactId>
+        <version>9.7.1</version>
       </dependency>
 
       <!-- Resolver + Maven -->

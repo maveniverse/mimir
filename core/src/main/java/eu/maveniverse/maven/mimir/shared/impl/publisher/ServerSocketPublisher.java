@@ -7,10 +7,8 @@
  */
 package eu.maveniverse.maven.mimir.shared.impl.publisher;
 
-import static java.util.Objects.requireNonNull;
-
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
-import eu.maveniverse.maven.mimir.shared.publisher.Publisher;
+import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,20 +22,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ServerSocketPublisher implements Publisher {
+public class ServerSocketPublisher extends PublisherSupport {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ServerSocket serverSocket;
     private final ExecutorService executor;
 
-    public ServerSocketPublisher(
-            InetSocketAddress inetSocketAddress, Function<String, Optional<SystemEntry>> entrySupplier)
-            throws IOException {
-        requireNonNull(inetSocketAddress, "inetSocketAddress");
-        requireNonNull(entrySupplier, "entrySupplier");
+    public ServerSocketPublisher(SystemNode systemNode, InetSocketAddress inetSocketAddress) throws IOException {
+        super(systemNode);
 
         this.serverSocket = new ServerSocket(inetSocketAddress.getPort(), 50, inetSocketAddress.getAddress());
         this.executor = Executors.newVirtualThreadPerTaskExecutor();
@@ -51,15 +45,15 @@ public class ServerSocketPublisher implements Publisher {
                             byte[] buf = socket.getInputStream().readNBytes(36);
                             OutputStream out = socket.getOutputStream();
                             if (buf.length == 36) {
-                                String txid = new String(buf, StandardCharsets.UTF_8);
-                                Optional<SystemEntry> entry = entrySupplier.apply(txid);
+                                String token = new String(buf, StandardCharsets.UTF_8);
+                                Optional<SystemEntry> entry = publishedEntry(token);
                                 if (entry.isPresent()) {
-                                    logger.debug("SERVER HIT: {} to {}", txid, socket.getRemoteSocketAddress());
+                                    logger.debug("HIT: {} to {}", token, socket.getRemoteSocketAddress());
                                     try (InputStream is = entry.orElseThrow().inputStream()) {
                                         is.transferTo(out);
                                     }
                                 } else {
-                                    logger.warn("SERVER MISS: {} to {}", txid, socket.getRemoteSocketAddress());
+                                    logger.warn("MISS: {} to {}", token, socket.getRemoteSocketAddress());
                                 }
                             }
                             out.flush();
@@ -85,9 +79,9 @@ public class ServerSocketPublisher implements Publisher {
     }
 
     @Override
-    public URI createHandle(String txid) throws IOException {
+    protected URI createHandle(String token) throws IOException {
         return URI.create("socket://" + InetAddress.getLocalHost().getHostAddress() + ":" + serverSocket.getLocalPort()
-                + "/" + txid);
+                + "/" + token);
     }
 
     @Override

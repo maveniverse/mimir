@@ -7,13 +7,30 @@
  */
 package eu.maveniverse.maven.mimir.shared.publisher;
 
+import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Optional;
 
 public interface Publisher extends Closeable {
     /**
-     * Crafts a publisher specific URI based on passed in token.
+     * The publisher handle.
      */
-    URI createHandle(String txid) throws IOException;
+    interface Handle {
+        /**
+         * The handle.
+         */
+        URI handle();
+
+        /**
+         * The entry being published under given handle.
+         */
+        SystemEntry publishedEntry();
+    }
+
+    /**
+     * Crafts a publisher specific URI based on passed in content URI key, if content can be published.
+     */
+    Optional<Handle> createHandle(URI key) throws IOException;
 }
