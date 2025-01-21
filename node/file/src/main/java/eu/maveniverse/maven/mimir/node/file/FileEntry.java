@@ -9,6 +9,7 @@ package eu.maveniverse.maven.mimir.node.file;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.impl.FileUtils;
 import eu.maveniverse.maven.mimir.shared.impl.Utils;
 import eu.maveniverse.maven.mimir.shared.impl.node.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
@@ -17,7 +18,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import org.eclipse.aether.util.FileUtils;
 
 public final class FileEntry extends EntrySupport implements SystemEntry {
     private final Path path;

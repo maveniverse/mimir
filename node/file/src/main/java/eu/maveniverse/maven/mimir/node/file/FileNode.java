@@ -10,6 +10,7 @@ package eu.maveniverse.maven.mimir.node.file;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.checksum.ChecksumAlgorithmFactory;
+import eu.maveniverse.maven.mimir.shared.impl.FileUtils;
 import eu.maveniverse.maven.mimir.shared.impl.Utils;
 import eu.maveniverse.maven.mimir.shared.impl.node.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.naming.Key;
@@ -27,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import org.eclipse.aether.util.FileUtils;
 
 public final class FileNode extends NodeSupport implements SystemNode {
     private final Path basedir;
