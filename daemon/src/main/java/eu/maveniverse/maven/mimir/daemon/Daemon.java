@@ -141,6 +141,7 @@ public class Daemon implements Closeable {
         this.serverSocketChannel = serverSocketChannel;
         logger.info("Mimir Daemon {} started", config.mimirVersion().orElse("UNKNOWN"));
         logger.info("  PID: {}", ProcessHandle.current().pid());
+        logger.info("  Properties: {}", config.basedir().resolve(config.propertiesPath()));
         logger.info("  Socket: {}", socketAddress);
         logger.info("  System Node: {}", systemNode);
         logger.info("  {} remote node(s):", remoteNodes.size());
@@ -175,7 +176,7 @@ public class Daemon implements Closeable {
             } catch (Exception e) {
                 logger.warn("Error closing executor", e);
             }
-            for (RemoteNode node : this.remoteNodes) {
+            for (RemoteNode node : remoteNodes) {
                 try {
                     node.close();
                 } catch (IOException e) {

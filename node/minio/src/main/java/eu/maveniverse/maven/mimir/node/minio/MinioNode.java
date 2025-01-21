@@ -38,17 +38,20 @@ import java.util.function.Function;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 public final class MinioNode extends NodeSupport implements SystemNode {
+    private final MinioNodeConfig config;
     private final MinioClient minioClient;
     private final Function<URI, Key> keyResolver;
     private final List<String> checksumAlgorithms;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
     public MinioNode(
+            MinioNodeConfig config,
             MinioClient minioClient,
             Function<URI, Key> keyResolver,
             List<String> checksumAlgorithms,
             Map<String, ChecksumAlgorithmFactory> checksumFactories) {
         super(MinioNodeConfig.NAME);
+        this.config = requireNonNull(config, "config");
         this.minioClient = requireNonNull(minioClient, "minioClient");
         this.keyResolver = requireNonNull(keyResolver, "keyResolver");
         this.checksumAlgorithms = requireNonNull(checksumAlgorithms, "checksumAlgorithms");
@@ -181,6 +184,6 @@ public final class MinioNode extends NodeSupport implements SystemNode {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName();
+        return getClass().getSimpleName() + "(" + config.endpoint() + ")";
     }
 }

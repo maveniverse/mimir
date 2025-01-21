@@ -66,11 +66,6 @@ public class ServerSocketPublisher extends PublisherSupport {
                 // closed
             } catch (Exception e) {
                 logger.error("Error while accepting client connection", e);
-            } finally {
-                try {
-                    close();
-                } catch (Exception ignore) {
-                }
             }
         });
         serverThread.setDaemon(true);

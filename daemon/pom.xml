@@ -42,6 +42,11 @@
       <artifactId>jgroups</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mimir.node</groupId>
+      <artifactId>minio</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -167,6 +172,8 @@
                     <exclude>META-INF/NOTICE</exclude>
                     <exclude>META-INF/NOTICE.txt</exclude>
                     <exclude>META-INF/*.kotlin_module</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.SF</exclude>
                     <exclude>**/module-info.class</exclude>
                   </excludes>
                 </filter>
