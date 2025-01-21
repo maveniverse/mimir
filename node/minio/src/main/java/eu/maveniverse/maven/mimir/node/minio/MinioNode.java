@@ -7,6 +7,8 @@
  */
 package eu.maveniverse.maven.mimir.node.minio;
 
+import static eu.maveniverse.maven.mimir.node.minio.Utils.popMap;
+import static eu.maveniverse.maven.mimir.node.minio.Utils.pushMap;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeEntry;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
@@ -33,11 +35,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public final class MinioNode extends NodeSupport implements SystemNode {
     private final MinioNodeConfig config;
@@ -79,10 +79,9 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                     .bucket(localKey.container())
                     .object(localKey.name())
                     .build());
-            // TODO: this is a hack but works for now
-            Map<String, String> checksums = splitChecksums(stat.userMetadata()).entrySet().stream()
-                    .collect(Collectors.toMap(e -> e.getKey().toUpperCase(Locale.ENGLISH), Map.Entry::getValue));
-            return Optional.of(new MinioEntry(splitMetadata(stat.userMetadata()), checksums, minioClient, localKey));
+            Map<String, String> userMetadata = popMap(stat.userMetadata());
+            return Optional.of(
+                    new MinioEntry(splitMetadata(userMetadata), splitChecksums(userMetadata), minioClient, localKey));
         } catch (ErrorResponseException e) {
             return Optional.empty();
         } catch (MinioException e) {
@@ -98,7 +97,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
         ensureOpen();
         Key localKey = keyResolver.apply(key);
         long size = Long.parseLong(entry.metadata().get(Entry.CONTENT_LENGTH));
-        Map<String, String> userMetadata = mergeEntry(entry);
+        Map<String, String> userMetadata = pushMap(mergeEntry(entry));
         switch (entry) {
             case RemoteEntry remoteEntry -> remoteEntry.handleContent(
                     inputStream -> {
@@ -167,7 +166,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
         metadata.put(Entry.CONTENT_LENGTH, Long.toString(size));
         metadata.put(Entry.CONTENT_LAST_MODIFIED, Long.toString(lastModified));
         try {
-            Map<String, String> userMetadata = mergeEntry(metadata, checksums);
+            Map<String, String> userMetadata = pushMap(mergeEntry(metadata, checksums));
             try (InputStream inputStream = Files.newInputStream(file)) {
                 minioClient.putObject(
                         PutObjectArgs.builder()
