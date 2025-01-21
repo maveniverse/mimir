@@ -15,6 +15,8 @@ import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.checksum.ChecksumAlgorithmFactory;
+import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumEnforcer;
+import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumInputStream;
 import eu.maveniverse.maven.mimir.shared.impl.node.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.naming.Key;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
@@ -22,8 +24,11 @@ import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
+import io.minio.CopyObjectArgs;
+import io.minio.CopySource;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
 import io.minio.StatObjectArgs;
 import io.minio.StatObjectResponse;
 import io.minio.errors.ErrorResponseException;
@@ -33,11 +38,13 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class MinioNode extends NodeSupport implements SystemNode {
     private final MinioNodeConfig config;
@@ -97,34 +104,55 @@ public final class MinioNode extends NodeSupport implements SystemNode {
         ensureOpen();
         Key localKey = keyResolver.apply(key);
         long size = Long.parseLong(entry.metadata().get(Entry.CONTENT_LENGTH));
-        Map<String, String> userMetadata = pushMap(mergeEntry(entry));
         switch (entry) {
-            case RemoteEntry remoteEntry -> remoteEntry.handleContent(
-                    // TODO: checksums are here; validate publisher content stream against it
-                    inputStream -> {
-                        try {
-                            minioClient.putObject(PutObjectArgs.builder()
+            case RemoteEntry remoteEntry -> remoteEntry.handleContent(inputStream -> {
+                try {
+                    ChecksumEnforcer checksumEnforcer;
+                    try (InputStream enforced = new ChecksumInputStream(
+                            inputStream,
+                            checksumAlgorithms().stream()
+                                    .map(a -> new AbstractMap.SimpleEntry<>(
+                                            a, checksumFactories.get(a).getAlgorithm()))
+                                    .collect(Collectors.toMap(
+                                            AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)),
+                            checksumEnforcer = new ChecksumEnforcer(entry.checksums()))) {
+                        minioClient.putObject(
+                                PutObjectArgs.builder().bucket(localKey.container()).object(localKey.name()).stream(
+                                                enforced, size, -1)
+                                        .build());
+                    } catch (ChecksumEnforcer.ChecksumEnforcerException e) {
+                        minioClient.removeObject(RemoveObjectArgs.builder()
+                                .bucket(localKey.container())
+                                .object(localKey.name())
+                                .build());
+                        throw e;
+                    }
+                    Map<String, String> userMetadata =
+                            pushMap(mergeEntry(entry.metadata(), checksumEnforcer.getChecksums()));
+                    minioClient.copyObject(CopyObjectArgs.builder()
+                            .bucket(localKey.container())
+                            .object(localKey.name())
+                            .userMetadata(userMetadata)
+                            .source(CopySource.builder()
                                     .bucket(localKey.container())
                                     .object(localKey.name())
-                                    .userMetadata(userMetadata)
-                                    .stream(inputStream, size, -1)
-                                    .build());
-                        } catch (MinioException e) {
-                            logger.debug(e.httpTrace());
-                            throw new IOException("inputStream()", e);
-                        } catch (Exception e) {
-                            throw new IOException("inputStream()", e);
-                        }
-                    });
+                                    .build())
+                            .build());
+                } catch (MinioException e) {
+                    logger.debug(e.httpTrace());
+                    throw new IOException("inputStream()", e);
+                } catch (Exception e) {
+                    throw new IOException("inputStream()", e);
+                }
+            });
             case SystemEntry systemEntry -> {
                 try (InputStream inputStream = systemEntry.inputStream()) {
-                    minioClient.putObject(
-                            PutObjectArgs.builder()
-                                    .bucket(localKey.container())
-                                    .object(localKey.name())
-                                    .userMetadata(userMetadata)
-                                    .stream(inputStream, size, -1)
-                                    .build());
+                    minioClient.putObject(PutObjectArgs.builder()
+                            .bucket(localKey.container())
+                            .object(localKey.name())
+                            .userMetadata(pushMap(mergeEntry(entry)))
+                            .stream(inputStream, size, -1)
+                            .build());
                 } catch (MinioException e) {
                     logger.debug(e.httpTrace());
                     throw new IOException("inputStream()", e);
@@ -136,13 +164,12 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                 Path tempFile = Files.createTempFile(localKey.container(), "minio");
                 localEntry.transferTo(tempFile);
                 try (InputStream inputStream = Files.newInputStream(tempFile)) {
-                    minioClient.putObject(
-                            PutObjectArgs.builder()
-                                    .bucket(localKey.container())
-                                    .object(localKey.name())
-                                    .userMetadata(userMetadata)
-                                    .stream(inputStream, size, -1)
-                                    .build());
+                    minioClient.putObject(PutObjectArgs.builder()
+                            .bucket(localKey.container())
+                            .object(localKey.name())
+                            .userMetadata(pushMap(mergeEntry(entry)))
+                            .stream(inputStream, size, -1)
+                            .build());
                 } catch (MinioException e) {
                     logger.debug(e.httpTrace());
                     throw new IOException("inputStream()", e);

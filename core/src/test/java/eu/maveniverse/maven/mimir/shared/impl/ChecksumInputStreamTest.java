@@ -1,6 +1,7 @@
 package eu.maveniverse.maven.mimir.shared.impl;
 
 import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumAlgorithmFactoryAdapter;
+import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;

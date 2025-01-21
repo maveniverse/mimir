@@ -14,8 +14,9 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.checksum.ChecksumAlgorithm;
 import eu.maveniverse.maven.mimir.shared.checksum.ChecksumAlgorithmFactory;
-import eu.maveniverse.maven.mimir.shared.impl.ChecksumInputStream;
 import eu.maveniverse.maven.mimir.shared.impl.FileUtils;
+import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumEnforcer;
+import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumInputStream;
 import eu.maveniverse.maven.mimir.shared.impl.node.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.naming.Key;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
@@ -28,6 +29,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.AbstractMap;
 import java.util.HashMap;
@@ -91,10 +93,21 @@ public final class FileNode extends NodeSupport implements SystemNode {
         Path path = resolveKey(key);
         if (entry instanceof RemoteEntry remoteEntry) {
             try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
-                // TODO: checksums are here; validate publisher content stream against it
-                remoteEntry.handleContent(is -> Files.copy(is, f.getPath()));
-                storeMetadata(path, mergeEntry(entry));
-                f.move();
+                remoteEntry.handleContent(inputStream -> {
+                    ChecksumEnforcer checksumEnforcer;
+                    try (InputStream enforced = new ChecksumInputStream(
+                            inputStream,
+                            checksumAlgorithms().stream()
+                                    .map(a -> new AbstractMap.SimpleEntry<>(
+                                            a, checksumFactories.get(a).getAlgorithm()))
+                                    .collect(Collectors.toMap(
+                                            AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)),
+                            checksumEnforcer = new ChecksumEnforcer(entry.checksums()))) {
+                        Files.copy(enforced, f.getPath(), StandardCopyOption.REPLACE_EXISTING);
+                    }
+                    storeMetadata(path, mergeEntry(entry.metadata(), checksumEnforcer.getChecksums()));
+                    f.move();
+                });
             }
         } else if (entry instanceof LocalEntry localEntry) {
             storeMetadata(path, mergeEntry(entry));
@@ -110,13 +123,24 @@ public final class FileNode extends NodeSupport implements SystemNode {
         ensureOpen();
         Path path = resolveKey(key);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
-            Files.copy(file, f.getPath());
+            ChecksumEnforcer checksumEnforcer;
+            try (InputStream enforced = new ChecksumInputStream(
+                    Files.newInputStream(file),
+                    checksumAlgorithms().stream()
+                            .map(a -> new AbstractMap.SimpleEntry<>(
+                                    a, checksumFactories.get(a).getAlgorithm()))
+                            .collect(Collectors.toMap(
+                                    AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)),
+                    checksumEnforcer = new ChecksumEnforcer(checksums))) {
+                Files.copy(enforced, f.getPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+
             HashMap<String, String> metadata = new HashMap<>();
             metadata.put(Entry.CONTENT_LENGTH, Long.toString(Files.size(file)));
             metadata.put(
                     Entry.CONTENT_LAST_MODIFIED,
                     Long.toString(Files.getLastModifiedTime(file).toMillis()));
-            storeMetadata(path, mergeEntry(metadata, checksums));
+            storeMetadata(path, mergeEntry(metadata, checksumEnforcer.getChecksums()));
             f.move();
         }
     }
