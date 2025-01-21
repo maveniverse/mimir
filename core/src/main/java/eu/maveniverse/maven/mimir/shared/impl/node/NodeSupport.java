@@ -5,7 +5,7 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.shared.impl;
+package eu.maveniverse.maven.mimir.shared.impl.node;
 
 import static java.util.Objects.requireNonNull;
 

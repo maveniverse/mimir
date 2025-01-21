@@ -10,6 +10,7 @@ package eu.maveniverse.maven.mimir.shared.impl;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
 
 public final class SessionConfig {
     public static SessionConfig with(Config config) {

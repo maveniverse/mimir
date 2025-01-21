@@ -9,7 +9,7 @@ package eu.maveniverse.maven.mimir.shared.impl.publisher;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.impl.EntrySupport;
+import eu.maveniverse.maven.mimir.shared.impl.node.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import java.io.IOException;
 import java.io.InputStream;

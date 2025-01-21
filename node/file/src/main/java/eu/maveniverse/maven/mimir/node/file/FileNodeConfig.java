@@ -11,7 +11,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.impl.SimpleKeyResolverFactory;
+import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;

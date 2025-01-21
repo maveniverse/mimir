@@ -7,7 +7,7 @@ import eu.maveniverse.maven.mimir.node.file.FileNode;
 import eu.maveniverse.maven.mimir.node.file.FileNodeConfig;
 import eu.maveniverse.maven.mimir.node.jgroups.JGroupsNode;
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.impl.SimpleKeyResolverFactory;
+import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.impl.publisher.ServerSocketPublisherFactory;
 import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import java.net.InetAddress;

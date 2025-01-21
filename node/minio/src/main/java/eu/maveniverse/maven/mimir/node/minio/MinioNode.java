@@ -12,7 +12,7 @@ import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
+import eu.maveniverse.maven.mimir.shared.impl.node.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.naming.Key;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;

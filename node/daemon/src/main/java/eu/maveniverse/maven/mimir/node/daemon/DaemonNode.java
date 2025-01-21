@@ -20,8 +20,8 @@ import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.impl.EntrySupport;
-import eu.maveniverse.maven.mimir.shared.impl.NodeSupport;
+import eu.maveniverse.maven.mimir.shared.impl.node.EntrySupport;
+import eu.maveniverse.maven.mimir.shared.impl.node.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.io.BufferedInputStream;

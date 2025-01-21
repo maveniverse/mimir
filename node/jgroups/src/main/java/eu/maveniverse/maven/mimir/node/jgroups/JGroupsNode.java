@@ -13,7 +13,7 @@ import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.impl.RemoteNodeSupport;
+import eu.maveniverse.maven.mimir.shared.impl.node.RemoteNodeSupport;
 import eu.maveniverse.maven.mimir.shared.impl.publisher.PublisherRemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
