@@ -9,6 +9,7 @@ package eu.maveniverse.maven.mimir.node.file;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.checksum.ChecksumAlgorithmFactory;
 import eu.maveniverse.maven.mimir.shared.impl.Utils;
 import eu.maveniverse.maven.mimir.shared.impl.node.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.naming.Key;
@@ -21,11 +22,11 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 import org.eclipse.aether.util.FileUtils;
 
 public final class FileNode extends NodeSupport implements SystemNode {
@@ -66,7 +67,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
         Path path = resolveKey(key);
         if (Files.isRegularFile(path)) {
             // TODO: hashes
-            return Optional.of(FileEntry.createEntry(path, Collections.emptyMap(), Collections.emptyMap()));
+            return Optional.of(createEntry(path, Collections.emptyMap(), Collections.emptyMap()));
         } else {
             return Optional.empty();
         }
@@ -89,7 +90,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
         } else {
             throw new UnsupportedOperationException("Unsupported entry type: " + entry.getClass());
         }
-        return FileEntry.createEntry(path, Collections.emptyMap(), Collections.emptyMap());
+        return createEntry(path, entry.metadata(), entry.checksums());
     }
 
     @Override
@@ -106,6 +107,16 @@ public final class FileNode extends NodeSupport implements SystemNode {
     private Path resolveKey(URI key) {
         Key resolved = keyResolver.apply(key);
         return basedir.resolve(resolved.container()).resolve(resolved.name());
+    }
+
+    private FileEntry createEntry(Path file, Map<String, String> metadata, Map<String, String> checksums)
+            throws IOException {
+        HashMap<String, String> md = new HashMap<>(metadata);
+        md.put(Entry.CONTENT_LENGTH, Long.toString(Files.size(file)));
+        md.put(
+                Entry.CONTENT_LAST_MODIFIED,
+                Long.toString(Files.getLastModifiedTime(file).toMillis()));
+        return new FileEntry(md, checksums, file);
     }
 
     @Override

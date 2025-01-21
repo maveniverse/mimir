@@ -1,5 +1,6 @@
 package eu.maveniverse.maven.mimir.shared.impl;
 
+import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumAlgorithmFactoryAdapter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -31,7 +32,9 @@ public class ChecksumInputStreamTest {
             };
             try (ChecksumInputStream cis = new ChecksumInputStream(
                     inputStream,
-                    Map.of(Md5ChecksumAlgorithmFactory.NAME, new Md5ChecksumAlgorithmFactory().getAlgorithm()),
+                    Map.of(
+                            Md5ChecksumAlgorithmFactory.NAME,
+                            new ChecksumAlgorithmFactoryAdapter(new Md5ChecksumAlgorithmFactory()).getAlgorithm()),
                     callback)) {
                 cis.read();
                 cis.transferTo(OutputStream.nullOutputStream());

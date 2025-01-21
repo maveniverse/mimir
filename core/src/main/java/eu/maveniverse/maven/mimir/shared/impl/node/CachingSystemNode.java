@@ -9,6 +9,7 @@ package eu.maveniverse.maven.mimir.shared.impl.node;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.checksum.ChecksumAlgorithmFactory;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
@@ -18,7 +19,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 public final class CachingSystemNode implements SystemNode {
     private final SystemNode one;

@@ -7,13 +7,13 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
+import eu.maveniverse.maven.mimir.shared.checksum.ChecksumAlgorithmFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 /**
  * Local node uses some "local" (local to the system) backing storage.

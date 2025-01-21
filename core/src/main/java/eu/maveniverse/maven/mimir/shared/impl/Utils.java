@@ -9,6 +9,7 @@ package eu.maveniverse.maven.mimir.shared.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.node.Entry;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -25,8 +26,11 @@ public final class Utils {
     private static final String METADATA_PREFIX = "m.";
     private static final String CHECKSUM_PREFIX = "c.";
 
-    public static Map<String, String> mergeMetadataAndChecksums(
-            Map<String, String> metadata, Map<String, String> checksums) {
+    public static Map<String, String> mergeEntry(Entry entry) {
+        return mergeEntry(entry.metadata(), entry.checksums());
+    }
+
+    public static Map<String, String> mergeEntry(Map<String, String> metadata, Map<String, String> checksums) {
         HashMap<String, String> merged = new HashMap<>();
         metadata.forEach((k, v) -> merged.put(METADATA_PREFIX + k, v));
         checksums.forEach((k, v) -> merged.put(CHECKSUM_PREFIX + k, v));

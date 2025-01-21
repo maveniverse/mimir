@@ -7,7 +7,7 @@
  */
 package eu.maveniverse.maven.mimir.node.jgroups;
 
-import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeMetadataAndChecksums;
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeEntry;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
@@ -109,8 +109,7 @@ public class JGroupsNode extends RemoteNodeSupport implements RequestHandler {
                         Publisher.Handle publisherHandle = handle.orElseThrow();
                         Entry publishedEntry = publisherHandle.publishedEntry();
                         URI publishedHandle = publisherHandle.handle();
-                        responseMap.putAll(
-                                mergeMetadataAndChecksums(publishedEntry.metadata(), publishedEntry.checksums()));
+                        responseMap.putAll(mergeEntry(publishedEntry));
                         responseMap.put(PUBLISHER_HANDLE, publishedHandle.toASCIIString());
                         logger.info("OK: {} asked {}", msg.getSrc(), keyString);
                     } else {

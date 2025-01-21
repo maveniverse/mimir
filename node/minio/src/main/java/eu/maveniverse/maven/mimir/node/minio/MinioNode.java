@@ -7,11 +7,12 @@
  */
 package eu.maveniverse.maven.mimir.node.minio;
 
-import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeMetadataAndChecksums;
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeEntry;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.checksum.ChecksumAlgorithmFactory;
 import eu.maveniverse.maven.mimir.shared.impl.node.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.naming.Key;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
@@ -35,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 public final class MinioNode extends NodeSupport implements SystemNode {
     private final MinioNodeConfig config;
@@ -95,27 +95,26 @@ public final class MinioNode extends NodeSupport implements SystemNode {
         ensureOpen();
         Key localKey = keyResolver.apply(key);
         long size = Long.parseLong(entry.metadata().get(Entry.CONTENT_LENGTH));
+        Map<String, String> userMetadata = mergeEntry(entry);
         switch (entry) {
-            case RemoteEntry remoteEntry -> remoteEntry.handleContent(inputStream -> {
-                try {
-                    Map<String, String> userMetadata = mergeMetadataAndChecksums(entry.metadata(), entry.checksums());
-                    minioClient.putObject(
-                            PutObjectArgs.builder()
+            case RemoteEntry remoteEntry -> remoteEntry.handleContent(
+                    inputStream -> {
+                        try {
+                            minioClient.putObject(PutObjectArgs.builder()
                                     .bucket(localKey.container())
                                     .object(localKey.name())
                                     .userMetadata(userMetadata)
                                     .stream(inputStream, size, -1)
                                     .build());
-                } catch (MinioException e) {
-                    logger.debug(e.httpTrace());
-                    throw new IOException("inputStream()", e);
-                } catch (Exception e) {
-                    throw new IOException("inputStream()", e);
-                }
-            });
+                        } catch (MinioException e) {
+                            logger.debug(e.httpTrace());
+                            throw new IOException("inputStream()", e);
+                        } catch (Exception e) {
+                            throw new IOException("inputStream()", e);
+                        }
+                    });
             case SystemEntry systemEntry -> {
                 try (InputStream inputStream = systemEntry.inputStream()) {
-                    Map<String, String> userMetadata = mergeMetadataAndChecksums(entry.metadata(), entry.checksums());
                     minioClient.putObject(
                             PutObjectArgs.builder()
                                     .bucket(localKey.container())
@@ -134,7 +133,6 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                 Path tempFile = Files.createTempFile(localKey.container(), "minio");
                 localEntry.transferTo(tempFile);
                 try (InputStream inputStream = Files.newInputStream(tempFile)) {
-                    Map<String, String> userMetadata = mergeMetadataAndChecksums(entry.metadata(), entry.checksums());
                     minioClient.putObject(
                             PutObjectArgs.builder()
                                     .bucket(localKey.container())
@@ -164,7 +162,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
         metadata.put(Entry.CONTENT_LENGTH, Long.toString(size));
         metadata.put(Entry.CONTENT_LAST_MODIFIED, Long.toString(lastModified));
         try {
-            Map<String, String> userMetadata = mergeMetadataAndChecksums(metadata, checksums);
+            Map<String, String> userMetadata = mergeEntry(metadata, checksums);
             try (InputStream inputStream = Files.newInputStream(file)) {
                 minioClient.putObject(
                         PutObjectArgs.builder()

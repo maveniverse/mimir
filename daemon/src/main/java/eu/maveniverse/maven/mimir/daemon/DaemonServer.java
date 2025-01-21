@@ -19,7 +19,7 @@ import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeRspKO;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeSimpleRspOK;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeStorePathRspOK;
 import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeTransferRspOK;
-import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeMetadataAndChecksums;
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeEntry;
 
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
@@ -82,7 +82,7 @@ final class DaemonServer implements Runnable {
                     }
                     if (entry.isPresent()) {
                         Entry entryValue = entry.orElseThrow();
-                        writeLocateRspOK(dos, mergeMetadataAndChecksums(entryValue.metadata(), entryValue.checksums()));
+                        writeLocateRspOK(dos, mergeEntry(entryValue));
                     } else {
                         writeLocateRspOK(dos, Collections.emptyMap());
                     }

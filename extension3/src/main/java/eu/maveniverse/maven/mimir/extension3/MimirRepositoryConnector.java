@@ -45,17 +45,20 @@ public class MimirRepositoryConnector implements RepositoryConnector {
     private final Session mimirSession;
     private final RemoteRepository remoteRepository;
     private final RepositoryConnector delegate;
-    private final List<ChecksumAlgorithmFactory> resolverChecksumAlgorithms;
+    private final List<ChecksumAlgorithmFactory> checksumAlgorithmFactories;
+    private final Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactoryMap;
 
     public MimirRepositoryConnector(
             Session mimirSession,
             RemoteRepository remoteRepository,
             RepositoryConnector delegate,
-            List<ChecksumAlgorithmFactory> resolverChecksumAlgorithms) {
+            List<ChecksumAlgorithmFactory> checksumAlgorithmFactories) {
         this.mimirSession = requireNonNull(mimirSession, "mimirSession");
         this.remoteRepository = requireNonNull(remoteRepository, "remoteRepository");
         this.delegate = requireNonNull(delegate, "delegate");
-        this.resolverChecksumAlgorithms = requireNonNull(resolverChecksumAlgorithms, "resolverChecksumAlgorithms");
+        this.checksumAlgorithmFactories = requireNonNull(checksumAlgorithmFactories, "checksumAlgorithmFactories");
+        this.checksumAlgorithmFactoryMap = checksumAlgorithmFactories.stream()
+                .collect(Collectors.toMap(ChecksumAlgorithmFactory::getName, f -> f));
     }
 
     @Override
@@ -80,7 +83,7 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                             Path artifactFile = artifactDownload.getFile().toPath();
                             ce.transferTo(artifactFile);
                             Optional<String> checksum = Optional.empty();
-                            for (ChecksumAlgorithmFactory checksumAlgorithmFactory : resolverChecksumAlgorithms) {
+                            for (ChecksumAlgorithmFactory checksumAlgorithmFactory : checksumAlgorithmFactories) {
                                 checksum = Optional.ofNullable(ce.checksums().get(checksumAlgorithmFactory.getName()));
                                 if (checksum.isPresent()) {
                                     String chk = checksum.orElseThrow();
@@ -97,17 +100,19 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                                 logger.warn(
                                         "No checksum written for {}; resolver={} vs entry={}",
                                         artifactDownload.getArtifact(),
-                                        resolverChecksumAlgorithms.stream()
+                                        checksumAlgorithmFactories.stream()
                                                 .map(ChecksumAlgorithmFactory::getName)
                                                 .collect(Collectors.joining(",")),
                                         String.join(",", ce.checksums().keySet()));
                             }
                         } else {
                             HashMap<String, ChecksumAlgorithm> checksumAlgorithms = new HashMap<>();
-                            for (Map.Entry<String, ChecksumAlgorithmFactory> factories :
-                                    mimirSession.checksumFactories().entrySet()) {
-                                checksumAlgorithms.put(
-                                        factories.getKey(), factories.getValue().getAlgorithm());
+                            for (String algorithm : mimirSession.checksumAlgorithms()) {
+                                ChecksumAlgorithmFactory factory = checksumAlgorithmFactoryMap.get(algorithm);
+                                if (factory == null) {
+                                    throw new IllegalStateException("Checksum algorithm mismatch: " + algorithm);
+                                }
+                                checksumAlgorithms.put(factory.getName(), factory.getAlgorithm());
                             }
                             ChecksumCalculator checksumCalculator = new ChecksumCalculator(checksumAlgorithms);
                             MimirTransferListener transferListener = new MimirTransferListener(checksumCalculator);

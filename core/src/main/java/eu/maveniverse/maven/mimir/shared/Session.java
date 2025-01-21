@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.mimir.shared;
 
+import eu.maveniverse.maven.mimir.shared.checksum.ChecksumAlgorithmFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -15,7 +16,6 @@ import java.util.Map;
 import java.util.Optional;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 public interface Session extends Closeable {
     /**
