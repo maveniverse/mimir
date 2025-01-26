@@ -79,7 +79,7 @@ final class DaemonServer implements Runnable {
                             }
                         }
                     }
-                    logger.debug("{} {} {}", cmd, keyString, entry.isPresent() ? "HIT" : "MISS");
+                    logger.debug("{} {} {}", cmd, entry.isPresent() ? "HIT" : "MISS", keyString);
                     if (entry.isPresent()) {
                         Entry entryValue = entry.orElseThrow();
                         writeLocateRspOK(dos, mergeEntry(entryValue));
@@ -93,7 +93,7 @@ final class DaemonServer implements Runnable {
                     URI key = URI.create(keyString);
                     Path path = Path.of(pathString);
                     Optional<? extends SystemEntry> entry = systemNode.locate(key);
-                    logger.debug("{} {} {} {}", cmd, keyString, pathString, entry.isPresent() ? "HIT" : "MISS");
+                    logger.debug("{} {} {} {}", cmd, entry.isPresent() ? "HIT" : "MISS", keyString, pathString);
                     if (entry.isPresent()) {
                         entry.orElseThrow().transferTo(path);
                         writeTransferRspOK(dos);
