@@ -68,7 +68,6 @@ final class DaemonServer implements Runnable {
             switch (cmd) {
                 case CMD_LOCATE -> {
                     String keyString = dis.readUTF();
-                    logger.debug("{} {}", cmd, keyString);
                     URI key = URI.create(keyString);
                     Optional<? extends Entry> entry = systemNode.locate(key);
                     if (entry.isEmpty()) {
@@ -80,6 +79,7 @@ final class DaemonServer implements Runnable {
                             }
                         }
                     }
+                    logger.debug("{} {} {}", cmd, keyString, entry.isPresent() ? "HIT" : "MISS");
                     if (entry.isPresent()) {
                         Entry entryValue = entry.orElseThrow();
                         writeLocateRspOK(dos, mergeEntry(entryValue));
@@ -90,10 +90,10 @@ final class DaemonServer implements Runnable {
                 case CMD_TRANSFER -> {
                     String keyString = dis.readUTF();
                     String pathString = dis.readUTF();
-                    logger.debug("{} {} {}", cmd, keyString, pathString);
                     URI key = URI.create(keyString);
                     Path path = Path.of(pathString);
                     Optional<? extends SystemEntry> entry = systemNode.locate(key);
+                    logger.debug("{} {} {} {}", cmd, keyString, pathString, entry.isPresent() ? "HIT" : "MISS");
                     if (entry.isPresent()) {
                         entry.orElseThrow().transferTo(path);
                         writeTransferRspOK(dos);
@@ -103,6 +103,7 @@ final class DaemonServer implements Runnable {
                 }
                 case CMD_LS_CHECKSUMS -> {
                     logger.debug("{}", cmd);
+                    logger.debug("{} {}", cmd, systemNode.checksumFactories().keySet());
                     writeLsChecksumsRspOK(
                             dos, new ArrayList<>(systemNode.checksumFactories().keySet()));
                 }

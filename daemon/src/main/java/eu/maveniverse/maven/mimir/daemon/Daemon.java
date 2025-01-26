@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
@@ -149,7 +150,9 @@ public class Daemon implements Closeable {
         }
         nds.sort(Comparator.comparing(RemoteNode::distance));
         this.remoteNodes = List.copyOf(nds);
-        this.executor = Executors.newVirtualThreadPerTaskExecutor();
+        AtomicInteger counter = new AtomicInteger();
+        this.executor = Executors.newThreadPerTaskExecutor(
+                Thread.ofVirtual().name("VT-" + counter.incrementAndGet()).factory());
 
         Path socketPath = daemonConfig.socketPath();
         // make sure socket is deleted once daemon exits
