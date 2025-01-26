@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumAlgorithmFactoryAdapter;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.naming.KeyMapper;
@@ -54,9 +53,9 @@ public class MinioNodeTest {
                                 Map.of(SimpleKeyResolverFactory.NAME, new SimpleKeyResolverFactory()),
                                 Map.of(
                                         Sha1ChecksumAlgorithmFactory.NAME,
-                                        new ChecksumAlgorithmFactoryAdapter(new Sha1ChecksumAlgorithmFactory()),
+                                        new Sha1ChecksumAlgorithmFactory(),
                                         Sha512ChecksumAlgorithmFactory.NAME,
-                                        new ChecksumAlgorithmFactoryAdapter(new Sha512ChecksumAlgorithmFactory())))
+                                        new Sha512ChecksumAlgorithmFactory()))
                         .createNode(config)) {
                     Optional<MinioEntry> entry = minioNode.locate(keyMapper.apply(central, junit));
                     assertFalse(entry.isPresent());

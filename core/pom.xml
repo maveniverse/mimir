@@ -32,6 +32,12 @@
       <artifactId>javax.inject</artifactId>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>com.google.inject</groupId>
+      <artifactId>guice</artifactId>
+      <classifier>classes</classifier>
+      <scope>provided</scope>
+    </dependency>
 
     <!-- Resolver -->
     <dependency>

@@ -12,8 +12,6 @@ import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.checksum.ChecksumAlgorithm;
-import eu.maveniverse.maven.mimir.shared.checksum.ChecksumAlgorithmFactory;
 import eu.maveniverse.maven.mimir.shared.impl.FileUtils;
 import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumEnforcer;
 import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumInputStream;
@@ -39,6 +37,8 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithm;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;

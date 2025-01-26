@@ -102,7 +102,6 @@ final class DaemonServer implements Runnable {
                     }
                 }
                 case CMD_LS_CHECKSUMS -> {
-                    logger.debug("{}", cmd);
                     logger.debug("{} {}", cmd, systemNode.checksumFactories().keySet());
                     writeLsChecksumsRspOK(
                             dos, new ArrayList<>(systemNode.checksumFactories().keySet()));
@@ -118,6 +117,7 @@ final class DaemonServer implements Runnable {
                     writeStorePathRspOK(dos);
                 }
                 case CMD_SHUTDOWN -> {
+                    logger.debug("{}", cmd);
                     writeSimpleRspOK(dos);
                     shutdownHook.run();
                 }

@@ -20,7 +20,6 @@ import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.checksum.ChecksumAlgorithmFactory;
 import eu.maveniverse.maven.mimir.shared.impl.node.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.impl.node.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
@@ -41,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 /**
  * This node is delegating all the work to daemon via Unix Domain Sockets.

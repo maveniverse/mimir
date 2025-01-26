@@ -7,7 +7,6 @@ import eu.maveniverse.maven.mimir.node.file.FileNode;
 import eu.maveniverse.maven.mimir.node.file.FileNodeConfig;
 import eu.maveniverse.maven.mimir.node.jgroups.JGroupsNode;
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumAlgorithmFactoryAdapter;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.impl.publisher.ServerSocketPublisherFactory;
 import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
@@ -48,9 +47,7 @@ public class JGroupsNodeTest {
                 configOne.basedir(),
                 new SimpleKeyResolverFactory().createKeyResolver(config),
                 List.of(Sha1ChecksumAlgorithmFactory.NAME),
-                Map.of(
-                        Sha1ChecksumAlgorithmFactory.NAME,
-                        new ChecksumAlgorithmFactoryAdapter(new Sha1ChecksumAlgorithmFactory())));
+                Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()));
         FileNodeConfig configTwo =
                 FileNodeConfig.of("two", two, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
         FileNode nodeTwo = new FileNode(
@@ -58,9 +55,7 @@ public class JGroupsNodeTest {
                 configTwo.basedir(),
                 new SimpleKeyResolverFactory().createKeyResolver(config),
                 List.of(Sha1ChecksumAlgorithmFactory.NAME),
-                Map.of(
-                        Sha1ChecksumAlgorithmFactory.NAME,
-                        new ChecksumAlgorithmFactoryAdapter(new Sha1ChecksumAlgorithmFactory())));
+                Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()));
 
         JChannel channelOne = new JChannel("udp-new.xml")
                 .name(InetAddress.getLocalHost().getHostName() + "-one")

@@ -9,7 +9,6 @@ package eu.maveniverse.maven.mimir.shared.impl.checksum;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.checksum.ChecksumAlgorithm;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithm;
 
 public final class ChecksumInputStream extends FilterInputStream {
     private final Map<String, ChecksumAlgorithm> checksumAlgorithms;

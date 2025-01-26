@@ -1,9 +1,17 @@
+/*
+ * Copyright (c) 2023-2024 Maveniverse Org.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v20.html
+ */
 package eu.maveniverse.maven.mimir.extension3;
 
 import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.Session;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,7 +42,14 @@ public class MimirTrustedChecksumsSource implements TrustedChecksumsSource {
                         Optional<CacheEntry> entry = ms.locate(remoteRepository, artifact);
                         if (entry.isPresent()) {
                             CacheEntry cacheEntry = entry.orElseThrow();
-                            return Map.copyOf(cacheEntry.checksums());
+                            HashMap<String, String> result = new HashMap<>();
+                            for (ChecksumAlgorithmFactory checksumAlgorithmFactory : checksumAlgorithmFactories) {
+                                String cache = cacheEntry.checksums().get(checksumAlgorithmFactory.getName());
+                                if (cache != null) {
+                                    result.put(checksumAlgorithmFactory.getName(), cache);
+                                }
+                            }
+                            return Map.copyOf(result);
                         }
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
