@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
@@ -97,13 +98,38 @@ public class JGroupsNode extends RemoteNodeSupport implements Receiver, RequestH
         return Optional.empty();
     }
 
+    private final AtomicReference<View> lastView = new AtomicReference<>(null);
+
     @Override
     public void viewAccepted(View view) {
-        logger.info("Cluster members: ");
-        logger.info("  coordinator: {}", view.getCoord());
-        for (Address member : view.getMembers()) {
-            logger.info("  member: {}", member);
+        View prev = lastView.get();
+        if (prev != null) {
+            logger.info("Cluster update: ");
+            logger.info("  coordinator: {}", view.getCoord());
+            List<Address> newMembers = View.newMembers(prev, view);
+            if (!newMembers.isEmpty()) {
+                logger.info("New members: ");
+                for (Address member : newMembers) {
+                    logger.info("  {}", member);
+                }
+            }
+
+            List<Address> leftMembers = View.leftMembers(prev, view);
+            if (!leftMembers.isEmpty()) {
+                logger.info("Left members: ");
+                for (Address member : leftMembers) {
+                    logger.info("  {}", member);
+                }
+            }
+        } else {
+            logger.info("Cluster info: ");
+            logger.info("  coordinator: {}", view.getCoord());
+            logger.info("Members: ");
+            for (Address member : view.getMembers()) {
+                logger.info("  {}", member);
+            }
         }
+        lastView.compareAndSet(prev, view);
     }
 
     @Override
