@@ -36,7 +36,7 @@ public interface Session extends Closeable {
     /**
      * Locates cache entry by key.
      */
-    Optional<? extends LocalEntry> locate(RemoteRepository remoteRepository, Artifact artifact) throws IOException;
+    Optional<LocalEntry> locate(RemoteRepository remoteRepository, Artifact artifact) throws IOException;
 
     /**
      * Stores entry under given cache key.

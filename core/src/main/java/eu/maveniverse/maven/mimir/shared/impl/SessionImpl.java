@@ -70,8 +70,7 @@ public final class SessionImpl implements Session {
     }
 
     @Override
-    public Optional<? extends LocalEntry> locate(RemoteRepository remoteRepository, Artifact artifact)
-            throws IOException {
+    public Optional<LocalEntry> locate(RemoteRepository remoteRepository, Artifact artifact) throws IOException {
         checkState();
         requireNonNull(remoteRepository, "remoteRepository");
         requireNonNull(artifact, "artifact");
@@ -79,11 +78,33 @@ public final class SessionImpl implements Session {
             URI key = keyMapper.apply(remoteRepository, artifact);
             Optional<? extends LocalEntry> result = localNode.locate(key);
             if (result.isPresent()) {
-                stats.query(true);
-                return result;
+                stats.doLocate(true);
+                LocalEntry entry = result.orElseThrow();
+                return Optional.of(new LocalEntry() {
+                    @Override
+                    public void transferTo(Path file) throws IOException {
+                        try {
+                            entry.transferTo(file);
+                            stats.doTransfer(true);
+                        } catch (IOException e) {
+                            stats.doTransfer(false);
+                            throw e;
+                        }
+                    }
+
+                    @Override
+                    public Map<String, String> metadata() {
+                        return entry.metadata();
+                    }
+
+                    @Override
+                    public Map<String, String> checksums() {
+                        return entry.checksums();
+                    }
+                });
             }
         }
-        stats.query(false);
+        stats.doLocate(false);
         return Optional.empty();
     }
 
@@ -98,10 +119,10 @@ public final class SessionImpl implements Session {
         if (repositoryPredicate.test(remoteRepository) && artifactPredicate.test(artifact)) {
             URI key = keyMapper.apply(remoteRepository, artifact);
             localNode.store(key, file, checksums);
-            stats.store(true);
+            stats.doStore(true);
             return true;
         } else {
-            stats.store(false);
+            stats.doStore(false);
             return false;
         }
     }
@@ -127,11 +148,13 @@ public final class SessionImpl implements Session {
                 throw closeException;
             }
             logger.info(
-                    "Mimir session closed (LOCATED/HIT={}/{} STORED/ACC={}/{})",
+                    "Mimir session closed (LOCATED={}/{} TRANSFER={}/{} STORED={}/{})",
                     stats.locate(),
-                    stats.locateHit(),
+                    stats.locateSuccess(),
+                    stats.transfer(),
+                    stats.transferSuccess(),
                     stats.store(),
-                    stats.storeAccepted());
+                    stats.storeSuccess());
         }
     }
 }

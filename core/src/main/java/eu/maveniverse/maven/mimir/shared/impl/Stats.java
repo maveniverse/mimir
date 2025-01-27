@@ -11,37 +11,54 @@ import java.util.concurrent.atomic.LongAdder;
 
 public final class Stats {
     private final LongAdder locate = new LongAdder();
-    private final LongAdder locateHit = new LongAdder();
+    private final LongAdder locateSuccess = new LongAdder();
+    private final LongAdder transfer = new LongAdder();
+    private final LongAdder transferSuccess = new LongAdder();
     private final LongAdder store = new LongAdder();
-    private final LongAdder storeAccepted = new LongAdder();
+    private final LongAdder storeSuccess = new LongAdder();
 
     public long locate() {
         return locate.sum();
     }
 
-    public long locateHit() {
-        return locateHit.sum();
+    public long locateSuccess() {
+        return locateSuccess.sum();
+    }
+
+    public long transfer() {
+        return transfer.sum();
+    }
+
+    public long transferSuccess() {
+        return transferSuccess.sum();
     }
 
     public long store() {
         return store.sum();
     }
 
-    public long storeAccepted() {
-        return storeAccepted.sum();
+    public long storeSuccess() {
+        return storeSuccess.sum();
     }
 
-    public void query(boolean present) {
+    public void doLocate(boolean success) {
         locate.increment();
-        if (present) {
-            locateHit.increment();
+        if (success) {
+            locateSuccess.increment();
         }
     }
 
-    public void store(boolean accepted) {
+    public void doTransfer(boolean success) {
+        transfer.increment();
+        if (success) {
+            transferSuccess.increment();
+        }
+    }
+
+    public void doStore(boolean success) {
         store.increment();
-        if (accepted) {
-            storeAccepted.increment();
+        if (success) {
+            storeSuccess.increment();
         }
     }
 }

@@ -77,7 +77,7 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                     ads.add(artifactDownload);
                 } else {
                     try {
-                        Optional<? extends LocalEntry> entry =
+                        Optional<LocalEntry> entry =
                                 mimirSession.locate(remoteRepository, artifactDownload.getArtifact());
                         if (entry.isPresent()) {
                             LocalEntry ce = entry.orElseThrow(() -> new IllegalStateException("Cache entry not found"));

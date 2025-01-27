@@ -39,7 +39,7 @@ public class MimirTrustedChecksumsSource implements TrustedChecksumsSource {
                 Session ms = sessionOptional.orElseThrow();
                 if (ms.repositorySupported(remoteRepository) && ms.artifactSupported(artifact)) {
                     try {
-                        Optional<? extends LocalEntry> entry = ms.locate(remoteRepository, artifact);
+                        Optional<LocalEntry> entry = ms.locate(remoteRepository, artifact);
                         if (entry.isPresent()) {
                             LocalEntry cacheEntry = entry.orElseThrow();
                             HashMap<String, String> result = new HashMap<>();
