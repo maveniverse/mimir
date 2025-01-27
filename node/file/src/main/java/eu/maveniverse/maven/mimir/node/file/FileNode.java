@@ -215,6 +215,6 @@ public final class FileNode extends NodeSupport implements SystemNode {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + " (name=" + name + "basedir=" + basedir + ")";
+        return getClass().getSimpleName() + " (name=" + name + " basedir=" + basedir + ")";
     }
 }

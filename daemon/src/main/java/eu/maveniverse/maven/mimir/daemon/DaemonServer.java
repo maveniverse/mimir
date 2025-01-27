@@ -7,18 +7,20 @@
  */
 package eu.maveniverse.maven.mimir.daemon;
 
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.CMD_LOCATE;
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.CMD_LS_CHECKSUMS;
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.CMD_SHUTDOWN;
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.CMD_STORE_PATH;
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.CMD_TRANSFER;
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.readMap;
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeLocateRspOK;
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeLsChecksumsRspOK;
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeRspKO;
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeSimpleRspOK;
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeStorePathRspOK;
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeTransferRspOK;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_HELLO;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_LOCATE;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_LS_CHECKSUMS;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_SHUTDOWN;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_STORE_PATH;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_TRANSFER;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readMap;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeHelloRspOK;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeLocateRspOK;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeLsChecksumsRspOK;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeRspKO;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeSimpleRspOK;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeStorePathRspOK;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeTransferRspOK;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeEntry;
 
 import eu.maveniverse.maven.mimir.shared.node.Entry;
@@ -47,13 +49,19 @@ final class DaemonServer implements Runnable {
     private final DataOutputStream dos;
     private final DataInputStream dis;
 
+    private final Map<String, String> daemonData;
     private final SystemNode systemNode;
     private final List<RemoteNode> remoteNodes;
     private final Runnable shutdownHook;
 
     DaemonServer(
-            SocketChannel socketChannel, SystemNode systemNode, List<RemoteNode> remoteNodes, Runnable shutdownHook) {
+            SocketChannel socketChannel,
+            Map<String, String> daemonData,
+            SystemNode systemNode,
+            List<RemoteNode> remoteNodes,
+            Runnable shutdownHook) {
         this.socketChannel = socketChannel;
+        this.daemonData = daemonData;
         this.dos = new DataOutputStream(Channels.newOutputStream(socketChannel));
         this.dis = new DataInputStream(Channels.newInputStream(socketChannel));
         this.systemNode = systemNode;
@@ -67,6 +75,11 @@ final class DaemonServer implements Runnable {
             Thread.currentThread().setName("Daemon-VT-" + socketChannel.getRemoteAddress());
             String cmd = dis.readUTF();
             switch (cmd) {
+                case CMD_HELLO -> {
+                    Map<String, String> data = readMap(dis);
+                    logger.debug("{} {}", cmd, data);
+                    writeHelloRspOK(dos, daemonData);
+                }
                 case CMD_LOCATE -> {
                     String keyString = dis.readUTF();
                     URI key = URI.create(keyString);

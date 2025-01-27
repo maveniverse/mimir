@@ -22,7 +22,7 @@ public class DaemonConfig {
     public static DaemonConfig with(Config config) {
         requireNonNull(config, "config");
 
-        Path socketPath = config.basedir().resolve("uds-socket");
+        Path socketPath = config.basedir().resolve("mimir-socket");
         boolean autoupdate = true;
         boolean autostart = true;
         String daemonJarName = "daemon-" + config.mimirVersion().orElse("UNKNOWN") + ".jar";

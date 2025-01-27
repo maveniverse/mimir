@@ -15,14 +15,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public final class SimpleProtocol {
-    private SimpleProtocol() {}
+public final class DaemonProtocol {
+    private DaemonProtocol() {}
 
     // server side processing successful
     public static final String OK = "OK";
     // server side processing error
     public static final String KO = "KO ";
 
+    public static final String CMD_HELLO = "HELLO";
     public static final String CMD_LOCATE = "LOCATE";
     public static final String CMD_TRANSFER = "TRANSFER";
     public static final String CMD_LS_CHECKSUMS = "LS_CHECKSUMS";
@@ -126,6 +127,30 @@ public final class SimpleProtocol {
             map.put(dis.readUTF(), dis.readUTF());
         }
         return map;
+    }
+
+    // HELLO
+
+    public static void writeHelloReq(DataOutputStream dos, Map<String, String> data) throws IOException {
+        dos.writeUTF(CMD_HELLO);
+        writeMap(dos, data);
+        dos.flush();
+    }
+
+    public static void writeHelloRspOK(DataOutputStream dos, Map<String, String> data) throws IOException {
+        dos.writeUTF(OK);
+        writeMap(dos, data);
+        dos.flush();
+    }
+
+    public static Map<String, String> readHelloRsp(DataInputStream dis) throws IOException {
+        String result = dis.readUTF();
+        if (OK.equals(result)) {
+            return readMap(dis);
+        } else {
+            String errorMessage = dis.readUTF();
+            throw new IOException(errorMessage);
+        }
     }
 
     // LOCATE

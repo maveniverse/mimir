@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -104,6 +105,7 @@ public class Daemon implements Closeable {
 
     private final Logger logger = LoggerFactory.getLogger(Daemon.class);
 
+    private final Config config;
     private final ServerSocketChannel serverSocketChannel;
     private final ExecutorService executor;
     private final SystemNode systemNode;
@@ -117,7 +119,7 @@ public class Daemon implements Closeable {
             Map<String, RemoteNodeFactory> remoteNodeFactories,
             Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories)
             throws IOException {
-        requireNonNull(config, "config");
+        this.config = requireNonNull(config, "config");
         requireNonNull(daemonConfig, "daemonConfig");
         requireNonNull(systemNode, "systemNode");
         requireNonNull(remoteNodeFactories, "remoteNodeFactories");
@@ -160,11 +162,15 @@ public class Daemon implements Closeable {
             logger.info("    {}", node);
         }
 
+        HashMap<String, String> daemonData = new HashMap<>();
+        daemonData.put("version", config.mimirVersion().orElse("UNKNOWN"));
+        daemonData.put("pid", Long.toString(ProcessHandle.current().pid()));
+
         executor.submit(() -> {
             try {
                 while (serverSocketChannel.isOpen()) {
                     SocketChannel socketChannel = serverSocketChannel.accept();
-                    executor.submit(new DaemonServer(socketChannel, systemNode, remoteNodes, this::close));
+                    executor.submit(new DaemonServer(socketChannel, daemonData, systemNode, remoteNodes, this::close));
                 }
             } catch (AsynchronousCloseException ignored) {
                 // we are done

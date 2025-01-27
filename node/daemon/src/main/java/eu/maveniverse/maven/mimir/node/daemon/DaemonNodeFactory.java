@@ -14,6 +14,7 @@ import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -47,7 +48,10 @@ public class DaemonNodeFactory implements LocalNodeFactory {
                 logger.info("Mimir daemon started (pid={})", daemon.pid());
             }
         }
-        return new DaemonNode(cfg.socketPath(), checksumAlgorithmFactories);
+        HashMap<String, String> clientData = new HashMap<>();
+        clientData.put("version", config.mimirVersion().orElse("UNKNOWN"));
+        clientData.put("pid", Long.toString(ProcessHandle.current().pid()));
+        return new DaemonNode(clientData, cfg.socketPath(), checksumAlgorithmFactories);
     }
 
     private Process startDaemon(Path basedir, DaemonConfig config) throws IOException {

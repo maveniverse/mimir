@@ -7,14 +7,16 @@
  */
 package eu.maveniverse.maven.mimir.node.daemon;
 
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.readLocateRsp;
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.readLsChecksumsRsp;
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.readStorePathRsp;
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.readTransferRsp;
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeLocateReq;
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeLsChecksumsReq;
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeStorePathReq;
-import static eu.maveniverse.maven.mimir.node.daemon.SimpleProtocol.writeTransferReq;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readHelloRsp;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readLocateRsp;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readLsChecksumsRsp;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readStorePathRsp;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readTransferRsp;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeHelloReq;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeLocateReq;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeLsChecksumsReq;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeStorePathReq;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeTransferReq;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
@@ -48,10 +50,18 @@ public class DaemonNode extends NodeSupport implements LocalNode {
     private final Path socketPath;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
-    public DaemonNode(Path socketPath, Map<String, ChecksumAlgorithmFactory> checksumFactories) {
+    public DaemonNode(
+            Map<String, String> clientData, Path socketPath, Map<String, ChecksumAlgorithmFactory> checksumFactories)
+            throws IOException {
         super(DaemonConfig.NAME);
         this.socketPath = requireNonNull(socketPath, "socketPath");
         this.checksumFactories = Collections.unmodifiableMap(requireNonNull(checksumFactories, "checksumFactories"));
+
+        try (Handle handle = create()) {
+            writeHelloReq(handle.dos, clientData);
+            Map<String, String> data = readHelloRsp(handle.dis);
+            logger.debug("Hello OK {}", data);
+        }
     }
 
     @Override
