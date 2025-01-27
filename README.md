@@ -33,7 +33,7 @@ With Maven 4 (latest master) create user-wide `~/.m2/extensions.xml` like this:
     <extension>
         <groupId>eu.maveniverse.maven.mimir</groupId>
         <artifactId>extension3</artifactId>
-        <version>0.3.2</version>
+        <version>0.3.3</version>
     </extension>
 </extensions>
 ```
