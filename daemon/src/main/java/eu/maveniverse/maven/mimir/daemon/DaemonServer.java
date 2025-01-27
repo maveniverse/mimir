@@ -64,6 +64,7 @@ final class DaemonServer implements Runnable {
     @Override
     public void run() {
         try (socketChannel) {
+            Thread.currentThread().setName("Daemon-VT-" + socketChannel.getRemoteAddress());
             String cmd = dis.readUTF();
             switch (cmd) {
                 case CMD_LOCATE -> {
@@ -109,7 +110,7 @@ final class DaemonServer implements Runnable {
                     String keyString = dis.readUTF();
                     String pathString = dis.readUTF();
                     Map<String, String> checksums = readMap(dis);
-                    logger.debug("{} {} -> {}", cmd, keyString, pathString);
+                    logger.debug("{} {} <- {}", cmd, keyString, pathString);
                     URI key = URI.create(keyString);
                     Path path = Path.of(pathString);
                     systemNode.store(key, path, checksums);

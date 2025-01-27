@@ -27,13 +27,15 @@ import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ObjectMessage;
+import org.jgroups.Receiver;
+import org.jgroups.View;
 import org.jgroups.blocks.MessageDispatcher;
 import org.jgroups.blocks.RequestHandler;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.Response;
 import org.jgroups.util.RspList;
 
-public class JGroupsNode extends RemoteNodeSupport implements RequestHandler {
+public class JGroupsNode extends RemoteNodeSupport implements Receiver, RequestHandler {
     private static final String PUBLISHER_HANDLE = "handle";
     private static final String CMD_LOCATE = "locate";
     private static final String RSP_ERROR = "error";
@@ -45,23 +47,29 @@ public class JGroupsNode extends RemoteNodeSupport implements RequestHandler {
     /**
      * Creates JGroups node w/o publisher.
      */
-    public JGroupsNode(JChannel channel) {
+    public JGroupsNode(String clusterName, JChannel channel) throws Exception {
         super(JGroupsNodeConfig.NAME, 500);
         this.channel = channel;
+        this.channel.setReceiver(this);
         this.messageDispatcher = new MessageDispatcher(channel);
         this.messageDispatcher.setAsynDispatching(true);
         this.publisher = null;
+
+        channel.connect(clusterName, null, 1500);
     }
 
     /**
      * Creates JGroups node with publisher.
      */
-    public JGroupsNode(JChannel channel, Publisher publisher) {
+    public JGroupsNode(String clusterName, JChannel channel, Publisher publisher) throws Exception {
         super(JGroupsNodeConfig.NAME, 500);
         this.channel = channel;
+        this.channel.setReceiver(this);
         this.messageDispatcher = new MessageDispatcher(channel, this);
         this.messageDispatcher.setAsynDispatching(true);
         this.publisher = publisher;
+
+        channel.connect(clusterName, null, 1500);
     }
 
     @Override
@@ -90,6 +98,15 @@ public class JGroupsNode extends RemoteNodeSupport implements RequestHandler {
     }
 
     @Override
+    public void viewAccepted(View view) {
+        logger.info("Cluster members: ");
+        logger.info("  coordinator: {}", view.getCoord());
+        for (Address member : view.getMembers()) {
+            logger.info("  member: {}", member);
+        }
+    }
+
+    @Override
     public Object handle(Message msg) {
         throw new UnsupportedOperationException();
     }
@@ -97,6 +114,7 @@ public class JGroupsNode extends RemoteNodeSupport implements RequestHandler {
     @Override
     public void handle(Message msg, Response response) {
         Thread.startVirtualThread(() -> {
+            Thread.currentThread().setName("JGroups-VT-" + msg.getSrc());
             HashMap<String, String> responseMap = new HashMap<>();
             boolean responseException = false;
             try {

@@ -59,17 +59,17 @@ public class JGroupsNodeTest {
 
         JChannel channelOne = new JChannel("udp-new.xml")
                 .name(InetAddress.getLocalHost().getHostName() + "-one")
-                .setDiscardOwnMessages(true)
-                .connect("mimir-jgroups");
+                .setDiscardOwnMessages(true);
         JChannel channelTwo = new JChannel("udp-new.xml")
                 .name(InetAddress.getLocalHost().getHostName() + "-two")
-                .setDiscardOwnMessages(true)
-                .connect("mimir-jgroups");
+                .setDiscardOwnMessages(true);
         Thread.sleep(1000);
 
         try (JGroupsNode publisher = new JGroupsNode(
-                        channelOne, new ServerSocketPublisherFactory().createPublisher(config, nodeOne));
-                JGroupsNode consumer = new JGroupsNode(channelTwo)) {
+                        "mimir-jgroups",
+                        channelOne,
+                        new ServerSocketPublisherFactory().createPublisher(config, nodeOne));
+                JGroupsNode consumer = new JGroupsNode("mimir-jgroups", channelTwo)) {
             URI key = URI.create("mimir:file:container:file.txt");
             Optional<? extends RemoteEntry> entry = consumer.locate(key);
             assertTrue(entry.isPresent());

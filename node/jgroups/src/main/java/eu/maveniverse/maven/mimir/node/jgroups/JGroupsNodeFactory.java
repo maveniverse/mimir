@@ -47,10 +47,12 @@ public class JGroupsNodeFactory implements RemoteNodeFactory {
                 if (publisherFactory == null) {
                     throw new IllegalStateException("No publisher found for transport " + cfg.publisherTransport());
                 }
-                return Optional.of(
-                        new JGroupsNode(createChannel(cfg), publisherFactory.createPublisher(config, systemNode)));
+                return Optional.of(new JGroupsNode(
+                        cfg.jgroupsClusterName(),
+                        createChannel(cfg),
+                        publisherFactory.createPublisher(config, systemNode)));
             } else {
-                return Optional.of(new JGroupsNode(createChannel(cfg)));
+                return Optional.of(new JGroupsNode(cfg.jgroupsClusterName(), createChannel(cfg)));
             }
         } catch (Exception e) {
             throw new IOException("Failed to create JChannel", e);
@@ -62,9 +64,6 @@ public class JGroupsNodeFactory implements RemoteNodeFactory {
             // hack, find better way
             System.setProperty("jgroups.bind_addr", cfg.jgroupsInterface());
         }
-        return new JChannel(cfg.jgroupsProps())
-                .name(cfg.jgroupsNodeName())
-                .setDiscardOwnMessages(true)
-                .connect(cfg.jgroupsClusterName());
+        return new JChannel(cfg.jgroupsProps()).name(cfg.jgroupsNodeName()).setDiscardOwnMessages(true);
     }
 }
