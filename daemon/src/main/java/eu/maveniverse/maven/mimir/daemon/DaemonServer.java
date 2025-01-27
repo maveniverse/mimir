@@ -72,7 +72,7 @@ final class DaemonServer implements Runnable {
     @Override
     public void run() {
         try (socketChannel) {
-            Thread.currentThread().setName("Daemon-VT-" + socketChannel.getRemoteAddress());
+            Thread.currentThread().setName("DVT");
             String cmd = dis.readUTF();
             switch (cmd) {
                 case CMD_HELLO -> {

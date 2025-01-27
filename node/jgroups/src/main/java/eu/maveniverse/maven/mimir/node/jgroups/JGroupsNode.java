@@ -127,7 +127,7 @@ public class JGroupsNode extends RemoteNodeSupport implements Receiver, RequestH
     @Override
     public void handle(Message msg, Response response) {
         Thread.startVirtualThread(() -> {
-            Thread.currentThread().setName("JGroups-VT-" + msg.getSrc());
+            Thread.currentThread().setName("JVT");
             HashMap<String, String> responseMap = new HashMap<>();
             boolean responseException = false;
             try {
