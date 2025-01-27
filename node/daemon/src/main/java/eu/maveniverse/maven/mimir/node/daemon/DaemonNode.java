@@ -20,7 +20,6 @@ import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.checksum.ChecksumAlgorithmFactory;
 import eu.maveniverse.maven.mimir.shared.impl.node.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.impl.node.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
@@ -37,10 +36,10 @@ import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 /**
  * This node is delegating all the work to daemon via Unix Domain Sockets.
@@ -57,7 +56,6 @@ public class DaemonNode extends NodeSupport implements LocalNode {
 
     @Override
     public List<String> checksumAlgorithms() throws IOException {
-        logger.debug("LS_CHECKSUMS");
         try (Handle handle = create()) {
             writeLsChecksumsReq(handle.dos);
             return readLsChecksumsRsp(handle.dis);
@@ -65,17 +63,8 @@ public class DaemonNode extends NodeSupport implements LocalNode {
     }
 
     @Override
-    public Map<String, ChecksumAlgorithmFactory> checksumFactories() throws IOException {
-        List<String> algorithms = checksumAlgorithms();
-        HashMap<String, ChecksumAlgorithmFactory> result = new HashMap<>(algorithms.size());
-        for (String algorithm : algorithms) {
-            ChecksumAlgorithmFactory factory = checksumFactories.get(algorithm);
-            if (factory == null) {
-                throw new IllegalArgumentException("Unknown daemon checksum algorithm: " + algorithm);
-            }
-            result.put(algorithm, factory);
-        }
-        return result;
+    public Map<String, ChecksumAlgorithmFactory> checksumFactories() {
+        return checksumFactories;
     }
 
     @Override

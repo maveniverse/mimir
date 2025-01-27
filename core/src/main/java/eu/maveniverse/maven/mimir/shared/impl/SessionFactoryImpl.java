@@ -63,9 +63,12 @@ public final class SessionFactoryImpl implements SessionFactory {
 
         if (logger.isDebugEnabled()) {
             logger.debug("Mimir {} session created", config.mimirVersion().orElse("UNKNOWN"));
+            logger.debug("  Properties: {}", config.basedir().resolve(config.propertiesPath()));
             logger.debug("  Name mapper: {}", nameMapper.getClass().getSimpleName());
-            logger.debug("  Checksums: {}", localNode.checksumFactories().keySet());
             logger.debug("  Local Node: {}", localNode);
+            logger.debug("  Used checksums: {}", localNode.checksumAlgorithms());
+            logger.debug(
+                    "  Supported checksums: {}", localNode.checksumFactories().keySet());
         }
 
         return new SessionImpl(RemoteRepositories.centralDirectOnly(), a -> !a.isSnapshot(), nameMapper, localNode);

@@ -14,7 +14,6 @@ import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.checksum.ChecksumAlgorithmFactory;
 import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumEnforcer;
 import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumInputStream;
 import eu.maveniverse.maven.mimir.shared.impl.node.NodeSupport;
@@ -46,6 +45,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 public final class MinioNode extends NodeSupport implements SystemNode {
     private final MinioNodeConfig config;

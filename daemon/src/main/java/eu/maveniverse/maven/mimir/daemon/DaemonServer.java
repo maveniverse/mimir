@@ -68,7 +68,6 @@ final class DaemonServer implements Runnable {
             switch (cmd) {
                 case CMD_LOCATE -> {
                     String keyString = dis.readUTF();
-                    logger.debug("{} {}", cmd, keyString);
                     URI key = URI.create(keyString);
                     Optional<? extends Entry> entry = systemNode.locate(key);
                     if (entry.isEmpty()) {
@@ -80,6 +79,7 @@ final class DaemonServer implements Runnable {
                             }
                         }
                     }
+                    logger.debug("{} {} {}", cmd, entry.isPresent() ? "HIT" : "MISS", keyString);
                     if (entry.isPresent()) {
                         Entry entryValue = entry.orElseThrow();
                         writeLocateRspOK(dos, mergeEntry(entryValue));
@@ -90,10 +90,10 @@ final class DaemonServer implements Runnable {
                 case CMD_TRANSFER -> {
                     String keyString = dis.readUTF();
                     String pathString = dis.readUTF();
-                    logger.debug("{} {} {}", cmd, keyString, pathString);
                     URI key = URI.create(keyString);
                     Path path = Path.of(pathString);
                     Optional<? extends SystemEntry> entry = systemNode.locate(key);
+                    logger.debug("{} {} {} -> {}", cmd, entry.isPresent() ? "HIT" : "MISS", keyString, pathString);
                     if (entry.isPresent()) {
                         entry.orElseThrow().transferTo(path);
                         writeTransferRspOK(dos);
@@ -102,21 +102,21 @@ final class DaemonServer implements Runnable {
                     }
                 }
                 case CMD_LS_CHECKSUMS -> {
-                    logger.debug("{}", cmd);
-                    writeLsChecksumsRspOK(
-                            dos, new ArrayList<>(systemNode.checksumFactories().keySet()));
+                    logger.debug("{} -> {}", cmd, systemNode.checksumAlgorithms());
+                    writeLsChecksumsRspOK(dos, new ArrayList<>(systemNode.checksumAlgorithms()));
                 }
                 case CMD_STORE_PATH -> {
                     String keyString = dis.readUTF();
                     String pathString = dis.readUTF();
                     Map<String, String> checksums = readMap(dis);
-                    logger.debug("{} {} {}", cmd, keyString, pathString);
+                    logger.debug("{} {} -> {}", cmd, keyString, pathString);
                     URI key = URI.create(keyString);
                     Path path = Path.of(pathString);
                     systemNode.store(key, path, checksums);
                     writeStorePathRspOK(dos);
                 }
                 case CMD_SHUTDOWN -> {
+                    logger.debug("{}", cmd);
                     writeSimpleRspOK(dos);
                     shutdownHook.run();
                 }

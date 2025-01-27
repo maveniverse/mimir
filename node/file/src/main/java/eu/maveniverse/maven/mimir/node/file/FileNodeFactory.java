@@ -10,16 +10,15 @@ package eu.maveniverse.maven.mimir.node.file;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.checksum.ChecksumAlgorithmFactory;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 @Singleton
 @Named(FileNodeConfig.NAME)
@@ -44,19 +43,20 @@ public final class FileNodeFactory implements SystemNodeFactory {
             throw new IllegalArgumentException("Unknown keyResolver: " + fileNodeConfig.keyResolver());
         }
         KeyResolver keyResolver = requireNonNull(keyResolverFactory.createKeyResolver(config), "keyResolver");
-        HashMap<String, ChecksumAlgorithmFactory> localChecksumFactories = new HashMap<>();
+
+        // verify checksum config
         for (String alg : fileNodeConfig.checksumAlgorithms()) {
             ChecksumAlgorithmFactory checksumAlgorithmFactory = checksumFactories.get(alg);
             if (checksumAlgorithmFactory == null) {
                 throw new IllegalArgumentException("Unknown checksumAlgorithmFactory: " + alg);
             }
-            localChecksumFactories.put(alg, checksumAlgorithmFactory);
         }
+
         return new FileNode(
                 fileNodeConfig.name(),
                 fileNodeConfig.basedir(),
                 keyResolver,
                 fileNodeConfig.checksumAlgorithms(),
-                localChecksumFactories);
+                checksumFactories);
     }
 }

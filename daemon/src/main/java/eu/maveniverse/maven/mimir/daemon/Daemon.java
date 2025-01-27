@@ -11,11 +11,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.Provides;
 import eu.maveniverse.maven.mimir.node.daemon.DaemonConfig;
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.checksum.ChecksumAlgorithmFactory;
-import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumAlgorithmFactoryAdapter;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
@@ -31,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,10 +37,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import org.eclipse.aether.internal.impl.checksum.Md5ChecksumAlgorithmFactory;
-import org.eclipse.aether.internal.impl.checksum.Sha1ChecksumAlgorithmFactory;
-import org.eclipse.aether.internal.impl.checksum.Sha256ChecksumAlgorithmFactory;
-import org.eclipse.aether.internal.impl.checksum.Sha512ChecksumAlgorithmFactory;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 import org.eclipse.sisu.space.BeanScanning;
 import org.eclipse.sisu.space.SpaceModule;
 import org.eclipse.sisu.space.URLClassSpace;
@@ -70,25 +63,6 @@ public class Daemon implements Closeable {
                                 protected void configure() {
                                     bind(Config.class).toInstance(DaemonConfig.toDaemonProcessConfig(config));
                                     bind(DaemonConfig.class).toInstance(daemonConfig);
-                                }
-
-                                @Provides
-                                @Singleton
-                                public Map<String, ChecksumAlgorithmFactory> checksumAlgorithms() {
-                                    HashMap<String, ChecksumAlgorithmFactory> checksumAlgorithms = new HashMap<>();
-                                    checksumAlgorithms.put(
-                                            Md5ChecksumAlgorithmFactory.NAME,
-                                            new ChecksumAlgorithmFactoryAdapter(new Md5ChecksumAlgorithmFactory()));
-                                    checksumAlgorithms.put(
-                                            Sha1ChecksumAlgorithmFactory.NAME,
-                                            new ChecksumAlgorithmFactoryAdapter(new Sha1ChecksumAlgorithmFactory()));
-                                    checksumAlgorithms.put(
-                                            Sha256ChecksumAlgorithmFactory.NAME,
-                                            new ChecksumAlgorithmFactoryAdapter(new Sha256ChecksumAlgorithmFactory()));
-                                    checksumAlgorithms.put(
-                                            Sha512ChecksumAlgorithmFactory.NAME,
-                                            new ChecksumAlgorithmFactoryAdapter(new Sha512ChecksumAlgorithmFactory()));
-                                    return checksumAlgorithms;
                                 }
                             },
                             new SpaceModule(
