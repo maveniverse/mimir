@@ -9,7 +9,6 @@ package eu.maveniverse.maven.mimir.shared.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.CacheEntry;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
@@ -78,7 +77,8 @@ public final class SessionImpl implements Session {
     }
 
     @Override
-    public Optional<CacheEntry> locate(RemoteRepository remoteRepository, Artifact artifact) throws IOException {
+    public Optional<? extends LocalEntry> locate(RemoteRepository remoteRepository, Artifact artifact)
+            throws IOException {
         checkState();
         requireNonNull(remoteRepository, "remoteRepository");
         requireNonNull(artifact, "artifact");
@@ -87,7 +87,7 @@ public final class SessionImpl implements Session {
             Optional<? extends LocalEntry> result = localNode.locate(key);
             if (result.isPresent()) {
                 stats.query(true);
-                return Optional.of(new CacheEntryImpl(result.orElseThrow()));
+                return result;
             }
         }
         stats.query(false);

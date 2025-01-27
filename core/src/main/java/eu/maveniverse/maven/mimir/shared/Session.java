@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.mimir.shared;
 
+import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -41,7 +42,7 @@ public interface Session extends Closeable {
     /**
      * Locates cache entry by key.
      */
-    Optional<CacheEntry> locate(RemoteRepository remoteRepository, Artifact artifact) throws IOException;
+    Optional<? extends LocalEntry> locate(RemoteRepository remoteRepository, Artifact artifact) throws IOException;
 
     /**
      * Stores entry under given cache key.
