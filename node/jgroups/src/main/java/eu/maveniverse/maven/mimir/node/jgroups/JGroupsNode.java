@@ -103,30 +103,17 @@ public class JGroupsNode extends RemoteNodeSupport implements Receiver, RequestH
     @Override
     public void viewAccepted(View view) {
         View prev = lastView.get();
+        logger.info("Cluster {}: ", prev == null ? "info" : "update");
+        logger.info("  Members: {}", view.getMembers());
         if (prev != null) {
-            logger.info("Cluster update: ");
-            logger.info("  Coordinator: {}", view.getCoord());
             List<Address> newMembers = View.newMembers(prev, view);
             if (!newMembers.isEmpty()) {
-                logger.info("  New members: ");
-                for (Address member : newMembers) {
-                    logger.info("    {}", member);
-                }
+                logger.info("  New members: {}", newMembers);
             }
 
             List<Address> leftMembers = View.leftMembers(prev, view);
             if (!leftMembers.isEmpty()) {
-                logger.info("  Left members: ");
-                for (Address member : leftMembers) {
-                    logger.info("    {}", member);
-                }
-            }
-        } else {
-            logger.info("Cluster info: ");
-            logger.info("  Coordinator: {}", view.getCoord());
-            logger.info("  Members: ");
-            for (Address member : view.getMembers()) {
-                logger.info("    {}", member);
+                logger.info("  Left members: {}", leftMembers);
             }
         }
         lastView.compareAndSet(prev, view);
