@@ -51,9 +51,9 @@ public class JGroupsNode extends RemoteNodeSupport implements Receiver, RequestH
     public JGroupsNode(String clusterName, JChannel channel) throws Exception {
         super(JGroupsNodeConfig.NAME, 500);
         this.channel = channel;
-        this.channel.setReceiver(this);
         this.messageDispatcher = new MessageDispatcher(channel);
         this.messageDispatcher.setAsynDispatching(true);
+        this.messageDispatcher.setReceiver(this);
         this.publisher = null;
 
         channel.connect(clusterName, null, 1500);
@@ -65,9 +65,9 @@ public class JGroupsNode extends RemoteNodeSupport implements Receiver, RequestH
     public JGroupsNode(String clusterName, JChannel channel, Publisher publisher) throws Exception {
         super(JGroupsNodeConfig.NAME, 500);
         this.channel = channel;
-        this.channel.setReceiver(this);
         this.messageDispatcher = new MessageDispatcher(channel, this);
         this.messageDispatcher.setAsynDispatching(true);
+        this.messageDispatcher.setReceiver(this);
         this.publisher = publisher;
 
         channel.connect(clusterName, null, 1500);
@@ -105,28 +105,28 @@ public class JGroupsNode extends RemoteNodeSupport implements Receiver, RequestH
         View prev = lastView.get();
         if (prev != null) {
             logger.info("Cluster update: ");
-            logger.info("  coordinator: {}", view.getCoord());
+            logger.info("  Coordinator: {}", view.getCoord());
             List<Address> newMembers = View.newMembers(prev, view);
             if (!newMembers.isEmpty()) {
-                logger.info("New members: ");
+                logger.info("  New members: ");
                 for (Address member : newMembers) {
-                    logger.info("  {}", member);
+                    logger.info("    {}", member);
                 }
             }
 
             List<Address> leftMembers = View.leftMembers(prev, view);
             if (!leftMembers.isEmpty()) {
-                logger.info("Left members: ");
+                logger.info("  Left members: ");
                 for (Address member : leftMembers) {
-                    logger.info("  {}", member);
+                    logger.info("    {}", member);
                 }
             }
         } else {
             logger.info("Cluster info: ");
-            logger.info("  coordinator: {}", view.getCoord());
-            logger.info("Members: ");
+            logger.info("  Coordinator: {}", view.getCoord());
+            logger.info("  Members: ");
             for (Address member : view.getMembers()) {
-                logger.info("  {}", member);
+                logger.info("    {}", member);
             }
         }
         lastView.compareAndSet(prev, view);

@@ -48,7 +48,12 @@ import org.slf4j.LoggerFactory;
 @Named
 @Singleton
 public class Daemon implements Closeable {
-    private static final Logger logger = LoggerFactory.getLogger(Daemon.class);
+    static {
+        // make Slf4j-simple go for stdout and not default stderr (unless re-configured by user)
+        if (System.getProperty("org.slf4j.simpleLogger.logFile") == null) {
+            System.setProperty("org.slf4j.simpleLogger.logFile", "System.out");
+        }
+    }
 
     public static void main(String[] args) {
         try {
@@ -71,7 +76,7 @@ public class Daemon implements Closeable {
 
             Runtime.getRuntime().addShutdownHook(new Thread(daemon::close));
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            LoggerFactory.getLogger(Daemon.class).error(e.getMessage(), e);
         }
     }
 
@@ -96,6 +101,8 @@ public class Daemon implements Closeable {
             return systemNode;
         }
     }
+
+    private final Logger logger = LoggerFactory.getLogger(Daemon.class);
 
     private final ServerSocketChannel serverSocketChannel;
     private final ExecutorService executor;

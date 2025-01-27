@@ -62,7 +62,6 @@ public class DaemonNodeFactory implements LocalNodeFactory {
                     .toString();
             ProcessBuilder pb = new ProcessBuilder()
                     .directory(basedir.toFile())
-                    .redirectError(daemonLog.toFile())
                     .redirectOutput(daemonLog.toFile())
                     .command(java, "-jar", daemonJarName);
             Process p = pb.start();
