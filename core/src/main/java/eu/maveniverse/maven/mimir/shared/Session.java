@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.Optional;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 public interface Session extends Closeable {
     /**
@@ -33,11 +32,6 @@ public interface Session extends Closeable {
      * Provides list of checksum algorithm names configured to be used by this node.
      */
     List<String> checksumAlgorithms() throws IOException;
-
-    /**
-     * Tells session configured checksum factories.
-     */
-    Map<String, ChecksumAlgorithmFactory> checksumFactories() throws IOException;
 
     /**
      * Locates cache entry by key.

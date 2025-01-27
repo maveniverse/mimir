@@ -24,7 +24,6 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,12 +67,6 @@ public final class SessionImpl implements Session {
     public List<String> checksumAlgorithms() throws IOException {
         checkState();
         return localNode.checksumAlgorithms();
-    }
-
-    @Override
-    public Map<String, ChecksumAlgorithmFactory> checksumFactories() throws IOException {
-        checkState();
-        return localNode.checksumFactories();
     }
 
     @Override
