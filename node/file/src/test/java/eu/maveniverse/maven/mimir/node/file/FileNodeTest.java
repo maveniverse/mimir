@@ -74,14 +74,17 @@ public class FileNodeTest {
 
     @Test
     void smokeNoLink(@TempDir Path basedir, @TempDir Path workdir) throws Exception {
-        Config config = Config.defaults().basedir(basedir).setUserProperty("mimir.file.mayLink", "false").build();
+        Config config = Config.defaults()
+                .basedir(basedir)
+                .setUserProperty("mimir.file.mayLink", "false")
+                .build();
         try (FileNode fileNode = new FileNodeFactory(
-                Map.of(SimpleKeyResolverFactory.NAME, new SimpleKeyResolverFactory()),
-                Map.of(
-                        Sha1ChecksumAlgorithmFactory.NAME,
-                        new Sha1ChecksumAlgorithmFactory(),
-                        Sha512ChecksumAlgorithmFactory.NAME,
-                        new Sha512ChecksumAlgorithmFactory()))
+                        Map.of(SimpleKeyResolverFactory.NAME, new SimpleKeyResolverFactory()),
+                        Map.of(
+                                Sha1ChecksumAlgorithmFactory.NAME,
+                                new Sha1ChecksumAlgorithmFactory(),
+                                Sha512ChecksumAlgorithmFactory.NAME,
+                                new Sha512ChecksumAlgorithmFactory()))
                 .createNode(config)) {
             Optional<FileEntry> entry = fileNode.locate(keyMapper.apply(central, junit));
             assertFalse(entry.isPresent());
