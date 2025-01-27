@@ -52,14 +52,13 @@ public final class FileNode extends NodeSupport implements SystemNode {
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
     public FileNode(
-            String name,
             Path basedir,
             boolean mayLink,
             Function<URI, Key> keyResolver,
             List<String> checksumAlgorithms,
             Map<String, ChecksumAlgorithmFactory> checksumFactories)
             throws IOException {
-        super(requireNonNull(name, "name"));
+        super(FileNodeConfig.NAME);
         this.basedir = basedir;
         this.mayLink = mayLink;
         this.keyResolver = requireNonNull(keyResolver, "keyResolver");
@@ -219,6 +218,6 @@ public final class FileNode extends NodeSupport implements SystemNode {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + " (name=" + name + " basedir=" + basedir + " mayLink=" + mayLink + ")";
+        return getClass().getSimpleName() + " (basedir=" + basedir + " mayLink=" + mayLink + ")";
     }
 }

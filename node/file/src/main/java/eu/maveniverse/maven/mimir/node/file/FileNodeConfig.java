@@ -19,15 +19,12 @@ import java.util.List;
 public final class FileNodeConfig {
     public static FileNodeConfig with(Config config) {
         requireNonNull(config, "config");
-        String name = NAME;
+
         Path basedir = config.basedir().resolve("local");
         boolean mayLink = true;
         List<String> checksumAlgorithms = Arrays.asList("SHA-1", "SHA-512");
         String keyResolver = SimpleKeyResolverFactory.NAME;
 
-        if (config.effectiveProperties().containsKey("mimir.file.name")) {
-            name = config.effectiveProperties().get("mimir.file.name");
-        }
         if (config.effectiveProperties().containsKey("mimir.file.basedir")) {
             basedir =
                     Config.getCanonicalPath(Path.of(config.effectiveProperties().get("mimir.file.basedir")));
@@ -46,38 +43,26 @@ public final class FileNodeConfig {
             keyResolver = config.effectiveProperties().get("mimir.file.keyResolver");
         }
 
-        return new FileNodeConfig(name, basedir, mayLink, checksumAlgorithms, keyResolver);
+        return new FileNodeConfig(basedir, mayLink, checksumAlgorithms, keyResolver);
     }
 
     public static FileNodeConfig of(
-            String name, Path basedir, boolean mayLink, List<String> checksumAlgorithms, String keyResolver) {
-        return new FileNodeConfig(
-                requireNonNull(name, "name"),
-                Config.getCanonicalPath(basedir),
-                mayLink,
-                checksumAlgorithms,
-                keyResolver);
+            Path basedir, boolean mayLink, List<String> checksumAlgorithms, String keyResolver) {
+        return new FileNodeConfig(Config.getCanonicalPath(basedir), mayLink, checksumAlgorithms, keyResolver);
     }
 
     public static final String NAME = "file";
 
-    private final String name;
     private final Path basedir;
     private final boolean mayLink;
     private final List<String> checksumAlgorithms;
     private final String keyResolver;
 
-    private FileNodeConfig(
-            String name, Path basedir, boolean mayLink, List<String> checksumAlgorithms, String keyResolver) {
-        this.name = name;
+    private FileNodeConfig(Path basedir, boolean mayLink, List<String> checksumAlgorithms, String keyResolver) {
         this.basedir = basedir;
         this.mayLink = mayLink;
         this.checksumAlgorithms = List.copyOf(checksumAlgorithms);
         this.keyResolver = keyResolver;
-    }
-
-    public String name() {
-        return name;
     }
 
     public Path basedir() {
