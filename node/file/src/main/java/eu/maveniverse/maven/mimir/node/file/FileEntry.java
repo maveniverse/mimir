@@ -21,10 +21,12 @@ import java.util.Map;
 
 public final class FileEntry extends EntrySupport implements SystemEntry {
     private final Path path;
+    private final boolean mayLink;
 
-    public FileEntry(Map<String, String> metadata, Map<String, String> checksums, Path path) {
+    public FileEntry(Map<String, String> metadata, Map<String, String> checksums, Path path, boolean mayLink) {
         super(metadata, checksums);
         this.path = requireNonNull(path, "path");
+        this.mayLink = mayLink;
     }
 
     @Override
@@ -36,7 +38,12 @@ public final class FileEntry extends EntrySupport implements SystemEntry {
     public void transferTo(Path file) throws IOException {
         Files.deleteIfExists(file);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(file)) {
-            Utils.copyOrLink(path, f.getPath());
+            if (mayLink) {
+                Utils.copyOrLink(path, f.getPath());
+            } else {
+                Files.copy(path, f.getPath());
+                Files.setLastModifiedTime(f.getPath(), Files.getLastModifiedTime(path));
+            }
             f.move();
         }
     }

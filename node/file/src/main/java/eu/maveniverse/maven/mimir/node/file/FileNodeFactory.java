@@ -55,6 +55,7 @@ public final class FileNodeFactory implements SystemNodeFactory {
         return new FileNode(
                 fileNodeConfig.name(),
                 fileNodeConfig.basedir(),
+                fileNodeConfig.mayLink(),
                 keyResolver,
                 fileNodeConfig.checksumAlgorithms(),
                 checksumFactories);

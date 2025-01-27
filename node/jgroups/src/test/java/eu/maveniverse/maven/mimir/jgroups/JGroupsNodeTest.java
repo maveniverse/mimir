@@ -41,18 +41,20 @@ public class JGroupsNodeTest {
         Files.writeString(contentPath, content);
 
         FileNodeConfig configOne =
-                FileNodeConfig.of("one", one, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
+                FileNodeConfig.of("one", one, true, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
         FileNode nodeOne = new FileNode(
                 configOne.name(),
                 configOne.basedir(),
+                true,
                 new SimpleKeyResolverFactory().createKeyResolver(config),
                 List.of(Sha1ChecksumAlgorithmFactory.NAME),
                 Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()));
         FileNodeConfig configTwo =
-                FileNodeConfig.of("two", two, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
+                FileNodeConfig.of("two", two, true, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
         FileNode nodeTwo = new FileNode(
                 configTwo.name(),
                 configTwo.basedir(),
+                true,
                 new SimpleKeyResolverFactory().createKeyResolver(config),
                 List.of(Sha1ChecksumAlgorithmFactory.NAME),
                 Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()));

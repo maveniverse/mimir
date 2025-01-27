@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +46,7 @@ import org.msgpack.core.MessageUnpacker;
 
 public final class FileNode extends NodeSupport implements SystemNode {
     private final Path basedir;
+    private final boolean mayLink;
     private final Function<URI, Key> keyResolver;
     private final List<String> checksumAlgorithms;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
@@ -52,12 +54,14 @@ public final class FileNode extends NodeSupport implements SystemNode {
     public FileNode(
             String name,
             Path basedir,
+            boolean mayLink,
             Function<URI, Key> keyResolver,
             List<String> checksumAlgorithms,
             Map<String, ChecksumAlgorithmFactory> checksumFactories)
             throws IOException {
         super(requireNonNull(name, "name"));
         this.basedir = basedir;
+        this.mayLink = mayLink;
         this.keyResolver = requireNonNull(keyResolver, "keyResolver");
         this.checksumAlgorithms = List.copyOf(checksumAlgorithms);
         this.checksumFactories = Map.copyOf(checksumFactories);
@@ -122,6 +126,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
     public void store(URI key, Path file, Map<String, String> checksums) throws IOException {
         ensureOpen();
         Path path = resolveKey(key);
+        FileTime fileTime = Files.getLastModifiedTime(file);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
             ChecksumEnforcer checksumEnforcer;
             try (InputStream enforced = new ChecksumInputStream(
@@ -132,14 +137,13 @@ public final class FileNode extends NodeSupport implements SystemNode {
                             .collect(Collectors.toMap(
                                     AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)),
                     checksumEnforcer = new ChecksumEnforcer(checksums))) {
-                Files.copy(enforced, f.getPath(), StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(enforced, f.getPath());
+                Files.setLastModifiedTime(f.getPath(), fileTime);
             }
 
             HashMap<String, String> metadata = new HashMap<>();
             metadata.put(Entry.CONTENT_LENGTH, Long.toString(Files.size(file)));
-            metadata.put(
-                    Entry.CONTENT_LAST_MODIFIED,
-                    Long.toString(Files.getLastModifiedTime(file).toMillis()));
+            metadata.put(Entry.CONTENT_LAST_MODIFIED, Long.toString(fileTime.toMillis()));
             storeMetadata(path, mergeEntry(metadata, checksumEnforcer.getChecksums()));
             f.move();
         }
@@ -157,7 +161,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
         md.put(
                 Entry.CONTENT_LAST_MODIFIED,
                 Long.toString(Files.getLastModifiedTime(file).toMillis()));
-        return new FileEntry(md, checksums, file);
+        return new FileEntry(md, checksums, file, mayLink);
     }
 
     private void storeMetadata(Path file, Map<String, String> metadata) throws IOException {
@@ -215,6 +219,6 @@ public final class FileNode extends NodeSupport implements SystemNode {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + " (name=" + name + " basedir=" + basedir + ")";
+        return getClass().getSimpleName() + " (name=" + name + " basedir=" + basedir + " mayLink=" + mayLink + ")";
     }
 }
