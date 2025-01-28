@@ -22,13 +22,14 @@ public class DaemonConfig {
     public static DaemonConfig with(Config config) {
         requireNonNull(config, "config");
 
+        final String mimirVersion = config.mimirVersion().orElse("UNKNOWN");
+
         Path socketPath = config.basedir().resolve("mimir-socket");
         boolean autoupdate = true;
         boolean autostart = true;
-        String daemonJarName = "daemon-" + config.mimirVersion().orElse("UNKNOWN") + ".jar";
-        String daemonLogName = "daemon-" + config.mimirVersion().orElse("UNKNOWN") + ".log";
-        String daemonGav = "eu.maveniverse.maven.mimir:daemon:jar:daemon:"
-                + config.mimirVersion().orElse("UNKNOWN");
+        String daemonJarName = "daemon-" + mimirVersion + ".jar";
+        String daemonLogName = "daemon-" + mimirVersion + ".log";
+        String daemonGav = "eu.maveniverse.maven.mimir:daemon:jar:daemon:" + mimirVersion;
         String systemNode = "file";
 
         if (config.effectiveProperties().containsKey("mimir.daemon.socketPath")) {

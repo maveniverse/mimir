@@ -109,24 +109,21 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
             return;
         }
         try {
+            String mimirVersion = config.mimirVersion().orElseThrow();
             logger.debug("Checking for Mimir updates...");
             VersionRangeRequest versionRangeRequest = new VersionRangeRequest(
-                    new DefaultArtifact(daemonConfig.daemonGav())
-                            .setVersion("[" + config.mimirVersion().orElseThrow() + ",)"),
+                    new DefaultArtifact(daemonConfig.daemonGav()).setVersion("[" + mimirVersion + ",)"),
                     remoteRepositories,
                     "mimir");
             VersionRangeResult rangeResult = repositorySystem.resolveVersionRange(session, versionRangeRequest);
             List<Version> versions = rangeResult.getVersions();
             if (versions.size() > 1) {
                 String latest = versions.get(versions.size() - 1).toString();
-                if (!Objects.equals(config.mimirVersion().orElse(null), latest)) {
-                    logger.info(
-                            "Please upgrade to Mimir version {} (you are using version {})",
-                            latest,
-                            config.mimirVersion());
+                if (!Objects.equals(mimirVersion, latest)) {
+                    logger.info("Please upgrade to Mimir version {} (you are using version {})", latest, mimirVersion);
                 }
             } else {
-                logger.debug("Mimir {} is up to date", config.mimirVersion().orElseThrow());
+                logger.debug("Mimir {} is up to date", mimirVersion);
             }
         } catch (Exception e) {
             logger.warn("Failed to check for updates; ignoring it", e);
