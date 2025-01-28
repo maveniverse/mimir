@@ -71,7 +71,7 @@ final class DaemonServer implements Runnable {
 
     @Override
     public void run() {
-        try (socketChannel) {
+        try (dos) {
             Thread.currentThread().setName("DVT");
             String cmd = dis.readUTF();
             switch (cmd) {
@@ -134,9 +134,7 @@ final class DaemonServer implements Runnable {
                     writeSimpleRspOK(dos);
                     shutdownHook.run();
                 }
-                default -> {
-                    writeRspKO(dos, "Bad command");
-                }
+                default -> writeRspKO(dos, "Bad command");
             }
         } catch (IOException e) {
             try {

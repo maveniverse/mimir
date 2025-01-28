@@ -70,8 +70,10 @@ public class DaemonNodeFactory implements LocalNodeFactory {
                     .command(java, "-jar", daemonJarName);
             Process p = pb.start();
             try {
-                // not the nicest, but JGroups will also sleep 1s to discover cluster
-                Thread.sleep(1500);
+                while (!Files.exists(config.socketPath())) {
+                    logger.debug("Waiting for socket to open");
+                    Thread.sleep(500);
+                }
             } catch (InterruptedException e) {
                 throw new IOException("Interrupted", e);
             }
