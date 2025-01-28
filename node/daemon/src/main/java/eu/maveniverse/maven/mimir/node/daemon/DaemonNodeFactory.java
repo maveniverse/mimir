@@ -70,14 +70,18 @@ public class DaemonNodeFactory implements LocalNodeFactory {
                     .command(java, "-jar", daemonJarName);
             Process p = pb.start();
             try {
-                while (!Files.exists(config.socketPath())) {
+                while (p.isAlive() && !Files.exists(config.socketPath())) {
                     logger.debug("Waiting for socket to open");
                     Thread.sleep(500);
                 }
             } catch (InterruptedException e) {
                 throw new IOException("Interrupted", e);
             }
-            return p;
+            if (p.isAlive()) {
+                return p;
+            } else {
+                throw new IOException("Failed to start daemon; check daemon logs in " + config.daemonLogName());
+            }
         }
         logger.warn("Mimir daemon is not present; cannot start it");
         return null;
