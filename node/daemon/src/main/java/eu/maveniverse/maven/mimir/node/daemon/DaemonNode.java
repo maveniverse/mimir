@@ -7,16 +7,19 @@
  */
 package eu.maveniverse.maven.mimir.node.daemon;
 
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readByeRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readHelloRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readLocateRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readLsChecksumsRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readStorePathRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readTransferRsp;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeByeReq;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeHelloReq;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeLocateReq;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeLsChecksumsReq;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeStorePathReq;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeTransferReq;
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeEntry;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
@@ -49,6 +52,7 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 public class DaemonNode extends NodeSupport implements LocalNode {
     private final Path socketPath;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
+    private final Map<String, String> session;
 
     public DaemonNode(
             Map<String, String> clientData, Path socketPath, Map<String, ChecksumAlgorithmFactory> checksumFactories)
@@ -59,8 +63,8 @@ public class DaemonNode extends NodeSupport implements LocalNode {
 
         try (Handle handle = create()) {
             writeHelloReq(handle.dos, clientData);
-            Map<String, String> data = readHelloRsp(handle.dis);
-            logger.debug("Hello OK {}", data);
+            this.session = readHelloRsp(handle.dis);
+            logger.debug("Hello OK {}", session);
         }
     }
 
@@ -93,13 +97,29 @@ public class DaemonNode extends NodeSupport implements LocalNode {
     }
 
     @Override
-    public void store(URI key, Path file, Map<String, String> checksums) throws IOException {
+    public LocalEntry store(URI key, Path file, Map<String, String> metadata, Map<String, String> checksums)
+            throws IOException {
         String keyString = key.toASCIIString();
         String filePath = Config.getCanonicalPath(file).toString();
         logger.debug("STORE PATH '{}' -> '{}'", keyString, filePath);
         try (Handle handle = create()) {
-            writeStorePathReq(handle.dos, keyString, filePath, checksums);
-            readStorePathRsp(handle.dis);
+            writeStorePathReq(handle.dos, keyString, filePath, mergeEntry(metadata, checksums));
+            Map<String, String> response = readStorePathRsp(handle.dis);
+            if (!response.isEmpty()) {
+                return new DaemonEntry(splitMetadata(response), splitChecksums(response), keyString);
+            } else {
+                // TODO: why?
+                throw new IOException("Failed to store " + filePath);
+            }
+        }
+    }
+
+    @Override
+    protected void doClose() throws IOException {
+        try (Handle handle = create()) {
+            writeByeReq(handle.dos, session);
+            Map<String, String> data = readByeRsp(handle.dis);
+            logger.debug("Bye OK {}", data);
         }
     }
 

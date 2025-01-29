@@ -24,6 +24,7 @@ public final class DaemonProtocol {
     public static final String KO = "KO ";
 
     public static final String CMD_HELLO = "HELLO";
+    public static final String CMD_BYE = "BYE";
     public static final String CMD_LOCATE = "LOCATE";
     public static final String CMD_TRANSFER = "TRANSFER";
     public static final String CMD_LS_CHECKSUMS = "LS_CHECKSUMS";
@@ -153,6 +154,30 @@ public final class DaemonProtocol {
         }
     }
 
+    // BYE
+
+    public static void writeByeReq(DataOutputStream dos, Map<String, String> data) throws IOException {
+        dos.writeUTF(CMD_BYE);
+        writeMap(dos, data);
+        dos.flush();
+    }
+
+    public static void writeByeRspOK(DataOutputStream dos, Map<String, String> data) throws IOException {
+        dos.writeUTF(OK);
+        writeMap(dos, data);
+        dos.flush();
+    }
+
+    public static Map<String, String> readByeRsp(DataInputStream dis) throws IOException {
+        String result = dis.readUTF();
+        if (OK.equals(result)) {
+            return readMap(dis);
+        } else {
+            String errorMessage = dis.readUTF();
+            throw new IOException(errorMessage);
+        }
+    }
+
     // LOCATE
 
     public static void writeLocateReq(DataOutputStream dos, String key) throws IOException {
@@ -228,11 +253,19 @@ public final class DaemonProtocol {
         dos.flush();
     }
 
-    public static void writeStorePathRspOK(DataOutputStream dos) throws IOException {
-        writeSimpleRspOK(dos);
+    public static void writeStorePathRspOK(DataOutputStream dos, Map<String, String> data) throws IOException {
+        dos.writeUTF(OK);
+        writeMap(dos, data);
+        dos.flush();
     }
 
-    public static void readStorePathRsp(DataInputStream dis) throws IOException {
-        readSimpleRsp(dis);
+    public static Map<String, String> readStorePathRsp(DataInputStream dis) throws IOException {
+        String result = dis.readUTF();
+        if (OK.equals(result)) {
+            return readMap(dis);
+        } else {
+            String errorMessage = dis.readUTF();
+            throw new IOException(errorMessage);
+        }
     }
 }

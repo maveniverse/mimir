@@ -52,7 +52,7 @@ public class FileNodeTest {
             Files.write(temp, data, StandardOpenOption.TRUNCATE_EXISTING);
             Map<String, String> checksums = ChecksumAlgorithmHelper.calculate(
                     data, Arrays.asList(new Sha1ChecksumAlgorithmFactory(), new Sha512ChecksumAlgorithmFactory()));
-            fileNode.store(keyMapper.apply(central, junit), temp, checksums);
+            fileNode.store(keyMapper.apply(central, junit), temp, Map.of(), checksums);
 
             entry = fileNode.locate(keyMapper.apply(central, junit));
             assertTrue(entry.isPresent());
@@ -94,7 +94,7 @@ public class FileNodeTest {
             Files.write(temp, data, StandardOpenOption.TRUNCATE_EXISTING);
             Map<String, String> checksums = ChecksumAlgorithmHelper.calculate(
                     data, Arrays.asList(new Sha1ChecksumAlgorithmFactory(), new Sha512ChecksumAlgorithmFactory()));
-            fileNode.store(keyMapper.apply(central, junit), temp, checksums);
+            fileNode.store(keyMapper.apply(central, junit), temp, Map.of(), checksums);
 
             entry = fileNode.locate(keyMapper.apply(central, junit));
             assertTrue(entry.isPresent());

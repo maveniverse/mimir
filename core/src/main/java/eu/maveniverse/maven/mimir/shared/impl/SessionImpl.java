@@ -78,9 +78,8 @@ public final class SessionImpl implements Session {
             URI key = keyMapper.apply(remoteRepository, artifact);
             Optional<? extends LocalEntry> result = localNode.locate(key);
             if (result.isPresent()) {
-                stats.doLocate(true);
                 LocalEntry entry = result.orElseThrow();
-                return Optional.of(new LocalEntry() {
+                return stats.doLocate(Optional.of(new LocalEntry() {
                     @Override
                     public void transferTo(Path file) throws IOException {
                         try {
@@ -101,15 +100,19 @@ public final class SessionImpl implements Session {
                     public Map<String, String> checksums() {
                         return entry.checksums();
                     }
-                });
+                }));
             }
         }
-        stats.doLocate(false);
-        return Optional.empty();
+        return stats.doLocate(Optional.empty());
     }
 
     @Override
-    public boolean store(RemoteRepository remoteRepository, Artifact artifact, Path file, Map<String, String> checksums)
+    public Optional<LocalEntry> store(
+            RemoteRepository remoteRepository,
+            Artifact artifact,
+            Path file,
+            Map<String, String> metadata,
+            Map<String, String> checksums)
             throws IOException {
         checkState();
         requireNonNull(remoteRepository, "remoteRepository");
@@ -118,12 +121,9 @@ public final class SessionImpl implements Session {
         requireNonNull(checksums, "checksums");
         if (repositoryPredicate.test(remoteRepository) && artifactPredicate.test(artifact)) {
             URI key = keyMapper.apply(remoteRepository, artifact);
-            localNode.store(key, file, checksums);
-            stats.doStore(true);
-            return true;
+            return stats.doStore(Optional.of(localNode.store(key, file, metadata, checksums)));
         } else {
-            stats.doStore(false);
-            return false;
+            return stats.doStore(Optional.empty());
         }
     }
 

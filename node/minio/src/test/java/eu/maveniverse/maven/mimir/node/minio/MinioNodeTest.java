@@ -66,7 +66,7 @@ public class MinioNodeTest {
                     Map<String, String> checksums = ChecksumAlgorithmHelper.calculate(
                             data,
                             Arrays.asList(new Sha1ChecksumAlgorithmFactory(), new Sha512ChecksumAlgorithmFactory()));
-                    minioNode.store(keyMapper.apply(central, junit), temp, checksums);
+                    minioNode.store(keyMapper.apply(central, junit), temp, Map.of(), checksums);
 
                     entry = minioNode.locate(keyMapper.apply(central, junit));
                     assertTrue(entry.isPresent());
