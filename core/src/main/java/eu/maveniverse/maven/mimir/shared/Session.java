@@ -41,6 +41,11 @@ public interface Session extends Closeable {
     /**
      * Stores entry under given cache key.
      */
-    boolean store(RemoteRepository remoteRepository, Artifact artifact, Path file, Map<String, String> checksums)
+    Optional<LocalEntry> store(
+            RemoteRepository remoteRepository,
+            Artifact artifact,
+            Path file,
+            Map<String, String> metadata,
+            Map<String, String> checksums)
             throws IOException;
 }

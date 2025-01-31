@@ -39,5 +39,6 @@ public interface LocalNode extends Node {
     /**
      * Stores file as new entry.
      */
-    void store(URI key, Path file, Map<String, String> checksums) throws IOException;
+    LocalEntry store(URI key, Path file, Map<String, String> metadata, Map<String, String> checksums)
+            throws IOException;
 }

@@ -26,7 +26,9 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmHelper;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.MinIOContainer;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers(disabledWithoutDocker = true)
 public class MinioNodeTest {
     private final RemoteRepository central =
             new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
@@ -66,7 +68,7 @@ public class MinioNodeTest {
                     Map<String, String> checksums = ChecksumAlgorithmHelper.calculate(
                             data,
                             Arrays.asList(new Sha1ChecksumAlgorithmFactory(), new Sha512ChecksumAlgorithmFactory()));
-                    minioNode.store(keyMapper.apply(central, junit), temp, checksums);
+                    minioNode.store(keyMapper.apply(central, junit), temp, Map.of(), checksums);
 
                     entry = minioNode.locate(keyMapper.apply(central, junit));
                     assertTrue(entry.isPresent());
