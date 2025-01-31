@@ -94,6 +94,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                 ArtifactRequest artifactRequest =
                         new ArtifactRequest(new DefaultArtifact(daemonConfig.daemonGav()), remoteRepositories, "mimir");
                 ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, artifactRequest);
+                Files.createDirectories(daemonJarPath.getParent());
                 Utils.copyOrLink(artifactResult.getArtifact().getFile().toPath(), daemonJarPath);
             } catch (Exception e) {
                 logger.warn("Failed to resolve daemon: {}", e.getMessage());
