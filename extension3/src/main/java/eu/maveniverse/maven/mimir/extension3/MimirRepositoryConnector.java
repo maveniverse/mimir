@@ -84,12 +84,12 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                             logger.debug("Fetched {} from Mimir cache", artifactDownload.getArtifact());
                             Path artifactFile = artifactDownload.getFile().toPath();
                             ce.transferTo(artifactFile);
-                            Optional<String> checksum = Optional.empty();
+                            String checksum = null;
                             for (ChecksumAlgorithmFactory checksumAlgorithmFactory :
                                     resolverChecksumAlgorithmFactories) {
-                                checksum = Optional.ofNullable(ce.checksums().get(checksumAlgorithmFactory.getName()));
-                                if (checksum.isPresent()) {
-                                    String chk = checksum.orElseThrow();
+                                checksum = ce.checksums().get(checksumAlgorithmFactory.getName());
+                                if (checksum != null) {
+                                    final String chk = checksum;
                                     FileUtils.writeFile(
                                             artifactFile
                                                     .getParent()
@@ -99,7 +99,7 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                                     break;
                                 }
                             }
-                            if (checksum.isEmpty()) {
+                            if (checksum == null) {
                                 logger.warn(
                                         "No checksum written for {}; resolver={} vs entry={}",
                                         artifactDownload.getArtifact(),
@@ -151,6 +151,7 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                                 remoteRepository,
                                 potentiallyCached.artifact,
                                 artifactDownload.getFile().toPath(),
+                                Map.of(),
                                 potentiallyCached.checksumCalculator().getChecksums());
                     } catch (IOException e) {
                         artifactDownload.setException(

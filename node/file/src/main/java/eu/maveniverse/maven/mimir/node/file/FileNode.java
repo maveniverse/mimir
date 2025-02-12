@@ -122,12 +122,14 @@ public final class FileNode extends NodeSupport implements SystemNode {
     }
 
     @Override
-    public void store(URI key, Path file, Map<String, String> checksums) throws IOException {
+    public FileEntry store(URI key, Path file, Map<String, String> md, Map<String, String> checksums)
+            throws IOException {
         ensureOpen();
         Path path = resolveKey(key);
+        HashMap<String, String> metadata = new HashMap<>(md);
         FileTime fileTime = Files.getLastModifiedTime(file);
+        ChecksumEnforcer checksumEnforcer;
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
-            ChecksumEnforcer checksumEnforcer;
             try (InputStream enforced = new ChecksumInputStream(
                     Files.newInputStream(file),
                     checksumAlgorithms().stream()
@@ -140,12 +142,12 @@ public final class FileNode extends NodeSupport implements SystemNode {
                 Files.setLastModifiedTime(f.getPath(), fileTime);
             }
 
-            HashMap<String, String> metadata = new HashMap<>();
             metadata.put(Entry.CONTENT_LENGTH, Long.toString(Files.size(file)));
             metadata.put(Entry.CONTENT_LAST_MODIFIED, Long.toString(fileTime.toMillis()));
             storeMetadata(path, mergeEntry(metadata, checksumEnforcer.getChecksums()));
             f.move();
         }
+        return new FileEntry(metadata, checksumEnforcer.getChecksums(), path, mayLink);
     }
 
     private Path resolveKey(URI key) {

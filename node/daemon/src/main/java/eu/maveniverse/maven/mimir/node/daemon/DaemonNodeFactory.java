@@ -41,7 +41,7 @@ public class DaemonNodeFactory implements LocalNodeFactory {
         if (!Files.exists(cfg.socketPath())) {
             if (cfg.autostart()) {
                 logger.debug("Mimir daemon is not running, starting it");
-                Process daemon = startDaemon(config.basedir(), cfg);
+                Process daemon = startDaemon(config.basedir(), config, cfg);
                 if (daemon == null) {
                     throw new IOException("Mimir daemon could not be started");
                 }
@@ -49,20 +49,26 @@ public class DaemonNodeFactory implements LocalNodeFactory {
             }
         }
         HashMap<String, String> clientData = new HashMap<>();
-        clientData.put("version", config.mimirVersion().orElse("UNKNOWN"));
-        clientData.put("pid", Long.toString(ProcessHandle.current().pid()));
+        clientData.put("node.version", config.mimirVersion().orElse("UNKNOWN"));
+        clientData.put("node.pid", Long.toString(ProcessHandle.current().pid()));
         return new DaemonNode(clientData, cfg.socketPath(), checksumAlgorithmFactories);
     }
 
-    private Process startDaemon(Path basedir, DaemonConfig config) throws IOException {
-        String daemonJarName = config.daemonJarName();
-        String daemonLogName = config.daemonLogName();
+    private Process startDaemon(Path basedir, Config config, DaemonConfig daemonConfig) throws IOException {
+        String daemonJarName = daemonConfig.daemonJarName();
+        String daemonLogName = daemonConfig.daemonLogName();
         Path daemonJar = basedir.resolve(daemonJarName);
         Path daemonLog = basedir.resolve(daemonLogName);
         if (Files.isRegularFile(daemonJar)) {
-            String java = Path.of(System.getProperty("java.home"))
+            String java = daemonConfig
+                    .daemonJavaHome()
                     .resolve("bin")
-                    .resolve(System.getProperty("os.name", "unknown").startsWith("Windows") ? "java.exe" : "java")
+                    .resolve(
+                            config.effectiveProperties()
+                                            .getOrDefault("os.name", "unknown")
+                                            .startsWith("Windows")
+                                    ? "java.exe"
+                                    : "java")
                     .toString();
             ProcessBuilder pb = new ProcessBuilder()
                     .directory(basedir.toFile())
@@ -70,7 +76,7 @@ public class DaemonNodeFactory implements LocalNodeFactory {
                     .command(java, "-jar", daemonJarName);
             Process p = pb.start();
             try {
-                while (p.isAlive() && !Files.exists(config.socketPath())) {
+                while (p.isAlive() && !Files.exists(daemonConfig.socketPath())) {
                     logger.debug("Waiting for socket to open");
                     Thread.sleep(500);
                 }
@@ -80,7 +86,7 @@ public class DaemonNodeFactory implements LocalNodeFactory {
             if (p.isAlive()) {
                 return p;
             } else {
-                throw new IOException("Failed to start daemon; check daemon logs in " + config.daemonLogName());
+                throw new IOException("Failed to start daemon; check daemon logs in " + daemonConfig.daemonLogName());
             }
         }
         logger.warn("Mimir daemon is not present; cannot start it");

@@ -163,8 +163,8 @@ public class Daemon implements Closeable {
         }
 
         HashMap<String, String> daemonData = new HashMap<>();
-        daemonData.put("version", config.mimirVersion().orElse("UNKNOWN"));
-        daemonData.put("pid", Long.toString(ProcessHandle.current().pid()));
+        daemonData.put("daemon.version", config.mimirVersion().orElse("UNKNOWN"));
+        daemonData.put("daemon.pid", Long.toString(ProcessHandle.current().pid()));
 
         executor.submit(() -> {
             try {

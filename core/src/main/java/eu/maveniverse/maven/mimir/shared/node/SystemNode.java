@@ -9,6 +9,8 @@ package eu.maveniverse.maven.mimir.shared.node;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -21,6 +23,13 @@ public interface SystemNode extends LocalNode {
      */
     @Override
     Optional<? extends SystemEntry> locate(URI key) throws IOException;
+
+    /**
+     * Stores file as new entry.
+     */
+    @Override
+    SystemEntry store(URI key, Path file, Map<String, String> metadata, Map<String, String> checksums)
+            throws IOException;
 
     /**
      * Stores entry and provides new local entry for stored content.

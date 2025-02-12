@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.mimir.daemon;
 
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_BYE;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_HELLO;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_LOCATE;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_LS_CHECKSUMS;
@@ -14,6 +15,7 @@ import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_SHUTDOWN
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_STORE_PATH;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_TRANSFER;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readMap;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeByeRspOK;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeHelloRspOK;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeLocateRspOK;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeLsChecksumsRspOK;
@@ -22,6 +24,8 @@ import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeSimpleR
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeStorePathRspOK;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeTransferRspOK;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeEntry;
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
+import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
@@ -37,6 +41,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,7 +50,6 @@ import org.slf4j.LoggerFactory;
 
 final class DaemonServer implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final SocketChannel socketChannel;
     private final DataOutputStream dos;
     private final DataInputStream dis;
 
@@ -60,10 +64,9 @@ final class DaemonServer implements Runnable {
             SystemNode systemNode,
             List<RemoteNode> remoteNodes,
             Runnable shutdownHook) {
-        this.socketChannel = socketChannel;
-        this.daemonData = daemonData;
         this.dos = new DataOutputStream(Channels.newOutputStream(socketChannel));
         this.dis = new DataInputStream(Channels.newInputStream(socketChannel));
+        this.daemonData = daemonData;
         this.systemNode = systemNode;
         this.remoteNodes = remoteNodes;
         this.shutdownHook = shutdownHook;
@@ -78,7 +81,14 @@ final class DaemonServer implements Runnable {
                 case CMD_HELLO -> {
                     Map<String, String> data = readMap(dis);
                     logger.debug("{} {}", cmd, data);
-                    writeHelloRspOK(dos, daemonData);
+                    Map<String, String> session = new HashMap<>(daemonData);
+                    session.put("session.id", "todo");
+                    writeHelloRspOK(dos, session);
+                }
+                case CMD_BYE -> {
+                    Map<String, String> data = readMap(dis);
+                    logger.debug("{} {}", cmd, data);
+                    writeByeRspOK(dos, Map.of("message", "So Long, and Thanks for All the Fish"));
                 }
                 case CMD_LOCATE -> {
                     String keyString = dis.readUTF();
@@ -122,12 +132,13 @@ final class DaemonServer implements Runnable {
                 case CMD_STORE_PATH -> {
                     String keyString = dis.readUTF();
                     String pathString = dis.readUTF();
-                    Map<String, String> checksums = readMap(dis);
+                    Map<String, String> data = readMap(dis);
+                    Map<String, String> metadata = splitMetadata(data);
+                    Map<String, String> checksums = splitChecksums(data);
                     logger.debug("{} {} <- {}", cmd, keyString, pathString);
                     URI key = URI.create(keyString);
                     Path path = Path.of(pathString);
-                    systemNode.store(key, path, checksums);
-                    writeStorePathRspOK(dos);
+                    writeStorePathRspOK(dos, mergeEntry(systemNode.store(key, path, metadata, checksums)));
                 }
                 case CMD_SHUTDOWN -> {
                     logger.debug("{}", cmd);

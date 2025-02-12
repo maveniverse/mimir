@@ -184,12 +184,13 @@ public final class MinioNode extends NodeSupport implements SystemNode {
     }
 
     @Override
-    public void store(URI key, Path file, Map<String, String> checksums) throws IOException {
+    public MinioEntry store(URI key, Path file, Map<String, String> md, Map<String, String> checksums)
+            throws IOException {
         ensureOpen();
         Key localKey = keyResolver.apply(key);
         long size = Files.size(file);
         long lastModified = Files.getLastModifiedTime(file).toMillis();
-        HashMap<String, String> metadata = new HashMap<>();
+        HashMap<String, String> metadata = new HashMap<>(md);
         metadata.put(Entry.CONTENT_LENGTH, Long.toString(size));
         metadata.put(Entry.CONTENT_LAST_MODIFIED, Long.toString(lastModified));
         try {
@@ -223,6 +224,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                             .object(localKey.name())
                             .build())
                     .build());
+            return new MinioEntry(metadata, checksumEnforcer.getChecksums(), minioClient, localKey);
         } catch (MinioException e) {
             logger.debug(e.httpTrace());
             throw new IOException("inputStream()", e);
