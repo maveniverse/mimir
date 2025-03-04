@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
@@ -44,6 +46,8 @@ public class JGroupsNode extends RemoteNodeSupport implements Receiver, RequestH
     private final JChannel channel;
     private final MessageDispatcher messageDispatcher;
     private final Publisher publisher;
+    private final AtomicReference<View> lastView;
+    private final ExecutorService executor;
 
     /**
      * Creates JGroups node w/o publisher.
@@ -55,6 +59,9 @@ public class JGroupsNode extends RemoteNodeSupport implements Receiver, RequestH
         this.messageDispatcher.setAsynDispatching(true);
         this.messageDispatcher.setReceiver(this);
         this.publisher = null;
+        this.lastView = new AtomicReference<>(null);
+        // Java 21: this.executor = Executors.newVirtualThreadPerTaskExecutor();
+        this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1);
 
         channel.connect(clusterName, null, 1500);
     }
@@ -69,6 +76,9 @@ public class JGroupsNode extends RemoteNodeSupport implements Receiver, RequestH
         this.messageDispatcher.setAsynDispatching(true);
         this.messageDispatcher.setReceiver(this);
         this.publisher = publisher;
+        this.lastView = new AtomicReference<>(null);
+        // Java 21: this.executor = Executors.newVirtualThreadPerTaskExecutor();
+        this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1);
 
         channel.connect(clusterName, null, 1500);
     }
@@ -98,8 +108,6 @@ public class JGroupsNode extends RemoteNodeSupport implements Receiver, RequestH
         return Optional.empty();
     }
 
-    private final AtomicReference<View> lastView = new AtomicReference<>(null);
-
     @Override
     public void viewAccepted(View view) {
         View prev = lastView.get();
@@ -126,13 +134,13 @@ public class JGroupsNode extends RemoteNodeSupport implements Receiver, RequestH
 
     @Override
     public void handle(Message msg, Response response) {
-        Thread.startVirtualThread(() -> {
+        executor.submit(() -> {
             Thread.currentThread().setName("JVT");
             HashMap<String, String> responseMap = new HashMap<>();
             boolean responseException = false;
             try {
                 List<String> req = msg.getObject();
-                if (req.size() == 2 && CMD_LOCATE.equals(req.getFirst())) {
+                if (req.size() == 2 && CMD_LOCATE.equals(req.get(0))) {
                     String keyString = req.get(1);
                     URI key = URI.create(keyString);
                     Optional<Publisher.Handle> handle = publisher.createHandle(key);

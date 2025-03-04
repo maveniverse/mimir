@@ -39,7 +39,8 @@ public class HttpServerPublisher extends PublisherSupport {
     public HttpServerPublisher(SystemNode systemNode, InetSocketAddress inetSocketAddress) throws IOException {
         super(systemNode);
         httpServer = HttpServer.create(inetSocketAddress, 0);
-        httpServer.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
+        // Java 21: httpServer.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
+        httpServer.setExecutor(Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1));
         httpServer.createContext("/txid", new TxHandler(this::publishedEntry));
         logger.info("HTTP publisher starting at {}", httpServer.getAddress());
         httpServer.start();

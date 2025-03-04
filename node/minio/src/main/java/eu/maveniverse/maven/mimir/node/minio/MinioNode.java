@@ -105,8 +105,8 @@ public final class MinioNode extends NodeSupport implements SystemNode {
         ensureOpen();
         Key localKey = keyResolver.apply(key);
         long size = Long.parseLong(entry.metadata().get(Entry.CONTENT_LENGTH));
-        switch (entry) {
-            case RemoteEntry remoteEntry -> remoteEntry.handleContent(inputStream -> {
+        if (entry instanceof RemoteEntry remoteEntry) {
+            remoteEntry.handleContent(inputStream -> {
                 try {
                     ChecksumEnforcer checksumEnforcer;
                     try (InputStream enforced = new ChecksumInputStream(
@@ -144,41 +144,40 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                     throw new IOException("inputStream()", e);
                 }
             });
-            case SystemEntry systemEntry -> {
-                try (InputStream inputStream = systemEntry.inputStream()) {
-                    minioClient.putObject(PutObjectArgs.builder()
-                            .bucket(localKey.container())
-                            .object(localKey.name())
-                            .userMetadata(pushMap(mergeEntry(entry)))
-                            .stream(inputStream, size, -1)
-                            .build());
-                } catch (MinioException e) {
-                    logger.debug(e.httpTrace());
-                    throw new IOException("inputStream()", e);
-                } catch (Exception e) {
-                    throw new IOException("inputStream()", e);
-                }
+        } else if (entry instanceof SystemEntry systemEntry) {
+            try (InputStream inputStream = systemEntry.inputStream()) {
+                minioClient.putObject(PutObjectArgs.builder()
+                        .bucket(localKey.container())
+                        .object(localKey.name())
+                        .userMetadata(pushMap(mergeEntry(entry)))
+                        .stream(inputStream, size, -1)
+                        .build());
+            } catch (MinioException e) {
+                logger.debug(e.httpTrace());
+                throw new IOException("inputStream()", e);
+            } catch (Exception e) {
+                throw new IOException("inputStream()", e);
             }
-            case LocalEntry localEntry -> {
-                Path tempFile = Files.createTempFile(localKey.container(), "minio");
-                localEntry.transferTo(tempFile);
-                try (InputStream inputStream = Files.newInputStream(tempFile)) {
-                    minioClient.putObject(PutObjectArgs.builder()
-                            .bucket(localKey.container())
-                            .object(localKey.name())
-                            .userMetadata(pushMap(mergeEntry(entry)))
-                            .stream(inputStream, size, -1)
-                            .build());
-                } catch (MinioException e) {
-                    logger.debug(e.httpTrace());
-                    throw new IOException("inputStream()", e);
-                } catch (Exception e) {
-                    throw new IOException("inputStream()", e);
-                } finally {
-                    Files.deleteIfExists(tempFile);
-                }
+        } else if (entry instanceof LocalEntry localEntry) {
+            Path tempFile = Files.createTempFile(localKey.container(), "minio");
+            localEntry.transferTo(tempFile);
+            try (InputStream inputStream = Files.newInputStream(tempFile)) {
+                minioClient.putObject(PutObjectArgs.builder()
+                        .bucket(localKey.container())
+                        .object(localKey.name())
+                        .userMetadata(pushMap(mergeEntry(entry)))
+                        .stream(inputStream, size, -1)
+                        .build());
+            } catch (MinioException e) {
+                logger.debug(e.httpTrace());
+                throw new IOException("inputStream()", e);
+            } catch (Exception e) {
+                throw new IOException("inputStream()", e);
+            } finally {
+                Files.deleteIfExists(tempFile);
             }
-            default -> throw new UnsupportedOperationException("Unsupported entry type: " + entry.getClass());
+        } else {
+            throw new UnsupportedOperationException("Unsupported entry type: " + entry.getClass());
         }
         return new MinioEntry(entry.metadata(), entry.checksums(), minioClient, localKey);
     }
