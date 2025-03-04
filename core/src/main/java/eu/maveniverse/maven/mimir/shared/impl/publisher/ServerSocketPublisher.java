@@ -34,7 +34,8 @@ public class ServerSocketPublisher extends PublisherSupport {
         super(systemNode);
 
         this.serverSocket = new ServerSocket(inetSocketAddress.getPort(), 50, inetSocketAddress.getAddress());
-        this.executor = Executors.newVirtualThreadPerTaskExecutor();
+        // Java 21: this.executor = Executors.newVirtualThreadPerTaskExecutor();
+        this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1);
 
         Thread serverThread = new Thread(() -> {
             try {
