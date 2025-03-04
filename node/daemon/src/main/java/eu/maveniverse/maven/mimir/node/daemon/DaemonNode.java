@@ -108,8 +108,8 @@ public class DaemonNode extends NodeSupport implements LocalNode {
             if (!response.isEmpty()) {
                 return new DaemonEntry(splitMetadata(response), splitChecksums(response), keyString);
             } else {
-                // TODO: why?
-                throw new IOException("Failed to store " + filePath);
+                // this theoretically can never happen: daemon will either store or fail
+                throw new IOException("Failed to store " + filePath + "; check daemon logs");
             }
         }
     }
