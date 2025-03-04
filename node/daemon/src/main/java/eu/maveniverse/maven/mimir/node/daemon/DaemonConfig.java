@@ -25,6 +25,9 @@ public class DaemonConfig {
         final String mimirVersion = config.mimirVersion().orElse("UNKNOWN");
 
         Path socketPath = config.basedir().resolve("mimir-socket");
+        Path daemonJavaHome = Path.of(config.effectiveProperties()
+                .getOrDefault(
+                        "mimir.daemon.java.home", config.effectiveProperties().get("java.home")));
         boolean autoupdate = true;
         boolean autostart = true;
         String daemonJarName = "daemon-" + mimirVersion + ".jar";
@@ -54,12 +57,14 @@ public class DaemonConfig {
         if (config.effectiveProperties().containsKey("mimir.daemon.systemNode")) {
             systemNode = config.effectiveProperties().get("mimir.daemon.systemNode");
         }
-        return new DaemonConfig(socketPath, autoupdate, autostart, daemonJarName, daemonLogName, daemonGav, systemNode);
+        return new DaemonConfig(
+                socketPath, daemonJavaHome, autoupdate, autostart, daemonJarName, daemonLogName, daemonGav, systemNode);
     }
 
     public static final String NAME = "daemon";
 
     private final Path socketPath;
+    private final Path daemonJavaHome;
     private final boolean autoupdate;
     private final boolean autostart;
     private final String daemonJarName;
@@ -69,6 +74,7 @@ public class DaemonConfig {
 
     private DaemonConfig(
             Path socketPath,
+            Path daemonJavaHome,
             boolean autoupdate,
             boolean autostart,
             String daemonJarName,
@@ -76,6 +82,7 @@ public class DaemonConfig {
             String daemonGav,
             String systemNode) {
         this.socketPath = socketPath;
+        this.daemonJavaHome = daemonJavaHome;
         this.autoupdate = autoupdate;
         this.autostart = autostart;
         this.daemonJarName = daemonJarName;
@@ -86,6 +93,10 @@ public class DaemonConfig {
 
     public Path socketPath() {
         return socketPath;
+    }
+
+    public Path daemonJavaHome() {
+        return daemonJavaHome;
     }
 
     public boolean autoupdate() {

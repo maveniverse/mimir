@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.mimir.shared.impl;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.LongAdder;
 
 public final class Stats {
@@ -41,11 +42,12 @@ public final class Stats {
         return storeSuccess.sum();
     }
 
-    public void doLocate(boolean success) {
+    public <T> Optional<T> doLocate(Optional<T> optional) {
         locate.increment();
-        if (success) {
+        if (optional.isPresent()) {
             locateSuccess.increment();
         }
+        return optional;
     }
 
     public void doTransfer(boolean success) {
@@ -55,10 +57,11 @@ public final class Stats {
         }
     }
 
-    public void doStore(boolean success) {
+    public <T> Optional<T> doStore(Optional<T> optional) {
         store.increment();
-        if (success) {
+        if (optional.isPresent()) {
             storeSuccess.increment();
         }
+        return optional;
     }
 }
