@@ -88,6 +88,9 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
         Path daemonJarPath = config.basedir().resolve(daemonConfig.daemonJarName());
         if (!Files.exists(daemonJarPath)) {
             try {
+                if (!Files.isDirectory(daemonJarPath.getParent())) {
+                    Files.createDirectories(daemonJarPath.getParent());
+                }
                 logger.info(
                         "Resolving Mimir daemon version {}",
                         config.mimirVersion().orElseThrow());
