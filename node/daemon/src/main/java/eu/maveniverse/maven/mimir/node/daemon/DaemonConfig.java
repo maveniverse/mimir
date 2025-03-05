@@ -30,6 +30,7 @@ public class DaemonConfig {
                         "mimir.daemon.java.home", config.effectiveProperties().get("java.home")));
         boolean autoupdate = true;
         boolean autostart = true;
+        boolean autostop = true;
         String daemonJarName = "daemon-" + mimirVersion + ".jar";
         String daemonLogName = "daemon-" + mimirVersion + ".log";
         String daemonGav = "eu.maveniverse.maven.mimir:daemon:jar:daemon:" + mimirVersion;
@@ -45,6 +46,9 @@ public class DaemonConfig {
         if (config.effectiveProperties().containsKey("mimir.daemon.autostart")) {
             autostart = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.autostart"));
         }
+        if (config.effectiveProperties().containsKey("mimir.daemon.autostop")) {
+            autostop = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.autostop"));
+        }
         if (config.effectiveProperties().containsKey("mimir.daemon.daemonJarName")) {
             daemonJarName = config.effectiveProperties().get("mimir.daemon.daemonJarName");
         }
@@ -58,7 +62,15 @@ public class DaemonConfig {
             systemNode = config.effectiveProperties().get("mimir.daemon.systemNode");
         }
         return new DaemonConfig(
-                socketPath, daemonJavaHome, autoupdate, autostart, daemonJarName, daemonLogName, daemonGav, systemNode);
+                socketPath,
+                daemonJavaHome,
+                autoupdate,
+                autostart,
+                autostop,
+                daemonJarName,
+                daemonLogName,
+                daemonGav,
+                systemNode);
     }
 
     public static final String NAME = "daemon";
@@ -67,6 +79,7 @@ public class DaemonConfig {
     private final Path daemonJavaHome;
     private final boolean autoupdate;
     private final boolean autostart;
+    private final boolean autostop;
     private final String daemonJarName;
     private final String daemonLogName;
     private final String daemonGav;
@@ -77,6 +90,7 @@ public class DaemonConfig {
             Path daemonJavaHome,
             boolean autoupdate,
             boolean autostart,
+            boolean autostop,
             String daemonJarName,
             String daemonLogName,
             String daemonGav,
@@ -85,6 +99,7 @@ public class DaemonConfig {
         this.daemonJavaHome = daemonJavaHome;
         this.autoupdate = autoupdate;
         this.autostart = autostart;
+        this.autostop = autostop;
         this.daemonJarName = daemonJarName;
         this.daemonLogName = daemonLogName;
         this.daemonGav = daemonGav;
@@ -105,6 +120,10 @@ public class DaemonConfig {
 
     public boolean autostart() {
         return autostart;
+    }
+
+    public boolean autostop() {
+        return autostop;
     }
 
     public String daemonJarName() {
