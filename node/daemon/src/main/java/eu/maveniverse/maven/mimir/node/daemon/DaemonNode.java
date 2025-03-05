@@ -11,14 +11,12 @@ import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readByeRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readHelloRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readLocateRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readLsChecksumsRsp;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readSimpleRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readStorePathRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readTransferRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeByeReq;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeHelloReq;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeLocateReq;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeLsChecksumsReq;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeShutdownReq;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeStorePathReq;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeTransferReq;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeEntry;
@@ -43,6 +41,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -124,14 +123,14 @@ public class DaemonNode extends NodeSupport implements LocalNode {
     @Override
     protected void doClose() throws IOException {
         try (Handle handle = create()) {
-            writeByeReq(handle.dos, session);
-            Map<String, String> data = readByeRsp(handle.dis);
-            logger.debug("Bye OK {}", data);
+            Map<String, String> data = new HashMap<>(session);
             if (autostop) {
-                writeShutdownReq(handle.dos);
-                readSimpleRsp(handle.dis);
-                logger.info("Daemon shutdown");
+                logger.info("Daemon shutdown initiated");
+                data.put("shutdown", "true");
             }
+            writeByeReq(handle.dos, data);
+            data = readByeRsp(handle.dis);
+            logger.debug("Bye OK {}", data);
         }
     }
 

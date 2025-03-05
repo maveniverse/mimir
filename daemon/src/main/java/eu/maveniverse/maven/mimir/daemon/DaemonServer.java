@@ -11,7 +11,6 @@ import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_BYE;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_HELLO;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_LOCATE;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_LS_CHECKSUMS;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_SHUTDOWN;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_STORE_PATH;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_TRANSFER;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readMap;
@@ -20,7 +19,6 @@ import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeHelloRs
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeLocateRspOK;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeLsChecksumsRspOK;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeRspKO;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeSimpleRspOK;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeStorePathRspOK;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeTransferRspOK;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeEntry;
@@ -89,6 +87,10 @@ final class DaemonServer implements Runnable {
                     Map<String, String> data = readMap(dis);
                     logger.debug("{} {}", cmd, data);
                     writeByeRspOK(dos, Map.of("message", "So Long, and Thanks for All the Fish"));
+
+                    if (Boolean.parseBoolean(data.getOrDefault("shutdown", "false"))) {
+                        shutdownHook.run();
+                    }
                 }
                 case CMD_LOCATE -> {
                     String keyString = dis.readUTF();
@@ -139,11 +141,6 @@ final class DaemonServer implements Runnable {
                     URI key = URI.create(keyString);
                     Path path = Path.of(pathString);
                     writeStorePathRspOK(dos, mergeEntry(systemNode.store(key, path, metadata, checksums)));
-                }
-                case CMD_SHUTDOWN -> {
-                    logger.debug("{}", cmd);
-                    writeSimpleRspOK(dos);
-                    shutdownHook.run();
                 }
                 default -> writeRspKO(dos, "Bad command");
             }

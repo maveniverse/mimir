@@ -33,6 +33,18 @@
       <artifactId>extension</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mimir</groupId>
+      <artifactId>daemon</artifactId>
+      <version>${project.version}</version>
+      <classifier>daemon</classifier>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
   </dependencies>
 
   <profiles>
