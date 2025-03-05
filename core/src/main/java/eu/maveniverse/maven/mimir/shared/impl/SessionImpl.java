@@ -148,11 +148,13 @@ public final class SessionImpl implements Session {
                 throw closeException;
             }
             logger.info(
-                    "Mimir session closed (LOCATED={}/{} TRANSFER={}/{} STORED={}/{})",
+                    // Located x/y: x times locate invoked; y times locate produced "hit" (key found)
+                    // Retrieved x: x files were pulled from cache (failed retrieve fails the build)
+                    // Cached x/y: x times asked to cache a file; y times cache happened (as cache may refuse)
+                    "Mimir session closed (LOCATED={}/{} RETRIEVED={} CACHED={}/{})",
                     stats.locate(),
                     stats.locateSuccess(),
                     stats.transfer(),
-                    stats.transferSuccess(),
                     stats.store(),
                     stats.storeSuccess());
         }

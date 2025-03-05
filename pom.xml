@@ -37,7 +37,7 @@
   <modules>
     <module>core</module>
     <module>node</module>
-    <module>extension3</module>
+    <module>extension</module>
     <module>daemon</module>
     <module>it</module>
   </modules>

@@ -17,7 +17,7 @@
     <version>0.3.7-SNAPSHOT</version>
   </parent>
 
-  <artifactId>extension3</artifactId>
+  <artifactId>extension</artifactId>
 
   <name>${project.groupId}:${project.artifactId}</name>
 
