@@ -11,12 +11,14 @@ import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readByeRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readHelloRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readLocateRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readLsChecksumsRsp;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readSimpleRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readStorePathRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readTransferRsp;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeByeReq;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeHelloReq;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeLocateReq;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeLsChecksumsReq;
+import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeShutdownReq;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeStorePathReq;
 import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeTransferReq;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeEntry;
@@ -52,14 +54,19 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 public class DaemonNode extends NodeSupport implements LocalNode {
     private final Path socketPath;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
+    private final boolean autostop;
     private final Map<String, String> session;
 
     public DaemonNode(
-            Map<String, String> clientData, Path socketPath, Map<String, ChecksumAlgorithmFactory> checksumFactories)
+            Map<String, String> clientData,
+            Path socketPath,
+            Map<String, ChecksumAlgorithmFactory> checksumFactories,
+            boolean autostop)
             throws IOException {
         super(DaemonConfig.NAME);
         this.socketPath = requireNonNull(socketPath, "socketPath");
         this.checksumFactories = Collections.unmodifiableMap(requireNonNull(checksumFactories, "checksumFactories"));
+        this.autostop = autostop;
 
         try (Handle handle = create()) {
             writeHelloReq(handle.dos, clientData);
@@ -120,6 +127,11 @@ public class DaemonNode extends NodeSupport implements LocalNode {
             writeByeReq(handle.dos, session);
             Map<String, String> data = readByeRsp(handle.dis);
             logger.debug("Bye OK {}", data);
+            if (autostop) {
+                writeShutdownReq(handle.dos);
+                readSimpleRsp(handle.dis);
+                logger.info("Daemon shutdown");
+            }
         }
     }
 

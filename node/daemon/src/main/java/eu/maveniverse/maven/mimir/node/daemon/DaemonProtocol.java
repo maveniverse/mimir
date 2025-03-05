@@ -178,6 +178,13 @@ public final class DaemonProtocol {
         }
     }
 
+    // SHUTDOWN
+
+    public static void writeShutdownReq(DataOutputStream dos) throws IOException {
+        dos.writeUTF(CMD_SHUTDOWN);
+        dos.flush();
+    }
+
     // LOCATE
 
     public static void writeLocateReq(DataOutputStream dos, String key) throws IOException {

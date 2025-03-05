@@ -51,7 +51,7 @@ public class DaemonNodeFactory implements LocalNodeFactory {
         HashMap<String, String> clientData = new HashMap<>();
         clientData.put("node.version", config.mimirVersion().orElse("UNKNOWN"));
         clientData.put("node.pid", Long.toString(ProcessHandle.current().pid()));
-        return new DaemonNode(clientData, cfg.socketPath(), checksumAlgorithmFactories);
+        return new DaemonNode(clientData, cfg.socketPath(), checksumAlgorithmFactories, cfg.autostop());
     }
 
     private Process startDaemon(Path basedir, Config config, DaemonConfig daemonConfig) throws IOException {
