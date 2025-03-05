@@ -10,6 +10,7 @@ package eu.maveniverse.maven.mimir.extension3;
 import static java.util.Objects.requireNonNull;
 import static org.eclipse.aether.internal.impl.Maven2RepositoryLayoutFactory.CONFIG_PROP_CHECKSUMS_ALGORITHMS;
 
+import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.Session;
 import java.util.List;
 import java.util.Optional;
@@ -49,28 +50,34 @@ public class MimirRepositoryConnectorFactory implements RepositoryConnectorFacto
     @Override
     public RepositoryConnector newInstance(RepositorySystemSession session, RemoteRepository repository)
             throws NoRepositoryConnectorException {
-        RepositoryConnector repositoryConnector = basicRepositoryConnectorFactory.newInstance(session, repository);
-        List<ChecksumAlgorithmFactory> checksumsAlgorithms = checksumAlgorithmFactorySelector.selectList(
-                ConfigUtils.parseCommaSeparatedUniqueNames(ConfigUtils.getString(
-                        session,
-                        "SHA-1,MD5", // copied from Maven2RepositoryLayoutFactory
-                        CONFIG_PROP_CHECKSUMS_ALGORITHMS + "." + repository.getId(),
-                        CONFIG_PROP_CHECKSUMS_ALGORITHMS)));
-
-        Optional<Session> mimirSessionOptional = MimirUtils.mayGetSession(session);
-        if (mimirSessionOptional.isPresent()) {
-            Session mimirSession = mimirSessionOptional.orElseThrow();
-            if (mimirSession.repositorySupported(repository)) {
-                return new MimirRepositoryConnector(
-                        mimirSession,
-                        repository,
-                        repositoryConnector,
-                        checksumsAlgorithms,
-                        checksumAlgorithmFactorySelector.getChecksumAlgorithmFactories().stream()
-                                .collect(Collectors.toMap(ChecksumAlgorithmFactory::getName, f -> f)));
+        String message = "Mimir is disabled";
+        Optional<Config> mimirConfigOptional = MimirUtils.mayGetConfig(session);
+        if (mimirConfigOptional.isPresent() && mimirConfigOptional.orElseThrow().enabled()) {
+            message = "Mimir session not yet created";
+            Optional<Session> mimirSessionOptional = MimirUtils.mayGetSession(session);
+            if (mimirSessionOptional.isPresent()) {
+                Session mimirSession = mimirSessionOptional.orElseThrow();
+                message = "Unsupported repository: " + repository;
+                if (mimirSession.repositorySupported(repository)) {
+                    RepositoryConnector repositoryConnector =
+                            basicRepositoryConnectorFactory.newInstance(session, repository);
+                    List<ChecksumAlgorithmFactory> checksumsAlgorithms = checksumAlgorithmFactorySelector.selectList(
+                            ConfigUtils.parseCommaSeparatedUniqueNames(ConfigUtils.getString(
+                                    session,
+                                    "SHA-1,MD5", // copied from Maven2RepositoryLayoutFactory
+                                    CONFIG_PROP_CHECKSUMS_ALGORITHMS + "." + repository.getId(),
+                                    CONFIG_PROP_CHECKSUMS_ALGORITHMS)));
+                    return new MimirRepositoryConnector(
+                            mimirSession,
+                            repository,
+                            repositoryConnector,
+                            checksumsAlgorithms,
+                            checksumAlgorithmFactorySelector.getChecksumAlgorithmFactories().stream()
+                                    .collect(Collectors.toMap(ChecksumAlgorithmFactory::getName, f -> f)));
+                }
             }
         }
-        return repositoryConnector;
+        throw new NoRepositoryConnectorException(repository, message);
     }
 
     @Override
