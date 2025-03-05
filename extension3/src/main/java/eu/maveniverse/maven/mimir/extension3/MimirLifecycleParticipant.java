@@ -59,11 +59,16 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                     .userProperties(repoSession.getUserProperties())
                     .systemProperties(repoSession.getSystemProperties())
                     .build();
-            List<RemoteRepository> remoteRepositories =
-                    RepositoryUtils.toRepos(session.getProjectBuildingRequest().getRemoteRepositories());
-            mayCheckForUpdates(config, repoSession, remoteRepositories);
-            mayResolveDaemonArtifact(config, repoSession, remoteRepositories);
-            MimirUtils.setSession(session.getRepositorySession(), sessionFactory.createSession(config));
+            MimirUtils.setConfig(repoSession, config);
+            if (MimirUtils.isEnabled(repoSession)) {
+                List<RemoteRepository> remoteRepositories = RepositoryUtils.toRepos(
+                        session.getProjectBuildingRequest().getRemoteRepositories());
+                mayCheckForUpdates(config, repoSession, remoteRepositories);
+                mayResolveDaemonArtifact(config, repoSession, remoteRepositories);
+                MimirUtils.setSession(session.getRepositorySession(), sessionFactory.createSession(config));
+            } else {
+                logger.info("Mimir is disabled");
+            }
         } catch (Exception e) {
             throw new MavenExecutionException("Error creating Mimir session", e);
         }
@@ -72,7 +77,9 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
     @Override
     public void afterSessionEnd(MavenSession session) throws MavenExecutionException {
         try {
-            MimirUtils.requireSession(session.getRepositorySession()).close();
+            if (MimirUtils.isEnabled(session.getRepositorySession())) {
+                MimirUtils.requireSession(session.getRepositorySession()).close();
+            }
         } catch (Exception e) {
             throw new MavenExecutionException("Error closing Mimir session", e);
         }

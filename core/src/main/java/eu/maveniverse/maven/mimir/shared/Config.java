@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -25,6 +26,8 @@ import java.util.Properties;
  * Simple Mimir configuration.
  */
 public interface Config {
+    boolean enabled();
+
     Optional<String> mimirVersion();
 
     Path basedir();
@@ -39,11 +42,17 @@ public interface Config {
 
     default Builder toBuilder() {
         return new Builder(
-                mimirVersion().orElse(null), basedir(), propertiesPath(), userProperties(), systemProperties());
+                enabled(),
+                mimirVersion().orElse(null),
+                basedir(),
+                propertiesPath(),
+                userProperties(),
+                systemProperties());
     }
 
     static Builder defaults() {
         return new Builder(
+                null,
                 Utils.discoverArtifactVersion(
                         Config.class.getClassLoader(), "eu.maveniverse.maven.mimir", "core", null),
                 discoverBaseDirectory(),
@@ -53,6 +62,7 @@ public interface Config {
     }
 
     class Builder {
+        private Boolean enabled;
         private final String mimirVersion;
         private Path basedir;
         private Path propertiesPath;
@@ -60,16 +70,23 @@ public interface Config {
         private Map<String, String> systemProperties;
 
         private Builder(
+                Boolean enabled,
                 String mimirVersion,
                 Path basedir,
                 Path propertiesPath,
                 Map<String, String> userProperties,
                 Map<String, String> systemProperties) {
+            this.enabled = enabled;
             this.mimirVersion = mimirVersion;
             this.basedir = basedir;
             this.propertiesPath = propertiesPath;
             this.userProperties = new HashMap<>(userProperties);
             this.systemProperties = new HashMap<>(systemProperties);
+        }
+
+        public Builder enabled(Boolean enabled) {
+            this.enabled = enabled;
+            return this;
         }
 
         public Builder basedir(Path basedir) {
@@ -107,10 +124,11 @@ public interface Config {
         }
 
         public Config build() {
-            return new Impl(mimirVersion, basedir, propertiesPath, userProperties, systemProperties);
+            return new Impl(enabled, mimirVersion, basedir, propertiesPath, userProperties, systemProperties);
         }
 
         private static class Impl implements Config {
+            private final Boolean enabled;
             private final String mimirVersion;
             private final Path basedir;
             private final Path propertiesPath;
@@ -119,11 +137,13 @@ public interface Config {
             private final Map<String, String> effectiveProperties;
 
             private Impl(
+                    Boolean enabled,
                     String mimirVersion,
                     Path basedir,
                     Path propertiesPath,
                     Map<String, String> userProperties,
                     Map<String, String> systemProperties) {
+                this.enabled = enabled;
                 this.mimirVersion = mimirVersion;
                 this.basedir = requireNonNull(basedir, "basedir");
                 requireNonNull(propertiesPath, "propertiesPath");
@@ -145,6 +165,14 @@ public interface Config {
                 eff.putAll(toMap(mimirProperties));
                 eff.putAll(userProperties);
                 this.effectiveProperties = Map.copyOf(eff);
+            }
+
+            @Override
+            public boolean enabled() {
+                return Objects.requireNonNullElseGet(
+                        enabled,
+                        () -> Boolean.parseBoolean(
+                                effectiveProperties.getOrDefault("mimir.enabled", Boolean.TRUE.toString())));
             }
 
             @Override
