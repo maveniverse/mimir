@@ -23,7 +23,9 @@
 
   <name>${project.groupId}:${project.artifactId}</name>
 
-  <modules />
+  <modules>
+    <module>extension-its</module>
+  </modules>
 
   <properties>
     <requireBuildtimeJavaVersion.version>[8,)</requireBuildtimeJavaVersion.version>
