@@ -48,7 +48,7 @@ public final class SessionImpl implements Session {
         this.localNode = requireNonNull(localNode, "localNode");
         this.stats = new Stats();
 
-        logger.info("Mimir session created with localNode={}", localNode);
+        logger.info("Mimir session created with {}", localNode);
     }
 
     @Override
