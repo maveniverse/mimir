@@ -30,7 +30,7 @@ public class DaemonConfig {
                         "mimir.daemon.java.home", config.effectiveProperties().get("java.home")));
         boolean autoupdate = true;
         boolean autostart = true;
-        boolean autostop = true;
+        boolean autostop = false;
         String daemonJarName = "daemon-" + mimirVersion + ".jar";
         String daemonLogName = "daemon-" + mimirVersion + ".log";
         String daemonGav = "eu.maveniverse.maven.mimir:daemon:jar:daemon:" + mimirVersion;
