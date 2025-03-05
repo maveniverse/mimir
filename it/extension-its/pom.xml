@@ -84,9 +84,25 @@
                 <phase>none</phase>
               </execution>
               <execution>
-                <id>run-its</id>
+                <id>its-install</id>
                 <goals>
                   <goal>install</goal>
+                </goals>
+                <phase>integration-test</phase>
+              </execution>
+              <execution>
+                <id>its-install-tail</id>
+                <goals>
+                  <goal>install</goal>
+                </goals>
+                <phase>integration-test</phase>
+                <configuration>
+                  <localRepositoryPath>${project.build.directory}/it-repo-tail</localRepositoryPath>
+                </configuration>
+              </execution>
+              <execution>
+                <id>its-run</id>
+                <goals>
                   <goal>run</goal>
                 </goals>
                 <phase>integration-test</phase>
