@@ -1,7 +1,10 @@
-File buildLog = new File( basedir, 'second.log' )
-assert buildLog.exists()
+File firstLog = new File( basedir, 'first.log' )
+assert firstLog.exists()
 
-String log = buildLog.text
+File secondLog = new File( basedir, 'second.log' )
+assert secondLog.exists()
+
+String log = secondLog.text
 
 // Lets make strict assertion
 // Explanation: cache was primed, so aside of "tail repo" everything else was located and retrieved, and
