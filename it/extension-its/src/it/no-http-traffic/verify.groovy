@@ -1,4 +1,4 @@
-File buildLog = new File( basedir, 'build.log' )
+File buildLog = new File( basedir, 'second.log' )
 assert buildLog.exists()
 
 String log = buildLog.text

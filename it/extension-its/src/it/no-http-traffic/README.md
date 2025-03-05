@@ -1,5 +1,4 @@
 # No HTTP Traffic
 
-This test redirects Central using custom settings.xml and then build with local empty repository.
-The build should succeed as Mimir caches are primed, while if Maven tries to go remote, it will
-fail.
+This test primes Mimir cache in 1st pass, and then in 2nd pass makes use of it. 
+Assertions are done against Mimir stats.
