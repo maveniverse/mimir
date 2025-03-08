@@ -35,6 +35,7 @@ public class DaemonConfig {
         String daemonLogName = "daemon-" + mimirVersion + ".log";
         String daemonGav = "eu.maveniverse.maven.mimir:daemon:jar:daemon:" + mimirVersion;
         String systemNode = "file";
+        boolean passOnUserHome = false;
 
         if (config.effectiveProperties().containsKey("mimir.daemon.socketPath")) {
             socketPath =
@@ -61,6 +62,9 @@ public class DaemonConfig {
         if (config.effectiveProperties().containsKey("mimir.daemon.systemNode")) {
             systemNode = config.effectiveProperties().get("mimir.daemon.systemNode");
         }
+        if (config.effectiveProperties().containsKey("mimir.daemon.passOnUserHome")) {
+            passOnUserHome = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.passOnUserHome"));
+        }
         return new DaemonConfig(
                 socketPath,
                 daemonJavaHome,
@@ -70,7 +74,8 @@ public class DaemonConfig {
                 daemonJarName,
                 daemonLogName,
                 daemonGav,
-                systemNode);
+                systemNode,
+                passOnUserHome);
     }
 
     public static final String NAME = "daemon";
@@ -84,6 +89,7 @@ public class DaemonConfig {
     private final String daemonLogName;
     private final String daemonGav;
     private final String systemNode;
+    private final boolean passOnUserHome;
 
     private DaemonConfig(
             Path socketPath,
@@ -94,7 +100,8 @@ public class DaemonConfig {
             String daemonJarName,
             String daemonLogName,
             String daemonGav,
-            String systemNode) {
+            String systemNode,
+            boolean passOnUserHome) {
         this.socketPath = socketPath;
         this.daemonJavaHome = daemonJavaHome;
         this.autoupdate = autoupdate;
@@ -104,6 +111,7 @@ public class DaemonConfig {
         this.daemonLogName = daemonLogName;
         this.daemonGav = daemonGav;
         this.systemNode = systemNode;
+        this.passOnUserHome = passOnUserHome;
     }
 
     public Path socketPath() {
@@ -140,5 +148,9 @@ public class DaemonConfig {
 
     public String systemNode() {
         return systemNode;
+    }
+
+    public boolean passOnUserHome() {
+        return passOnUserHome;
     }
 }

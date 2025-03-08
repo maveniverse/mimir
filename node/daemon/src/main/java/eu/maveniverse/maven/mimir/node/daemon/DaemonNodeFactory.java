@@ -14,6 +14,7 @@ import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
@@ -72,8 +73,17 @@ public class DaemonNodeFactory implements LocalNodeFactory {
                     .toString();
             ProcessBuilder pb = new ProcessBuilder()
                     .directory(basedir.toFile())
-                    .redirectOutput(daemonLog.toFile())
-                    .command(java, "-jar", daemonJarName);
+                    .redirectOutput(daemonLog.toFile());
+
+            ArrayList<String> command = new ArrayList<>();
+            command.add(java);
+            if (daemonConfig.passOnUserHome()) {
+                command.add("-Duser.home=" + System.getProperty("user.home"));
+            }
+            command.add("-jar");
+            command.add(daemonJarName);
+
+            pb.command(command);
             Process p = pb.start();
             try {
                 while (p.isAlive() && !Files.exists(daemonConfig.socketPath())) {
