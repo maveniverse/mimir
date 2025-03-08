@@ -71,9 +71,7 @@ public class DaemonNodeFactory implements LocalNodeFactory {
                                     ? "java.exe"
                                     : "java")
                     .toString();
-            ProcessBuilder pb = new ProcessBuilder()
-                    .directory(basedir.toFile())
-                    .redirectOutput(daemonLog.toFile());
+            ProcessBuilder pb = new ProcessBuilder().directory(basedir.toFile()).redirectOutput(daemonLog.toFile());
 
             ArrayList<String> command = new ArrayList<>();
             command.add(java);
