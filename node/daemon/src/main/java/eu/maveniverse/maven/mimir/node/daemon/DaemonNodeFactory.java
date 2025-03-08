@@ -75,8 +75,8 @@ public class DaemonNodeFactory implements LocalNodeFactory {
 
             ArrayList<String> command = new ArrayList<>();
             command.add(java);
-            if (daemonConfig.passOnUserHome()) {
-                command.add("-Duser.home=" + System.getProperty("user.home"));
+            if (daemonConfig.passOnBasedir()) {
+                command.add("-Dmimir.basedir=" + basedir);
             }
             command.add("-jar");
             command.add(daemonJarName);

@@ -35,7 +35,7 @@ public class DaemonConfig {
         String daemonLogName = "daemon-" + mimirVersion + ".log";
         String daemonGav = "eu.maveniverse.maven.mimir:daemon:jar:daemon:" + mimirVersion;
         String systemNode = "file";
-        boolean passOnUserHome = false;
+        boolean passOnBasedir = false;
 
         if (config.effectiveProperties().containsKey("mimir.daemon.socketPath")) {
             socketPath =
@@ -62,8 +62,8 @@ public class DaemonConfig {
         if (config.effectiveProperties().containsKey("mimir.daemon.systemNode")) {
             systemNode = config.effectiveProperties().get("mimir.daemon.systemNode");
         }
-        if (config.effectiveProperties().containsKey("mimir.daemon.passOnUserHome")) {
-            passOnUserHome = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.passOnUserHome"));
+        if (config.effectiveProperties().containsKey("mimir.daemon.passOnBasedir")) {
+            passOnBasedir = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.passOnBasedir"));
         }
         return new DaemonConfig(
                 socketPath,
@@ -75,7 +75,7 @@ public class DaemonConfig {
                 daemonLogName,
                 daemonGav,
                 systemNode,
-                passOnUserHome);
+                passOnBasedir);
     }
 
     public static final String NAME = "daemon";
@@ -89,7 +89,7 @@ public class DaemonConfig {
     private final String daemonLogName;
     private final String daemonGav;
     private final String systemNode;
-    private final boolean passOnUserHome;
+    private final boolean passOnBasedir;
 
     private DaemonConfig(
             Path socketPath,
@@ -101,7 +101,7 @@ public class DaemonConfig {
             String daemonLogName,
             String daemonGav,
             String systemNode,
-            boolean passOnUserHome) {
+            boolean passOnBasedir) {
         this.socketPath = socketPath;
         this.daemonJavaHome = daemonJavaHome;
         this.autoupdate = autoupdate;
@@ -111,7 +111,7 @@ public class DaemonConfig {
         this.daemonLogName = daemonLogName;
         this.daemonGav = daemonGav;
         this.systemNode = systemNode;
-        this.passOnUserHome = passOnUserHome;
+        this.passOnBasedir = passOnBasedir;
     }
 
     public Path socketPath() {
@@ -150,7 +150,7 @@ public class DaemonConfig {
         return systemNode;
     }
 
-    public boolean passOnUserHome() {
-        return passOnUserHome;
+    public boolean passOnBasedir() {
+        return passOnBasedir;
     }
 }
