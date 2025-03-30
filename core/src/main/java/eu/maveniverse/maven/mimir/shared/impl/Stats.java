@@ -11,11 +11,17 @@ import java.util.Optional;
 import java.util.concurrent.atomic.LongAdder;
 
 public final class Stats {
+    // metadata queried
     private final LongAdder locate = new LongAdder();
+    // metadata found
     private final LongAdder locateSuccess = new LongAdder();
+    // content transferred (retrieval from cache) asked
     private final LongAdder transfer = new LongAdder();
+    // content transferred (retrieval from cache) succeeded
     private final LongAdder transferSuccess = new LongAdder();
+    // store (put to cache) asked
     private final LongAdder store = new LongAdder();
+    // store (put to cache) succeeded; cache did not refuse operation
     private final LongAdder storeSuccess = new LongAdder();
 
     public long locate() {

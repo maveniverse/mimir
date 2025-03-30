@@ -127,7 +127,8 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
             List<Version> versions = rangeResult.getVersions();
             if (versions.size() > 1) {
                 String latest = versions.get(versions.size() - 1).toString();
-                if (!Objects.equals(mimirVersion, latest)) {
+                // only for locally built versions; we do not publish snapshots
+                if (!latest.endsWith("-SNAPSHOT") && !Objects.equals(mimirVersion, latest)) {
                     logger.info("Please upgrade to Mimir version {} (you are using version {})", latest, mimirVersion);
                 }
             } else {
