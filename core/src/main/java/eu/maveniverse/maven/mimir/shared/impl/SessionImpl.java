@@ -147,7 +147,7 @@ public final class SessionImpl implements Session {
                 exceptions.forEach(closeException::addSuppressed);
                 throw closeException;
             }
-            logger.info("Mimir session closed (RETRIEVED={} CACHED={})", stats.transfer(), stats.storeSuccess());
+            logger.info("Mimir session closed (RETRIEVED={} CACHED={})", stats.transferSuccess(), stats.storeSuccess());
         }
     }
 }
