@@ -14,6 +14,7 @@ import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -83,8 +84,16 @@ public class DaemonNodeFactory implements LocalNodeFactory {
 
             pb.command(command);
             Process p = pb.start();
+            Instant startingUntil = Instant.now().plus(daemonConfig.autostartDuration());
             try {
                 while (p.isAlive() && !Files.exists(daemonConfig.socketPath())) {
+                    if (Instant.now().isAfter(startingUntil)) {
+                        if (Files.isRegularFile(daemonLog)) {
+                            logger.error("Daemon log dump:\n{}", Files.readString(daemonLog));
+                        }
+                        throw new IOException("Failed to start daemon in time " + daemonConfig.autostartDuration()
+                                + "; check daemon logs in " + daemonConfig.daemonLogName());
+                    }
                     logger.debug("Waiting for socket to open");
                     Thread.sleep(500);
                 }
@@ -94,6 +103,9 @@ public class DaemonNodeFactory implements LocalNodeFactory {
             if (p.isAlive()) {
                 return p;
             } else {
+                if (Files.isRegularFile(daemonLog)) {
+                    logger.error("Daemon log dump:\n{}", Files.readString(daemonLog));
+                }
                 throw new IOException("Failed to start daemon; check daemon logs in " + daemonConfig.daemonLogName());
             }
         }

@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
 import java.nio.file.Path;
+import java.time.Duration;
 
 public class DaemonConfig {
     public static Config toDaemonProcessConfig(Config config) {
@@ -30,6 +31,7 @@ public class DaemonConfig {
                         "mimir.daemon.java.home", config.effectiveProperties().get("java.home")));
         boolean autoupdate = true;
         boolean autostart = true;
+        Duration autostartDuration = Duration.ofMinutes(1);
         boolean autostop = false;
         String daemonJarName = "daemon-" + mimirVersion + ".jar";
         String daemonLogName = "daemon-" + mimirVersion + ".log";
@@ -46,6 +48,9 @@ public class DaemonConfig {
         }
         if (config.effectiveProperties().containsKey("mimir.daemon.autostart")) {
             autostart = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.autostart"));
+        }
+        if (config.effectiveProperties().containsKey("mimir.daemon.autostartDuration")) {
+            autostartDuration = Duration.parse(config.effectiveProperties().get("mimir.daemon.autostartDuration"));
         }
         if (config.effectiveProperties().containsKey("mimir.daemon.autostop")) {
             autostop = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.autostop"));
@@ -70,6 +75,7 @@ public class DaemonConfig {
                 daemonJavaHome,
                 autoupdate,
                 autostart,
+                autostartDuration,
                 autostop,
                 daemonJarName,
                 daemonLogName,
@@ -84,6 +90,7 @@ public class DaemonConfig {
     private final Path daemonJavaHome;
     private final boolean autoupdate;
     private final boolean autostart;
+    private final Duration autostartDuration;
     private final boolean autostop;
     private final String daemonJarName;
     private final String daemonLogName;
@@ -96,21 +103,23 @@ public class DaemonConfig {
             Path daemonJavaHome,
             boolean autoupdate,
             boolean autostart,
+            Duration autostartDuration,
             boolean autostop,
             String daemonJarName,
             String daemonLogName,
             String daemonGav,
             String systemNode,
             boolean passOnBasedir) {
-        this.socketPath = socketPath;
-        this.daemonJavaHome = daemonJavaHome;
+        this.socketPath = requireNonNull(socketPath);
+        this.daemonJavaHome = requireNonNull(daemonJavaHome);
         this.autoupdate = autoupdate;
         this.autostart = autostart;
+        this.autostartDuration = requireNonNull(autostartDuration);
         this.autostop = autostop;
-        this.daemonJarName = daemonJarName;
-        this.daemonLogName = daemonLogName;
-        this.daemonGav = daemonGav;
-        this.systemNode = systemNode;
+        this.daemonJarName = requireNonNull(daemonJarName);
+        this.daemonLogName = requireNonNull(daemonLogName);
+        this.daemonGav = requireNonNull(daemonGav);
+        this.systemNode = requireNonNull(systemNode);
         this.passOnBasedir = passOnBasedir;
     }
 
@@ -128,6 +137,10 @@ public class DaemonConfig {
 
     public boolean autostart() {
         return autostart;
+    }
+
+    public Duration autostartDuration() {
+        return autostartDuration;
     }
 
     public boolean autostop() {
