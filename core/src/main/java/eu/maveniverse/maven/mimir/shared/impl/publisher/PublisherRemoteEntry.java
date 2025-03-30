@@ -30,19 +30,23 @@ public class PublisherRemoteEntry extends EntrySupport implements RemoteEntry {
     @Override
     public void handleContent(IOConsumer consumer) throws IOException {
         String schema = handle.getScheme();
-        if ("http".equals(schema)) {
-            try (InputStream inputStream = handle.toURL().openConnection().getInputStream()) {
-                consumer.accept(inputStream);
+        try {
+            if ("http".equals(schema)) {
+                try (InputStream inputStream = handle.toURL().openConnection().getInputStream()) {
+                    consumer.accept(inputStream);
+                }
+            } else if ("socket".equals(schema)) {
+                try (Socket socket = new Socket(handle.getHost(), handle.getPort())) {
+                    OutputStream os = socket.getOutputStream();
+                    os.write(handle.getPath().substring(1).getBytes(StandardCharsets.UTF_8));
+                    os.flush();
+                    consumer.accept(socket.getInputStream());
+                }
+            } else {
+                throw new IOException("Unknown protocol: " + schema);
             }
-        } else if ("socket".equals(schema)) {
-            try (Socket socket = new Socket(handle.getHost(), handle.getPort())) {
-                OutputStream os = socket.getOutputStream();
-                os.write(handle.getPath().substring(1).getBytes(StandardCharsets.UTF_8));
-                os.flush();
-                consumer.accept(socket.getInputStream());
-            }
-        } else {
-            throw new IOException("Unknown protocol: " + schema);
+        } catch (IOException e) {
+            throw new IOException("Failed to get artifact content from publisher at " + handle.toASCIIString(), e);
         }
     }
 }
