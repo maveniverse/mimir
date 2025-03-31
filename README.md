@@ -1,6 +1,6 @@
 # Mímir
 
-[![Maven Central](https://img.shields.io/maven-central/v/eu.maveniverse.maven.mimir/extension3.svg?label=Maven%20Central)](https://search.maven.org/artifact/eu.maveniverse.maven.mimir/extension3)
+[![Maven Central](https://img.shields.io/maven-central/v/eu.maveniverse.maven.mimir/extension.svg?label=Maven%20Central)](https://search.maven.org/artifact/eu.maveniverse.maven.mimir/extension)
 
 Requirements:
 * Java 17+
@@ -37,7 +37,7 @@ With Maven 3 create project-wide, or with Maven 4-rc-3+ create user-wide `~/.m2/
     <extension>
         <groupId>eu.maveniverse.maven.mimir</groupId>
         <artifactId>extension</artifactId>
-        <version>0.4.0</version>
+        <version>0.4.1</version>
     </extension>
 </extensions>
 ```
