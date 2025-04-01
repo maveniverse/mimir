@@ -17,17 +17,13 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonSerialize(as = ImmutableResponse.class)
 @JsonDeserialize(as = ImmutableResponse.class)
-public abstract class Response {
+public abstract class Response extends Message {
     public static final String STATUS_OK = "OK";
     public static final String STATUS_KO = "KO ";
 
     public static final String DATA_MESSAGE = "message";
 
     public abstract String status();
-
-    public abstract Map<String, String> data();
-
-    public abstract Map<String, String> session();
 
     public static Response okMessage(Request request, String message) {
         requireNonNull(message, "message");

@@ -18,7 +18,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonSerialize(as = ImmutableRequest.class)
 @JsonDeserialize(as = ImmutableRequest.class)
-public abstract class Request {
+public abstract class Request extends Message {
     public static final String CMD_HELLO = "HELLO";
     public static final String CMD_BYE = "BYE";
     public static final String CMD_LOCATE = "LOCATE";
@@ -33,28 +33,6 @@ public abstract class Request {
     public static final String SESSION_ID = "sessionId";
 
     public abstract String cmd();
-
-    public abstract Map<String, String> data();
-
-    public abstract Map<String, String> session();
-
-    public String requireData(String key) {
-        requireNonNull(key, "key");
-        if (data().containsKey(key)) {
-            return data().get(key);
-        } else {
-            throw new IllegalStateException(String.format("Key '%s' not found in data", key));
-        }
-    }
-
-    public String requireSession(String key) {
-        requireNonNull(key, "key");
-        if (session().containsKey(key)) {
-            return session().get(key);
-        } else {
-            throw new IllegalStateException(String.format("Key '%s' not found in session", key));
-        }
-    }
 
     public static Request hello(Map<String, String> data) {
         requireNonNull(data, "data");
