@@ -70,7 +70,7 @@ final class DaemonServer implements Runnable {
                     case CMD_HELLO -> {
                         logger.debug("{} {}", request.cmd(), request.data());
                         Map<String, String> session = new HashMap<>();
-                        session.put("session.id", "todo");
+                        session.put(Request.SESSION_ID, "todo");
                         handle.writeResponse(ImmutableResponse.builder()
                                 .status(Response.STATUS_OK)
                                 .session(session)

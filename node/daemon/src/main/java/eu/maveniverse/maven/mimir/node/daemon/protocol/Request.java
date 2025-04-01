@@ -30,6 +30,8 @@ public abstract class Request {
     public static final String PARAM_PATHSTRING = "pathString";
     public static final String PARAM_SHUTDOWN = "shutdown";
 
+    public static final String SESSION_ID = "sessionId";
+
     public abstract String cmd();
 
     public abstract Map<String, String> data();
