@@ -28,7 +28,6 @@ public abstract class Request {
 
     public static final String PARAM_KEYSTRING = "keyString";
     public static final String PARAM_PATHSTRING = "pathString";
-
     public static final String PARAM_SHUTDOWN = "shutdown";
 
     public abstract String cmd();
@@ -78,7 +77,7 @@ public abstract class Request {
                 .build();
     }
 
-    public static Request transferTo(Map<String, String> session, String keyString, String filePath) {
+    public static Request transfer(Map<String, String> session, String keyString, String filePath) {
         requireNonNull(session, "session");
         requireNonNull(keyString, "keyString");
         requireNonNull(filePath, "filePath");
@@ -86,7 +85,7 @@ public abstract class Request {
         requestData.put(PARAM_KEYSTRING, keyString);
         requestData.put(PARAM_PATHSTRING, filePath);
         return ImmutableRequest.builder()
-                .cmd(CMD_STORE_PATH)
+                .cmd(CMD_TRANSFER)
                 .data(requestData)
                 .session(session)
                 .build();

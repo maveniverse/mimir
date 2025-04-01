@@ -134,13 +134,14 @@ final class DaemonServer implements Runnable {
                         String keyString = request.data().get(Request.PARAM_KEYSTRING);
                         String pathString = request.data().get(Request.PARAM_PATHSTRING);
                         Map<String, String> data = request.data();
-                        Map<String, String> metadata = splitMetadata(data);
-                        Map<String, String> checksums = splitChecksums(data);
                         logger.debug("{} {} <- {}", request.cmd(), keyString, pathString);
-                        URI key = URI.create(keyString);
-                        Path path = Path.of(pathString);
-                        handle.writeResponse(
-                                Response.okData(request, mergeEntry(systemNode.store(key, path, metadata, checksums))));
+                        handle.writeResponse(Response.okData(
+                                request,
+                                mergeEntry(systemNode.store(
+                                        URI.create(keyString),
+                                        Path.of(pathString),
+                                        splitMetadata(data),
+                                        splitChecksums(data)))));
                     }
                     default -> handle.writeResponse(Response.koMessage(request, "Bad command"));
                 }

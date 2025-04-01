@@ -40,6 +40,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
     private final boolean autostop;
     private final Map<String, String> session;
+    private final Map<String, String> daemonData;
 
     public DaemonNode(
             Map<String, String> clientData,
@@ -56,6 +57,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
             handle.writeRequest(Request.hello(clientData));
             Response helloResponse = handle.readResponse();
             this.session = helloResponse.session();
+            this.daemonData = helloResponse.data();
             logger.debug("Hello OK {}", helloResponse.data());
         }
     }
@@ -123,8 +125,8 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
     @Override
     public String toString() {
         return getClass().getSimpleName() + " (socketPath=" + socketPath + "; daemonPID="
-                + session.getOrDefault("daemon.pid", "n/a") + "; daemonVersion="
-                + session.getOrDefault("daemon.version", "n/a") + ")";
+                + daemonData.getOrDefault("daemon.pid", "n/a") + "; daemonVersion="
+                + daemonData.getOrDefault("daemon.version", "n/a") + ")";
     }
 
     private Handle create() throws IOException {
@@ -152,7 +154,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
         public void transferTo(Path file) throws IOException {
             logger.debug("TRANSFER '{}'->'{}'", keyString, file);
             try (Handle handle = create()) {
-                handle.writeRequest(Request.transferTo(
+                handle.writeRequest(Request.transfer(
                         session, keyString, Config.getCanonicalPath(file).toString()));
                 handle.readResponse();
             }
