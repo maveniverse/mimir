@@ -24,7 +24,7 @@ public class HttpServerPublisherFactory implements PublisherFactory {
     public static final String NAME = "http";
 
     @Override
-    public Publisher createPublisher(Config config, SystemNode systemNode) throws IOException {
+    public Publisher createPublisher(Config config, SystemNode<?> systemNode) throws IOException {
         requireNonNull(config, "config");
         requireNonNull(systemNode, "systemNode");
         return new HttpServerPublisher(systemNode, new InetSocketAddress(0));

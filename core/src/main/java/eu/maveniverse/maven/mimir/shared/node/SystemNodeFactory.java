@@ -15,5 +15,5 @@ public interface SystemNodeFactory extends LocalNodeFactory {
      * Creates a {@link SystemNode} instance.
      */
     @Override
-    SystemNode createNode(Config config) throws IOException;
+    SystemNode<?> createNode(Config config) throws IOException;
 }

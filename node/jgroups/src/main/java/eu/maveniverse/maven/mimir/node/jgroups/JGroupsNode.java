@@ -38,7 +38,7 @@ import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.Response;
 import org.jgroups.util.RspList;
 
-public class JGroupsNode extends RemoteNodeSupport implements Receiver, RequestHandler {
+public class JGroupsNode extends RemoteNodeSupport<PublisherRemoteEntry> implements Receiver, RequestHandler {
     private static final String PUBLISHER_HANDLE = "handle";
     private static final String CMD_LOCATE = "locate";
     private static final String RSP_ERROR = "error";

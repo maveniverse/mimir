@@ -7,9 +7,10 @@
  */
 package eu.maveniverse.maven.mimir.shared.impl.node;
 
+import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 
-public abstract class RemoteNodeSupport extends NodeSupport implements RemoteNode {
+public abstract class RemoteNodeSupport<E extends RemoteEntry> extends NodeSupport<E> implements RemoteNode<E> {
     protected final int distance;
 
     public RemoteNodeSupport(String name, int distance) {

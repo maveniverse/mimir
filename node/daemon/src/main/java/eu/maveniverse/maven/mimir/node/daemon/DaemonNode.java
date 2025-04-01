@@ -50,7 +50,7 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 /**
  * This node is delegating all the work to daemon via Unix Domain Sockets.
  */
-public class DaemonNode extends NodeSupport implements LocalNode {
+public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements LocalNode<DaemonNode.DaemonEntry> {
     private final Path socketPath;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
     private final boolean autostop;
@@ -88,7 +88,7 @@ public class DaemonNode extends NodeSupport implements LocalNode {
     }
 
     @Override
-    public Optional<LocalEntry> locate(URI key) throws IOException {
+    public Optional<DaemonEntry> locate(URI key) throws IOException {
         String keyString = key.toASCIIString();
         logger.debug("LOCATE '{}'", keyString);
         try (Handle handle = create()) {
@@ -103,7 +103,7 @@ public class DaemonNode extends NodeSupport implements LocalNode {
     }
 
     @Override
-    public LocalEntry store(URI key, Path file, Map<String, String> metadata, Map<String, String> checksums)
+    public DaemonEntry store(URI key, Path file, Map<String, String> metadata, Map<String, String> checksums)
             throws IOException {
         String keyString = key.toASCIIString();
         String filePath = Config.getCanonicalPath(file).toString();
@@ -162,7 +162,7 @@ public class DaemonNode extends NodeSupport implements LocalNode {
         }
     }
 
-    private class DaemonEntry extends EntrySupport implements LocalEntry {
+    public class DaemonEntry extends EntrySupport implements LocalEntry {
         private final String keyString;
 
         private DaemonEntry(Map<String, String> metadata, Map<String, String> checksums, String keyString) {

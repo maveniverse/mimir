@@ -14,5 +14,5 @@ public interface LocalNodeFactory {
     /**
      * Creates a {@link LocalNode} instance.
      */
-    LocalNode createNode(Config config) throws IOException;
+    LocalNode<?> createNode(Config config) throws IOException;
 }

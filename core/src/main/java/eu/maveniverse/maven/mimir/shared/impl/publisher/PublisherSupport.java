@@ -43,10 +43,10 @@ public abstract class PublisherSupport implements Publisher {
     }
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
-    protected final SystemNode systemNode;
+    protected final SystemNode<?> systemNode;
     protected final ConcurrentMap<String, SystemEntry> publishedEntries;
 
-    protected PublisherSupport(SystemNode systemNode) {
+    protected PublisherSupport(SystemNode<?> systemNode) {
         this.systemNode = requireNonNull(systemNode, "systemNode");
         this.publishedEntries = new ConcurrentHashMap<>();
     }

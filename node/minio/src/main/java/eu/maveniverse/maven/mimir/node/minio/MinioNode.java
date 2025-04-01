@@ -47,7 +47,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
-public final class MinioNode extends NodeSupport implements SystemNode {
+public final class MinioNode extends NodeSupport<MinioEntry> implements SystemNode<MinioEntry> {
     private final MinioNodeConfig config;
     private final MinioClient minioClient;
     private final Function<URI, Key> keyResolver;

@@ -52,15 +52,15 @@ final class DaemonServer implements Runnable {
     private final DataInputStream dis;
 
     private final Map<String, String> daemonData;
-    private final SystemNode systemNode;
-    private final List<RemoteNode> remoteNodes;
+    private final SystemNode<?> systemNode;
+    private final List<RemoteNode<?>> remoteNodes;
     private final Runnable shutdownHook;
 
     DaemonServer(
             SocketChannel socketChannel,
             Map<String, String> daemonData,
-            SystemNode systemNode,
-            List<RemoteNode> remoteNodes,
+            SystemNode<?> systemNode,
+            List<RemoteNode<?>> remoteNodes,
             Runnable shutdownHook) {
         this.dos = new DataOutputStream(Channels.newOutputStream(socketChannel));
         this.dis = new DataInputStream(Channels.newInputStream(socketChannel));
@@ -97,7 +97,7 @@ final class DaemonServer implements Runnable {
                     URI key = URI.create(keyString);
                     Optional<? extends Entry> entry = systemNode.locate(key);
                     if (entry.isEmpty()) {
-                        for (RemoteNode node : remoteNodes) {
+                        for (RemoteNode<?> node : remoteNodes) {
                             Optional<? extends RemoteEntry> remoteEntry = node.locate(key);
                             if (remoteEntry.isPresent()) {
                                 entry = Optional.of(systemNode.store(key, remoteEntry.orElseThrow()));

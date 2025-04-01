@@ -34,7 +34,7 @@ public class HttpServerPublisher extends PublisherSupport {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final HttpServer httpServer;
 
-    public HttpServerPublisher(SystemNode systemNode, InetSocketAddress inetSocketAddress) throws IOException {
+    public HttpServerPublisher(SystemNode<?> systemNode, InetSocketAddress inetSocketAddress) throws IOException {
         super(systemNode);
         httpServer = HttpServer.create(inetSocketAddress, 0);
         // Java 21: httpServer.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
