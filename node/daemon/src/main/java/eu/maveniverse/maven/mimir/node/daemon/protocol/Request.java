@@ -26,9 +26,9 @@ public abstract class Request {
     public static final String CMD_LS_CHECKSUMS = "LS_CHECKSUMS";
     public static final String CMD_STORE_PATH = "STORE_PATH";
 
-    public static final String PARAM_KEYSTRING = "keyString";
-    public static final String PARAM_PATHSTRING = "pathString";
-    public static final String PARAM_SHUTDOWN = "shutdown";
+    public static final String DATA_KEYSTRING = "keyString";
+    public static final String DATA_PATHSTRING = "pathString";
+    public static final String DATA_SHUTDOWN = "shutdown";
 
     public static final String SESSION_ID = "sessionId";
 
@@ -51,7 +51,7 @@ public abstract class Request {
         requireNonNull(session, "session");
         Map<String, String> data = new HashMap<>();
         if (shutdown) {
-            data.put(PARAM_SHUTDOWN, Boolean.TRUE.toString());
+            data.put(DATA_SHUTDOWN, Boolean.TRUE.toString());
         }
         return ImmutableRequest.builder()
                 .cmd(CMD_BYE)
@@ -65,7 +65,7 @@ public abstract class Request {
         requireNonNull(keyString, "keyString");
         return ImmutableRequest.builder()
                 .cmd(CMD_LOCATE)
-                .data(Map.of(PARAM_KEYSTRING, keyString))
+                .data(Map.of(DATA_KEYSTRING, keyString))
                 .session(session)
                 .build();
     }
@@ -84,8 +84,8 @@ public abstract class Request {
         requireNonNull(keyString, "keyString");
         requireNonNull(filePath, "filePath");
         HashMap<String, String> requestData = new HashMap<>();
-        requestData.put(PARAM_KEYSTRING, keyString);
-        requestData.put(PARAM_PATHSTRING, filePath);
+        requestData.put(DATA_KEYSTRING, keyString);
+        requestData.put(DATA_PATHSTRING, filePath);
         return ImmutableRequest.builder()
                 .cmd(CMD_TRANSFER)
                 .data(requestData)
@@ -100,8 +100,8 @@ public abstract class Request {
         requireNonNull(filePath, "filePath");
         requireNonNull(data, "data");
         HashMap<String, String> requestData = new HashMap<>(data);
-        requestData.put(PARAM_KEYSTRING, keyString);
-        requestData.put(PARAM_PATHSTRING, filePath);
+        requestData.put(DATA_KEYSTRING, keyString);
+        requestData.put(DATA_PATHSTRING, filePath);
         return ImmutableRequest.builder()
                 .cmd(CMD_STORE_PATH)
                 .data(requestData)
