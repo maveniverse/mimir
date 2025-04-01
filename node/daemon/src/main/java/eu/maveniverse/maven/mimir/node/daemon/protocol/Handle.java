@@ -14,8 +14,8 @@ import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.nio.channels.ByteChannel;
+import java.nio.channels.Channels;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,12 +27,14 @@ import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 
 public class Handle implements Closeable {
+    private final ByteChannel channel;
     private final DataOutputStream outputStream;
     private final DataInputStream inputStream;
 
-    public Handle(OutputStream outputStream, InputStream inputStream) {
-        this.outputStream = new DataOutputStream(requireNonNull(outputStream, "outputStream"));
-        this.inputStream = new DataInputStream(requireNonNull(inputStream, "inputStream"));
+    public Handle(ByteChannel byteChannel) {
+        this.channel = requireNonNull(byteChannel, "byteChannel");
+        this.outputStream = new DataOutputStream(Channels.newOutputStream(channel));
+        this.inputStream = new DataInputStream(Channels.newInputStream(channel));
     }
 
     public void writeRequest(Request request) throws IOException {
@@ -85,8 +87,7 @@ public class Handle implements Closeable {
 
     @Override
     public void close() throws IOException {
-        outputStream.close();
-        inputStream.close();
+        channel.close();
     }
 
     private void packMap(MessagePacker p, Map<String, String> map) throws IOException {

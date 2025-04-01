@@ -5,8 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.InetSocketAddress;
+import java.net.StandardProtocolFamily;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.jupiter.api.Test;
@@ -15,13 +17,14 @@ public class ProtocolTest {
     @Test
     void smoke() throws Exception {
         CopyOnWriteArrayList<Message> messages = new CopyOnWriteArrayList<>();
-        try (ServerSocket serverSocket = new ServerSocket(0);
-                Socket clientSck = new Socket("localhost", serverSocket.getLocalPort());
-                Socket serverSck = serverSocket.accept()) {
+        try (ServerSocketChannel serverSocket =
+                        ServerSocketChannel.open(StandardProtocolFamily.INET).bind(new InetSocketAddress(0));
+                SocketChannel clientSck = SocketChannel.open(serverSocket.getLocalAddress());
+                SocketChannel serverSck = serverSocket.accept()) {
             Thread client = new Thread(
                     () -> {
                         try {
-                            Handle handle = new Handle(clientSck.getOutputStream(), clientSck.getInputStream());
+                            Handle handle = new Handle(clientSck);
                             handle.writeRequest(Request.hello(Map.of("hello", "world")));
                             messages.add(handle.readResponse());
                         } catch (IOException e) {
@@ -32,7 +35,7 @@ public class ProtocolTest {
             Thread server = new Thread(
                     () -> {
                         try {
-                            Handle handle = new Handle(serverSck.getOutputStream(), serverSck.getInputStream());
+                            Handle handle = new Handle(serverSck);
                             Request request = handle.readRequest();
                             messages.add(request);
                             handle.writeResponse(Response.okMessage(request, "hi!"));

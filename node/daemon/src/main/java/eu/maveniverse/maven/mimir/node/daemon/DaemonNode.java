@@ -23,7 +23,6 @@ import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.io.IOException;
 import java.net.URI;
 import java.net.UnixDomainSocketAddress;
-import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -132,14 +131,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
     private Handle create() throws IOException {
         SocketChannel socketChannel = SocketChannel.open(UnixDomainSocketAddress.of(socketPath));
         socketChannel.configureBlocking(true);
-        return new Handle(Channels.newOutputStream(socketChannel), Channels.newInputStream(socketChannel)) {
-            @Override
-            public void close() throws IOException {
-                try (socketChannel) {
-                    super.close();
-                }
-            }
-        };
+        return new Handle(socketChannel);
     }
 
     public class DaemonEntry extends EntrySupport implements LocalEntry {
