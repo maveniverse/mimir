@@ -142,8 +142,8 @@ public final class FileNode extends NodeSupport implements SystemNode {
                 Files.setLastModifiedTime(f.getPath(), fileTime);
             }
 
-            metadata.put(Entry.CONTENT_LENGTH, Long.toString(Files.size(file)));
-            metadata.put(Entry.CONTENT_LAST_MODIFIED, Long.toString(fileTime.toMillis()));
+            Entry.setContentLength(metadata, Files.size(file));
+            Entry.setContentLastModified(metadata, fileTime.toInstant());
             storeMetadata(path, mergeEntry(metadata, checksumEnforcer.getChecksums()));
             f.move();
         }
@@ -158,10 +158,8 @@ public final class FileNode extends NodeSupport implements SystemNode {
     private FileEntry createEntry(Path file, Map<String, String> metadata, Map<String, String> checksums)
             throws IOException {
         HashMap<String, String> md = new HashMap<>(metadata);
-        md.put(Entry.CONTENT_LENGTH, Long.toString(Files.size(file)));
-        md.put(
-                Entry.CONTENT_LAST_MODIFIED,
-                Long.toString(Files.getLastModifiedTime(file).toMillis()));
+        Entry.setContentLength(md, Files.size(file));
+        Entry.setContentLastModified(md, Files.getLastModifiedTime(file).toInstant());
         return new FileEntry(md, checksums, file, mayLink);
     }
 
@@ -196,10 +194,8 @@ public final class FileNode extends NodeSupport implements SystemNode {
 
     private void recreateMetadata(Path file) throws IOException {
         HashMap<String, String> metadata = new HashMap<>();
-        metadata.put(Entry.CONTENT_LENGTH, Long.toString(Files.size(file)));
-        metadata.put(
-                Entry.CONTENT_LAST_MODIFIED,
-                Long.toString(Files.getLastModifiedTime(file).toMillis()));
+        Entry.setContentLength(metadata, Files.size(file));
+        Entry.setContentLastModified(metadata, Files.getLastModifiedTime(file).toInstant());
         Map<String, String> checksums = calculate(
                 file,
                 checksumAlgorithms().stream()

@@ -57,7 +57,7 @@ public class FileNodeTest {
             entry = fileNode.locate(keyMapper.apply(central, junit));
             assertTrue(entry.isPresent());
             SystemEntry systemEntry = entry.orElseThrow();
-            assertEquals("12", systemEntry.metadata().get(SystemEntry.CONTENT_LENGTH));
+            assertEquals(12, systemEntry.getContentLength());
             assertEquals(
                     "2ef7bde608ce5404e97d5f042f95f89f1c232871",
                     systemEntry.checksums().get(Sha1ChecksumAlgorithmFactory.NAME));
@@ -99,7 +99,7 @@ public class FileNodeTest {
             entry = fileNode.locate(keyMapper.apply(central, junit));
             assertTrue(entry.isPresent());
             SystemEntry systemEntry = entry.orElseThrow();
-            assertEquals("12", systemEntry.metadata().get(SystemEntry.CONTENT_LENGTH));
+            assertEquals(12, systemEntry.getContentLength());
             assertEquals(
                     "2ef7bde608ce5404e97d5f042f95f89f1c232871",
                     systemEntry.checksums().get(Sha1ChecksumAlgorithmFactory.NAME));
