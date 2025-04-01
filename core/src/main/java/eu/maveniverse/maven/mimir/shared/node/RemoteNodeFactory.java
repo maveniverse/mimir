@@ -11,12 +11,9 @@ import eu.maveniverse.maven.mimir.shared.Config;
 import java.io.IOException;
 import java.util.Optional;
 
-/**
- * A node represents some generic storage node.
- */
 public interface RemoteNodeFactory {
     /**
-     * Creates a {@link Node} instance.
+     * Creates a {@link RemoteNode} instance, but based on passed configuration, it may choose not to do so.
      */
     Optional<? extends RemoteNode> createNode(Config config) throws IOException;
 }

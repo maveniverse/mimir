@@ -12,7 +12,7 @@ import java.net.URI;
 import java.util.Optional;
 
 /**
- * A node represents some generic storage node.
+ * A remote node represents some generic storage on some remote place.
  */
 public interface RemoteNode extends Node {
     /**

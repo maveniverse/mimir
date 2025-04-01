@@ -14,8 +14,9 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Local node uses some "local" (local to the system) backing storage.
- * This type of node is able to back a session.
+ * System node is a special local node that can also cache various {@link Entry} items, and provides system entry,
+ * that makes publishing cache possible as well. On one workstation there is usually one system node, that is also
+ * published.
  */
 public interface SystemNode extends LocalNode {
     /**

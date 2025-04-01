@@ -10,6 +10,9 @@ package eu.maveniverse.maven.mimir.shared.node;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * Remote entry.
+ */
 public interface RemoteEntry extends Entry {
     /**
      * Consumer of remote entry content.

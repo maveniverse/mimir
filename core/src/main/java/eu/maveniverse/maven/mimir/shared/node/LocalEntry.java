@@ -10,6 +10,9 @@ package eu.maveniverse.maven.mimir.shared.node;
 import java.io.IOException;
 import java.nio.file.Path;
 
+/**
+ * Local entry, can use file system as it is "local" to the caller.
+ */
 public interface LocalEntry extends Entry {
     /**
      * Transfers cached entry to given file by best available means and atomically. The file will be overwritten,

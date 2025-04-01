@@ -10,9 +10,12 @@ package eu.maveniverse.maven.mimir.shared.node;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * System entry is a local entry that also supports publishing.
+ */
 public interface SystemEntry extends LocalEntry {
     /**
-     * Provides stream to entry content.
+     * Provides entry content as stream.
      */
     InputStream inputStream() throws IOException;
 }

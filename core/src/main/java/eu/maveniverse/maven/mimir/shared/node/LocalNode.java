@@ -16,7 +16,7 @@ import java.util.Optional;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 /**
- * Local node uses some "local" (local to the system) backing storage.
+ * Local node uses some "local" (local to the system) backing storage and hence, has access to filesystem.
  * This type of node is able to back a session.
  */
 public interface LocalNode extends Node {

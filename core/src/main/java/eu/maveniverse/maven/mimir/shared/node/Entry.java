@@ -12,6 +12,9 @@ import static java.util.Objects.requireNonNull;
 import java.time.Instant;
 import java.util.Map;
 
+/**
+ * Node entry, holds some metadata and content. How to get content wildly varies (see subclasses).
+ */
 public interface Entry {
     String CONTENT_PREFIX = "content-";
     String CONTENT_LENGTH = CONTENT_PREFIX + "length";
