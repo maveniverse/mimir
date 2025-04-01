@@ -9,31 +9,15 @@ package eu.maveniverse.maven.mimir.shared.node;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * System node is a special local node that can also cache various {@link Entry} items, and provides system entry,
  * that makes publishing cache possible as well. On one workstation there is usually one system node, that is also
  * published.
  */
-public interface SystemNode extends LocalNode {
-    /**
-     * Locates cache entry by key on this node.
-     */
-    @Override
-    Optional<? extends SystemEntry> locate(URI key) throws IOException;
-
-    /**
-     * Stores file as new entry.
-     */
-    @Override
-    SystemEntry store(URI key, Path file, Map<String, String> metadata, Map<String, String> checksums)
-            throws IOException;
-
+public interface SystemNode<E extends SystemEntry> extends LocalNode<E> {
     /**
      * Stores entry and provides new local entry for stored content.
      */
-    SystemEntry store(URI key, Entry entry) throws IOException;
+    E store(URI key, Entry entry) throws IOException;
 }

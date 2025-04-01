@@ -24,7 +24,7 @@ public class ServerSocketPublisherFactory implements PublisherFactory {
     public static final String NAME = "socket";
 
     @Override
-    public Publisher createPublisher(Config config, SystemNode systemNode) throws IOException {
+    public Publisher createPublisher(Config config, SystemNode<?> systemNode) throws IOException {
         requireNonNull(config, "config");
         requireNonNull(systemNode, "systemNode");
         return new ServerSocketPublisher(systemNode, new InetSocketAddress(0));

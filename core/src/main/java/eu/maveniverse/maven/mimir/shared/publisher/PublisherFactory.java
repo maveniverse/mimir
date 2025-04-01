@@ -15,5 +15,5 @@ public interface PublisherFactory {
     /**
      * Creates a publisher for given system node.
      */
-    Publisher createPublisher(Config config, SystemNode systemNode) throws IOException;
+    Publisher createPublisher(Config config, SystemNode<?> systemNode) throws IOException;
 }

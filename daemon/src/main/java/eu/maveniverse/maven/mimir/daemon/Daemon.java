@@ -82,8 +82,8 @@ public class Daemon implements Closeable {
     }
 
     @Named
-    public static final class SystemNodeProvider implements Provider<SystemNode> {
-        private final SystemNode systemNode;
+    public static final class SystemNodeProvider implements Provider<SystemNode<?>> {
+        private final SystemNode<?> systemNode;
 
         @Inject
         public SystemNodeProvider(
@@ -98,7 +98,7 @@ public class Daemon implements Closeable {
         }
 
         @Override
-        public SystemNode get() {
+        public SystemNode<?> get() {
             return systemNode;
         }
     }
@@ -108,14 +108,14 @@ public class Daemon implements Closeable {
     private final Config config;
     private final ServerSocketChannel serverSocketChannel;
     private final ExecutorService executor;
-    private final SystemNode systemNode;
-    private final List<RemoteNode> remoteNodes;
+    private final SystemNode<?> systemNode;
+    private final List<RemoteNode<?>> remoteNodes;
 
     @Inject
     public Daemon(
             Config config,
             DaemonConfig daemonConfig,
-            SystemNode systemNode,
+            SystemNode<?> systemNode,
             Map<String, RemoteNodeFactory> remoteNodeFactories,
             Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories)
             throws IOException {
@@ -125,9 +125,9 @@ public class Daemon implements Closeable {
         requireNonNull(remoteNodeFactories, "remoteNodeFactories");
 
         this.systemNode = systemNode;
-        ArrayList<RemoteNode> nds = new ArrayList<>();
+        ArrayList<RemoteNode<?>> nds = new ArrayList<>();
         for (RemoteNodeFactory remoteNodeFactory : remoteNodeFactories.values()) {
-            Optional<? extends RemoteNode> node = remoteNodeFactory.createNode(config);
+            Optional<? extends RemoteNode<?>> node = remoteNodeFactory.createNode(config);
             node.ifPresent(nds::add);
         }
         nds.sort(Comparator.comparing(RemoteNode::distance));
@@ -159,7 +159,7 @@ public class Daemon implements Closeable {
         logger.info("  System Node: {}", systemNode);
         logger.info("  Using checksums: {}", systemNode.checksumAlgorithms());
         logger.info("  {} remote node(s):", remoteNodes.size());
-        for (RemoteNode node : this.remoteNodes) {
+        for (RemoteNode<?> node : this.remoteNodes) {
             logger.info("    {}", node);
         }
 
@@ -194,7 +194,7 @@ public class Daemon implements Closeable {
             } catch (Exception e) {
                 logger.warn("Error closing executor", e);
             }
-            for (RemoteNode node : remoteNodes) {
+            for (RemoteNode<?> node : remoteNodes) {
                 try {
                     node.close();
                 } catch (IOException e) {

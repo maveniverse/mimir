@@ -30,7 +30,7 @@ public class ServerSocketPublisher extends PublisherSupport {
     private final ServerSocket serverSocket;
     private final ExecutorService executor;
 
-    public ServerSocketPublisher(SystemNode systemNode, InetSocketAddress inetSocketAddress) throws IOException {
+    public ServerSocketPublisher(SystemNode<?> systemNode, InetSocketAddress inetSocketAddress) throws IOException {
         super(systemNode);
 
         this.serverSocket = new ServerSocket(inetSocketAddress.getPort(), 50, inetSocketAddress.getAddress());

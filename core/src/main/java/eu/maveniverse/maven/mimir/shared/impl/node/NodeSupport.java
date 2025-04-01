@@ -9,13 +9,14 @@ package eu.maveniverse.maven.mimir.shared.impl.node;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.Node;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class NodeSupport implements Node {
+public abstract class NodeSupport<E extends Entry> implements Node<E> {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final String name;
     protected final AtomicBoolean closed;

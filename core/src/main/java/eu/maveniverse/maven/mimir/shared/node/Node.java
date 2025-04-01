@@ -15,7 +15,7 @@ import java.util.Optional;
 /**
  * A node represents some generic storage node.
  */
-public interface Node extends Closeable {
+public interface Node<E extends Entry> extends Closeable {
     /**
      * Node name, a label.
      */
@@ -24,5 +24,5 @@ public interface Node extends Closeable {
     /**
      * Locates cache entry by key on this node.
      */
-    Optional<? extends Entry> locate(URI key) throws IOException;
+    Optional<E> locate(URI key) throws IOException;
 }
