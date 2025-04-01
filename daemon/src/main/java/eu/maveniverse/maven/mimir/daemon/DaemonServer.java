@@ -86,7 +86,7 @@ final class DaemonServer implements Runnable {
                         }
                     }
                     case CMD_LOCATE -> {
-                        String keyString = request.data().get(Request.DATA_KEYSTRING);
+                        String keyString = request.requireData(Request.DATA_KEYSTRING);
                         URI key = URI.create(keyString);
                         Optional<? extends Entry> entry = systemNode.locate(key);
                         if (entry.isEmpty()) {
@@ -107,8 +107,8 @@ final class DaemonServer implements Runnable {
                         }
                     }
                     case CMD_TRANSFER -> {
-                        String keyString = request.data().get(Request.DATA_KEYSTRING);
-                        String pathString = request.data().get(Request.DATA_PATHSTRING);
+                        String keyString = request.requireData(Request.DATA_KEYSTRING);
+                        String pathString = request.requireData(Request.DATA_PATHSTRING);
                         URI key = URI.create(keyString);
                         Path path = Path.of(pathString);
                         Optional<? extends SystemEntry> entry = systemNode.locate(key);
@@ -131,8 +131,8 @@ final class DaemonServer implements Runnable {
                                 Response.okData(request, Handle.listToMap(systemNode.checksumAlgorithms())));
                     }
                     case CMD_STORE_PATH -> {
-                        String keyString = request.data().get(Request.DATA_KEYSTRING);
-                        String pathString = request.data().get(Request.DATA_PATHSTRING);
+                        String keyString = request.requireData(Request.DATA_KEYSTRING);
+                        String pathString = request.requireData(Request.DATA_PATHSTRING);
                         Map<String, String> data = request.data();
                         logger.debug("{} {} <- {}", request.cmd(), keyString, pathString);
                         handle.writeResponse(Response.okData(

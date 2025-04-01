@@ -38,6 +38,24 @@ public abstract class Request {
 
     public abstract Map<String, String> session();
 
+    public String requireData(String key) {
+        requireNonNull(key, "key");
+        if (data().containsKey(key)) {
+            return data().get(key);
+        } else {
+            throw new IllegalStateException(String.format("Key '%s' not found in data", key));
+        }
+    }
+
+    public String requireSession(String key) {
+        requireNonNull(key, "key");
+        if (session().containsKey(key)) {
+            return session().get(key);
+        } else {
+            throw new IllegalStateException(String.format("Key '%s' not found in session", key));
+        }
+    }
+
     public static Request hello(Map<String, String> data) {
         requireNonNull(data, "data");
         return ImmutableRequest.builder()
