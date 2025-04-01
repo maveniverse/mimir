@@ -85,6 +85,26 @@
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>prepare-user-home</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>generate-test-resources</phase>
+                <configuration>
+                  <target>
+                    <copy todir="${project.build.directory}/it-user">
+                      <fileset dir="src/it/user-home" />
+                    </copy>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-invoker-plugin</artifactId>
             <executions>
               <execution>
@@ -121,6 +141,10 @@
                   <mavenHome>${project.build.directory}/dependency/apache-maven-${maven3Version}</mavenHome>
                   <cloneProjectsTo>${project.build.directory}/mvn3-it</cloneProjectsTo>
                   <localRepositoryPath>${project.build.directory}/it-repo</localRepositoryPath>
+                  <mavenOpts>-Duser.home=${project.build.directory}/it-user</mavenOpts>
+                  <properties>
+                    <mimir.daemon.passOnBasedir>true</mimir.daemon.passOnBasedir>
+                  </properties>
                   <cloneClean>true</cloneClean>
                   <pomIncludes>
                     <pomInclude>*/pom.xml</pomInclude>
@@ -140,6 +164,10 @@
                   <mavenHome>${project.build.directory}/dependency/apache-maven-${maven4Version}</mavenHome>
                   <cloneProjectsTo>${project.build.directory}/mvn4-it</cloneProjectsTo>
                   <localRepositoryPath>${project.build.directory}/it-repo</localRepositoryPath>
+                  <mavenOpts>-Duser.home=${project.build.directory}/it-user</mavenOpts>
+                  <properties>
+                    <mimir.daemon.passOnBasedir>true</mimir.daemon.passOnBasedir>
+                  </properties>
                   <cloneClean>true</cloneClean>
                   <pomIncludes>
                     <pomInclude>*/pom.xml</pomInclude>
