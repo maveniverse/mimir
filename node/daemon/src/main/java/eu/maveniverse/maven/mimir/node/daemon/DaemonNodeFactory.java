@@ -76,6 +76,9 @@ public class DaemonNodeFactory implements LocalNodeFactory {
 
             ArrayList<String> command = new ArrayList<>();
             command.add(java);
+            if (daemonConfig.debug()) {
+                command.add("-Dorg.slf4j.simpleLogger.defaultLogLevel=debug");
+            }
             if (daemonConfig.passOnBasedir()) {
                 command.add("-Dmimir.basedir=" + basedir);
             }

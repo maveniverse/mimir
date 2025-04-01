@@ -7,33 +7,19 @@
  */
 package eu.maveniverse.maven.mimir.node.daemon;
 
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readByeRsp;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readHelloRsp;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readLocateRsp;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readLsChecksumsRsp;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readStorePathRsp;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readTransferRsp;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeByeReq;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeHelloReq;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeLocateReq;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeLsChecksumsReq;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeStorePathReq;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeTransferReq;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeEntry;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.node.daemon.protocol.Handle;
+import eu.maveniverse.maven.mimir.node.daemon.protocol.Request;
+import eu.maveniverse.maven.mimir.node.daemon.protocol.Response;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.impl.node.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.impl.node.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.Closeable;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.UnixDomainSocketAddress;
@@ -41,7 +27,6 @@ import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -68,17 +53,18 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
         this.autostop = autostop;
 
         try (Handle handle = create()) {
-            writeHelloReq(handle.dos, clientData);
-            this.session = readHelloRsp(handle.dis);
-            logger.debug("Hello OK {}", session);
+            handle.writeRequest(Request.hello(clientData));
+            Response helloResponse = handle.readResponse();
+            this.session = helloResponse.session();
+            logger.debug("Hello OK {}", helloResponse.data());
         }
     }
 
     @Override
     public List<String> checksumAlgorithms() throws IOException {
         try (Handle handle = create()) {
-            writeLsChecksumsReq(handle.dos);
-            return readLsChecksumsRsp(handle.dis);
+            handle.writeRequest(Request.lsChecksums(session));
+            return Handle.mapToList(handle.readResponse().data());
         }
     }
 
@@ -92,10 +78,11 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
         String keyString = key.toASCIIString();
         logger.debug("LOCATE '{}'", keyString);
         try (Handle handle = create()) {
-            writeLocateReq(handle.dos, keyString);
-            Map<String, String> response = readLocateRsp(handle.dis);
-            if (!response.isEmpty()) {
-                return Optional.of(new DaemonEntry(splitMetadata(response), splitChecksums(response), keyString));
+            handle.writeRequest(Request.locate(session, keyString));
+            Response locateResponse = handle.readResponse();
+            if (!locateResponse.data().isEmpty()) {
+                return Optional.of(new DaemonEntry(
+                        splitMetadata(locateResponse.data()), splitChecksums(locateResponse.data()), keyString));
             } else {
                 return Optional.empty();
             }
@@ -109,10 +96,11 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
         String filePath = Config.getCanonicalPath(file).toString();
         logger.debug("STORE PATH '{}' -> '{}'", keyString, filePath);
         try (Handle handle = create()) {
-            writeStorePathReq(handle.dos, keyString, filePath, mergeEntry(metadata, checksums));
-            Map<String, String> response = readStorePathRsp(handle.dis);
-            if (!response.isEmpty()) {
-                return new DaemonEntry(splitMetadata(response), splitChecksums(response), keyString);
+            handle.writeRequest(Request.storePath(session, keyString, filePath, mergeEntry(metadata, checksums)));
+            Response storePathResponse = handle.readResponse();
+            if (!storePathResponse.data().isEmpty()) {
+                return new DaemonEntry(
+                        splitMetadata(storePathResponse.data()), splitChecksums(storePathResponse.data()), keyString);
             } else {
                 // this theoretically can never happen: daemon will either store or fail
                 throw new IOException("Failed to store " + filePath + "; check daemon logs");
@@ -123,14 +111,12 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
     @Override
     protected void doClose() throws IOException {
         try (Handle handle = create()) {
-            Map<String, String> data = new HashMap<>(session);
             if (autostop) {
                 logger.info("Daemon shutdown initiated");
-                data.put("shutdown", "true");
             }
-            writeByeReq(handle.dos, data);
-            data = readByeRsp(handle.dis);
-            logger.debug("Bye OK {}", data);
+            handle.writeRequest(Request.bye(session, autostop));
+            Response byeResponse = handle.readResponse();
+            logger.debug("Bye OK {}", byeResponse.data());
         }
     }
 
@@ -142,24 +128,16 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
     }
 
     private Handle create() throws IOException {
-        return new Handle();
-    }
-
-    private class Handle implements Closeable {
-        private final SocketChannel socketChannel;
-        private final DataOutputStream dos;
-        private final DataInputStream dis;
-
-        public Handle() throws IOException {
-            this.socketChannel = SocketChannel.open(UnixDomainSocketAddress.of(socketPath));
-            this.dos = new DataOutputStream(new BufferedOutputStream(Channels.newOutputStream(socketChannel)));
-            this.dis = new DataInputStream(new BufferedInputStream(Channels.newInputStream(socketChannel)));
-        }
-
-        @Override
-        public void close() throws IOException {
-            socketChannel.close();
-        }
+        SocketChannel socketChannel = SocketChannel.open(UnixDomainSocketAddress.of(socketPath));
+        socketChannel.configureBlocking(true);
+        return new Handle(Channels.newOutputStream(socketChannel), Channels.newInputStream(socketChannel)) {
+            @Override
+            public void close() throws IOException {
+                try (socketChannel) {
+                    super.close();
+                }
+            }
+        };
     }
 
     public class DaemonEntry extends EntrySupport implements LocalEntry {
@@ -174,9 +152,9 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
         public void transferTo(Path file) throws IOException {
             logger.debug("TRANSFER '{}'->'{}'", keyString, file);
             try (Handle handle = create()) {
-                writeTransferReq(
-                        handle.dos, keyString, Config.getCanonicalPath(file).toString());
-                readTransferRsp(handle.dis);
+                handle.writeRequest(Request.transferTo(
+                        session, keyString, Config.getCanonicalPath(file).toString()));
+                handle.readResponse();
             }
         }
     }
