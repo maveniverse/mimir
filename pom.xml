@@ -210,11 +210,6 @@
         <artifactId>msgpack-core</artifactId>
         <version>${version.msgpack}</version>
       </dependency>
-      <dependency>
-        <groupId>org.msgpack</groupId>
-        <artifactId>jackson-dataformat-msgpack</artifactId>
-        <version>${version.msgpack}</version>
-      </dependency>
 
       <dependency>
         <groupId>org.jgroups</groupId>
@@ -222,6 +217,7 @@
         <version>5.4.5.Final</version>
       </dependency>
 
+      <!-- Minio uses it -->
       <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>

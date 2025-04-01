@@ -9,15 +9,11 @@ package eu.maveniverse.maven.mimir.node.daemon.protocol;
 
 import static java.util.Objects.requireNonNull;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.HashMap;
 import java.util.Map;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableRequest.class)
-@JsonDeserialize(as = ImmutableRequest.class)
 public abstract class Request extends Message {
     public static final String CMD_HELLO = "HELLO";
     public static final String CMD_BYE = "BYE";

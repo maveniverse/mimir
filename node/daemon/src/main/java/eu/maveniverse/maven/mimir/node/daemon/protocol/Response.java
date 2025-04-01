@@ -9,14 +9,10 @@ package eu.maveniverse.maven.mimir.node.daemon.protocol;
 
 import static java.util.Objects.requireNonNull;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.Map;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableResponse.class)
-@JsonDeserialize(as = ImmutableResponse.class)
 public abstract class Response extends Message {
     public static final String STATUS_OK = "OK";
     public static final String STATUS_KO = "KO ";

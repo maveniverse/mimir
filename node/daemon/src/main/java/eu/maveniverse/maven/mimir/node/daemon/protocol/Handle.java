@@ -9,60 +9,103 @@ package eu.maveniverse.maven.mimir.node.daemon.protocol;
 
 import static java.util.Objects.requireNonNull;
 
-import com.fasterxml.jackson.core.JsonParser;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import org.msgpack.jackson.dataformat.MessagePackMapper;
+import org.msgpack.core.MessagePack;
+import org.msgpack.core.MessagePacker;
+import org.msgpack.core.MessageUnpacker;
 
 public class Handle implements Closeable {
-    private final MessagePackMapper mapper = new MessagePackMapper();
-    private final OutputStream outputStream;
-    private final InputStream inputStream;
+    private final DataOutputStream outputStream;
+    private final DataInputStream inputStream;
 
     public Handle(OutputStream outputStream, InputStream inputStream) {
-        this.outputStream = new BufferedOutputStream(requireNonNull(outputStream));
-        this.inputStream = new BufferedInputStream(requireNonNull(inputStream));
-
-        this.mapper.configure(JsonParser.Feature.AUTO_CLOSE_SOURCE, false);
+        this.outputStream = new DataOutputStream(requireNonNull(outputStream, "outputStream"));
+        this.inputStream = new DataInputStream(requireNonNull(inputStream, "inputStream"));
     }
 
     public void writeRequest(Request request) throws IOException {
         requireNonNull(request, "request");
-        outputStream.write(mapper.writeValueAsBytes(request));
+        ByteArrayOutputStream b = new ByteArrayOutputStream();
+        try (MessagePacker p = MessagePack.newDefaultPacker(b)) {
+            p.packString(request.cmd());
+            packMap(p, request.data());
+            packMap(p, request.session());
+        }
+        outputStream.writeInt(b.size());
+        outputStream.write(b.toByteArray());
         outputStream.flush();
     }
 
     public Request readRequest() throws IOException {
-        return mapper.readValue(inputStream, Request.class);
+        byte[] bytes = inputStream.readNBytes(inputStream.readInt());
+        try (MessageUnpacker u = MessagePack.newDefaultUnpacker(bytes)) {
+            return ImmutableRequest.builder()
+                    .cmd(u.unpackString())
+                    .data(unpackMap(u))
+                    .session(unpackMap(u))
+                    .build();
+        }
     }
 
     public void writeResponse(Response response) throws IOException {
-        requireNonNull(response);
-        outputStream.write(mapper.writeValueAsBytes(response));
+        requireNonNull(response, "response");
+        ByteArrayOutputStream b = new ByteArrayOutputStream();
+        try (MessagePacker p = MessagePack.newDefaultPacker(b)) {
+            p.packString(response.status());
+            packMap(p, response.data());
+            packMap(p, response.session());
+        }
+        outputStream.writeInt(b.size());
+        outputStream.write(b.toByteArray());
         outputStream.flush();
     }
 
     public Response readResponse() throws IOException {
-        Response response = mapper.readValue(inputStream, Response.class);
-        if (!Response.STATUS_OK.equals(response.status())) {
-            throw new IOException(response.data().get(Response.DATA_MESSAGE));
+        byte[] bytes = inputStream.readNBytes(inputStream.readInt());
+        try (MessageUnpacker u = MessagePack.newDefaultUnpacker(bytes)) {
+            return ImmutableResponse.builder()
+                    .status(u.unpackString())
+                    .data(unpackMap(u))
+                    .session(unpackMap(u))
+                    .build();
         }
-        return response;
     }
 
     @Override
     public void close() throws IOException {
         outputStream.close();
         inputStream.close();
+    }
+
+    private void packMap(MessagePacker p, Map<String, String> map) throws IOException {
+        p.packMapHeader(map.size());
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            p.packString(entry.getKey());
+            p.packString(entry.getValue());
+        }
+    }
+
+    private Map<String, String> unpackMap(MessageUnpacker u) throws IOException {
+        HashMap<String, String> metadata = new HashMap<>();
+        int entries = u.unpackMapHeader();
+        for (int i = 0; i < entries; i++) {
+            String key = u.unpackString();
+            String value = u.unpackString();
+            metadata.put(key, value);
+        }
+        return metadata;
     }
 
     public static Map<String, String> listToMap(List<String> data) {
