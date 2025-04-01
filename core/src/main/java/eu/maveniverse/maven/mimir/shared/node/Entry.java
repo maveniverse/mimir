@@ -7,6 +7,9 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
+import static java.util.Objects.requireNonNull;
+
+import java.time.Instant;
 import java.util.Map;
 
 public interface Entry {
@@ -23,4 +26,27 @@ public interface Entry {
      * Entry checksums.
      */
     Map<String, String> checksums();
+
+    default long getContentLength() {
+        return Long.parseLong(requireNonNull(metadata().get(Entry.CONTENT_LENGTH), Entry.CONTENT_LENGTH));
+    }
+
+    static void setContentLength(Map<String, String> metadata, long contentLength) {
+        requireNonNull(metadata, "metadata cannot be null");
+        if (contentLength < 0) {
+            throw new IllegalArgumentException("Content length cannot be negative");
+        }
+        metadata.put(Entry.CONTENT_LENGTH, Long.toString(contentLength));
+    }
+
+    default Instant getContentLastModified() {
+        return Instant.ofEpochMilli(Long.parseLong(
+                requireNonNull(metadata().get(Entry.CONTENT_LAST_MODIFIED), Entry.CONTENT_LAST_MODIFIED)));
+    }
+
+    static void setContentLastModified(Map<String, String> metadata, Instant contentLastModified) {
+        requireNonNull(metadata, "metadata cannot be null");
+        requireNonNull(contentLastModified, "Content last modified cannot be null");
+        metadata.put(Entry.CONTENT_LAST_MODIFIED, Long.toString(contentLastModified.toEpochMilli()));
+    }
 }

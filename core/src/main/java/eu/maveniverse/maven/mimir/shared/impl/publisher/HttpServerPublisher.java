@@ -13,7 +13,6 @@ import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import java.io.IOException;
@@ -22,7 +21,6 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -85,18 +83,11 @@ public class HttpServerPublisher extends PublisherSupport {
                     Optional<SystemEntry> entry = entrySupplier.apply(token);
                     if (entry.isPresent()) {
                         SystemEntry systemEntry = entry.orElseThrow();
-                        long contentLength = Long.parseLong(
-                                requireNonNull(systemEntry.metadata().get(Entry.CONTENT_LENGTH), Entry.CONTENT_LENGTH));
                         Headers headers = exchange.getResponseHeaders();
-                        String contentLastModified = systemEntry.metadata().get(Entry.CONTENT_LAST_MODIFIED);
-                        if (contentLastModified != null) {
-                            headers.add(
-                                    "Last-Modified",
-                                    rfc7231.format(Instant.ofEpochMilli(Long.parseLong(contentLastModified))));
-                        }
+                        headers.add("Last-Modified", rfc7231.format(systemEntry.getContentLastModified()));
                         headers.add("Content-Type", "application/octet-stream");
                         logger.debug("HIT {} to {}", token, exchange.getRemoteAddress());
-                        exchange.sendResponseHeaders(200, contentLength);
+                        exchange.sendResponseHeaders(200, systemEntry.getContentLength());
                         try (OutputStream os = exchange.getResponseBody();
                                 InputStream is = systemEntry.inputStream()) {
                             is.transferTo(os);

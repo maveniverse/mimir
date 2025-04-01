@@ -104,7 +104,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
     public MinioEntry store(URI key, Entry entry) throws IOException {
         ensureOpen();
         Key localKey = keyResolver.apply(key);
-        long size = Long.parseLong(entry.metadata().get(Entry.CONTENT_LENGTH));
+        long contentLength = entry.getContentLength();
         if (entry instanceof RemoteEntry remoteEntry) {
             remoteEntry.handleContent(inputStream -> {
                 try {
@@ -119,7 +119,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                             checksumEnforcer = new ChecksumEnforcer(entry.checksums()))) {
                         minioClient.putObject(
                                 PutObjectArgs.builder().bucket(localKey.container()).object(localKey.name()).stream(
-                                                enforced, size, -1)
+                                                enforced, contentLength, -1)
                                         .build());
                     } catch (ChecksumEnforcer.ChecksumEnforcerException e) {
                         minioClient.removeObject(RemoveObjectArgs.builder()
@@ -150,7 +150,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                         .bucket(localKey.container())
                         .object(localKey.name())
                         .userMetadata(pushMap(mergeEntry(entry)))
-                        .stream(inputStream, size, -1)
+                        .stream(inputStream, contentLength, -1)
                         .build());
             } catch (MinioException e) {
                 logger.debug(e.httpTrace());
@@ -166,7 +166,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                         .bucket(localKey.container())
                         .object(localKey.name())
                         .userMetadata(pushMap(mergeEntry(entry)))
-                        .stream(inputStream, size, -1)
+                        .stream(inputStream, contentLength, -1)
                         .build());
             } catch (MinioException e) {
                 logger.debug(e.httpTrace());
@@ -187,11 +187,10 @@ public final class MinioNode extends NodeSupport implements SystemNode {
             throws IOException {
         ensureOpen();
         Key localKey = keyResolver.apply(key);
-        long size = Files.size(file);
-        long lastModified = Files.getLastModifiedTime(file).toMillis();
+        long contentLength = Files.size(file);
         HashMap<String, String> metadata = new HashMap<>(md);
-        metadata.put(Entry.CONTENT_LENGTH, Long.toString(size));
-        metadata.put(Entry.CONTENT_LAST_MODIFIED, Long.toString(lastModified));
+        Entry.setContentLength(metadata, contentLength);
+        Entry.setContentLastModified(metadata, Files.getLastModifiedTime(file).toInstant());
         try {
             ChecksumEnforcer checksumEnforcer;
             try (InputStream enforced = new ChecksumInputStream(
@@ -204,7 +203,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                     checksumEnforcer = new ChecksumEnforcer(checksums))) {
                 minioClient.putObject(
                         PutObjectArgs.builder().bucket(localKey.container()).object(localKey.name()).stream(
-                                        enforced, size, -1)
+                                        enforced, contentLength, -1)
                                 .build());
             } catch (ChecksumEnforcer.ChecksumEnforcerException e) {
                 minioClient.removeObject(RemoveObjectArgs.builder()
