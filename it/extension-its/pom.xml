@@ -112,16 +112,6 @@
                 <phase>none</phase>
               </execution>
               <execution>
-                <id>its-install</id>
-                <goals>
-                  <goal>install</goal>
-                </goals>
-                <phase>integration-test</phase>
-                <configuration>
-                  <localRepositoryPath>${project.build.directory}/it-repo</localRepositoryPath>
-                </configuration>
-              </execution>
-              <execution>
                 <id>its-install-tail</id>
                 <goals>
                   <goal>install</goal>
