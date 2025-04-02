@@ -22,24 +22,27 @@ public abstract class Response extends Message {
     public abstract String status();
 
     public static Response okMessage(Request request, String message) {
+        requireNonNull(request, "request");
         requireNonNull(message, "message");
-        return okData(request, Map.of(DATA_MESSAGE, message));
+        return response(request, STATUS_OK, Map.of(DATA_MESSAGE, message));
     }
 
     public static Response okData(Request request, Map<String, String> data) {
+        requireNonNull(request, "request");
         requireNonNull(data, "data");
-        return ImmutableResponse.builder()
-                .status(Response.STATUS_OK)
-                .data(data)
-                .session(request.session())
-                .build();
+        return response(request, STATUS_OK, data);
     }
 
     public static Response koMessage(Request request, String message) {
+        requireNonNull(request, "request");
         requireNonNull(message, "message");
+        return response(request, STATUS_KO, Map.of(DATA_MESSAGE, message));
+    }
+
+    private static Response response(Request request, String status, Map<String, String> data) {
         return ImmutableResponse.builder()
-                .status(Response.STATUS_KO)
-                .data(Map.of(DATA_MESSAGE, message))
+                .status(status)
+                .data(data)
                 .session(request.session())
                 .build();
     }

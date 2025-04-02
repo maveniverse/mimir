@@ -30,11 +30,7 @@ public abstract class Request extends Message {
 
     public static Request hello(Map<String, String> data) {
         requireNonNull(data, "data");
-        return ImmutableRequest.builder()
-                .cmd(CMD_HELLO)
-                .data(data)
-                .session(Map.of())
-                .build();
+        return request(Map.of(), CMD_HELLO, data);
     }
 
     public static Request bye(Map<String, String> session, boolean shutdown) {
@@ -43,30 +39,18 @@ public abstract class Request extends Message {
         if (shutdown) {
             data.put(DATA_SHUTDOWN, Boolean.TRUE.toString());
         }
-        return ImmutableRequest.builder()
-                .cmd(CMD_BYE)
-                .data(data)
-                .session(session)
-                .build();
+        return request(session, CMD_BYE, data);
     }
 
     public static Request locate(Map<String, String> session, String keyString) {
         requireNonNull(session, "session");
         requireNonNull(keyString, "keyString");
-        return ImmutableRequest.builder()
-                .cmd(CMD_LOCATE)
-                .data(Map.of(DATA_KEYSTRING, keyString))
-                .session(session)
-                .build();
+        return request(session, CMD_LOCATE, Map.of(DATA_KEYSTRING, keyString));
     }
 
     public static Request lsChecksums(Map<String, String> session) {
         requireNonNull(session, "session");
-        return ImmutableRequest.builder()
-                .cmd(CMD_LS_CHECKSUMS)
-                .data(Map.of())
-                .session(session)
-                .build();
+        return request(session, CMD_LS_CHECKSUMS, Map.of());
     }
 
     public static Request transfer(Map<String, String> session, String keyString, String filePath) {
@@ -76,11 +60,7 @@ public abstract class Request extends Message {
         HashMap<String, String> requestData = new HashMap<>();
         requestData.put(DATA_KEYSTRING, keyString);
         requestData.put(DATA_PATHSTRING, filePath);
-        return ImmutableRequest.builder()
-                .cmd(CMD_TRANSFER)
-                .data(requestData)
-                .session(session)
-                .build();
+        return request(session, CMD_TRANSFER, requestData);
     }
 
     public static Request storePath(
@@ -92,10 +72,10 @@ public abstract class Request extends Message {
         HashMap<String, String> requestData = new HashMap<>(data);
         requestData.put(DATA_KEYSTRING, keyString);
         requestData.put(DATA_PATHSTRING, filePath);
-        return ImmutableRequest.builder()
-                .cmd(CMD_STORE_PATH)
-                .data(requestData)
-                .session(session)
-                .build();
+        return request(session, CMD_STORE_PATH, requestData);
+    }
+
+    private static Request request(Map<String, String> session, String cmd, Map<String, String> data) {
+        return ImmutableRequest.builder().cmd(cmd).data(data).session(session).build();
     }
 }
