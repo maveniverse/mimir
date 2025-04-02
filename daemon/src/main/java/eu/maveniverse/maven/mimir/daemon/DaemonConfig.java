@@ -9,6 +9,7 @@ package eu.maveniverse.maven.mimir.daemon;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
 import eu.maveniverse.maven.mimir.shared.Config;
 import java.nio.file.Path;
 
@@ -16,7 +17,7 @@ public class DaemonConfig {
     public static DaemonConfig with(Config config) {
         requireNonNull(config, "config");
 
-        Path socketPath = config.basedir().resolve("mimir-socket");
+        Path socketPath = config.basedir().resolve(Handle.DEFAULT_SOCKET_PATH);
         String systemNode = "file";
 
         if (config.effectiveProperties().containsKey("mimir.daemon.socketPath")) {

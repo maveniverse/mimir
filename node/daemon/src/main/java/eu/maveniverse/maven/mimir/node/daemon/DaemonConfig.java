@@ -9,6 +9,7 @@ package eu.maveniverse.maven.mimir.node.daemon;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
 import eu.maveniverse.maven.mimir.shared.Config;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -19,7 +20,7 @@ public class DaemonConfig {
 
         final String mimirVersion = config.mimirVersion().orElse("UNKNOWN");
 
-        Path socketPath = config.basedir().resolve("mimir-socket");
+        Path socketPath = config.basedir().resolve(Handle.DEFAULT_SOCKET_PATH);
         Path daemonJavaHome = Path.of(config.effectiveProperties()
                 .getOrDefault(
                         "mimir.daemon.java.home", config.effectiveProperties().get("java.home")));
