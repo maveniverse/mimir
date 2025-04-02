@@ -23,6 +23,11 @@ import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 
 public class Handle implements Closeable {
+    /**
+     * The default unix socket path (resolved from Mimir basedir).
+     */
+    public static final String DEFAULT_SOCKET_PATH = "mimir-socket";
+
     private final ByteChannel channel;
     private final DataOutputStream outputStream;
     private final DataInputStream inputStream;

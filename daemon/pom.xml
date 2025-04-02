@@ -35,11 +35,6 @@
 
     <dependency>
       <groupId>eu.maveniverse.maven.mimir.node</groupId>
-      <artifactId>daemon</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>eu.maveniverse.maven.mimir.node</groupId>
       <artifactId>file</artifactId>
       <version>${project.version}</version>
     </dependency>

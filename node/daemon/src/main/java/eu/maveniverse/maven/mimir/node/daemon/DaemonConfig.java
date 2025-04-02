@@ -9,34 +9,29 @@ package eu.maveniverse.maven.mimir.node.daemon;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
 import eu.maveniverse.maven.mimir.shared.Config;
 import java.nio.file.Path;
 import java.time.Duration;
 
 public class DaemonConfig {
-    public static Config toDaemonProcessConfig(Config config) {
-        return config.toBuilder()
-                .setUserProperty("mimir.daemon.enabled", "false")
-                .build();
-    }
-
     public static DaemonConfig with(Config config) {
         requireNonNull(config, "config");
 
+        final boolean mimirVersionPresent = config.mimirVersion().isPresent();
         final String mimirVersion = config.mimirVersion().orElse("UNKNOWN");
 
-        Path socketPath = config.basedir().resolve("mimir-socket");
+        Path socketPath = config.basedir().resolve(Handle.DEFAULT_SOCKET_PATH);
         Path daemonJavaHome = Path.of(config.effectiveProperties()
                 .getOrDefault(
                         "mimir.daemon.java.home", config.effectiveProperties().get("java.home")));
-        boolean autoupdate = true;
-        boolean autostart = true;
+        boolean autoupdate = mimirVersionPresent; // without version GAV is wrong
+        boolean autostart = mimirVersionPresent;
         Duration autostartDuration = Duration.ofMinutes(1);
         boolean autostop = false;
         String daemonJarName = "daemon-" + mimirVersion + ".jar";
         String daemonLogName = "daemon-" + mimirVersion + ".log";
         String daemonGav = "eu.maveniverse.maven.mimir:daemon:jar:daemon:" + mimirVersion;
-        String systemNode = "file";
         boolean passOnBasedir = false;
         boolean debug = false;
 
@@ -65,9 +60,6 @@ public class DaemonConfig {
         if (config.effectiveProperties().containsKey("mimir.daemon.daemonGav")) {
             daemonGav = config.effectiveProperties().get("mimir.daemon.daemonGav");
         }
-        if (config.effectiveProperties().containsKey("mimir.daemon.systemNode")) {
-            systemNode = config.effectiveProperties().get("mimir.daemon.systemNode");
-        }
         if (config.effectiveProperties().containsKey("mimir.daemon.passOnBasedir")) {
             passOnBasedir = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.passOnBasedir"));
         }
@@ -84,7 +76,6 @@ public class DaemonConfig {
                 daemonJarName,
                 daemonLogName,
                 daemonGav,
-                systemNode,
                 passOnBasedir,
                 debug);
     }
@@ -100,7 +91,6 @@ public class DaemonConfig {
     private final String daemonJarName;
     private final String daemonLogName;
     private final String daemonGav;
-    private final String systemNode;
     private final boolean passOnBasedir;
     private final boolean debug;
 
@@ -114,7 +104,6 @@ public class DaemonConfig {
             String daemonJarName,
             String daemonLogName,
             String daemonGav,
-            String systemNode,
             boolean passOnBasedir,
             boolean debug) {
         this.socketPath = requireNonNull(socketPath);
@@ -126,7 +115,6 @@ public class DaemonConfig {
         this.daemonJarName = requireNonNull(daemonJarName);
         this.daemonLogName = requireNonNull(daemonLogName);
         this.daemonGav = requireNonNull(daemonGav);
-        this.systemNode = requireNonNull(systemNode);
         this.passOnBasedir = passOnBasedir;
         this.debug = debug;
     }
@@ -165,10 +153,6 @@ public class DaemonConfig {
 
     public String daemonGav() {
         return daemonGav;
-    }
-
-    public String systemNode() {
-        return systemNode;
     }
 
     public boolean passOnBasedir() {

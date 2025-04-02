@@ -13,7 +13,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import eu.maveniverse.maven.mimir.daemon.protocol.Request;
 import eu.maveniverse.maven.mimir.daemon.protocol.Session;
-import eu.maveniverse.maven.mimir.node.daemon.DaemonConfig;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
@@ -71,7 +70,7 @@ public class Daemon implements Closeable {
                             new AbstractModule() {
                                 @Override
                                 protected void configure() {
-                                    bind(Config.class).toInstance(DaemonConfig.toDaemonProcessConfig(config));
+                                    bind(Config.class).toInstance(config);
                                     bind(DaemonConfig.class).toInstance(daemonConfig);
                                 }
                             },

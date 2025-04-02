@@ -88,7 +88,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
     private void mayResolveDaemonArtifact(
             Config config, RepositorySystemSession session, List<RemoteRepository> remoteRepositories) {
         DaemonConfig daemonConfig = DaemonConfig.with(config);
-        if (!daemonConfig.autostart() || config.mimirVersion().isEmpty()) {
+        if (!daemonConfig.autostart()) {
             logger.debug("Not resolving Mimir daemon; autostart not enabled or version not detected");
             return;
         }
@@ -112,7 +112,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
     private void mayCheckForUpdates(
             Config config, RepositorySystemSession session, List<RemoteRepository> remoteRepositories) {
         DaemonConfig daemonConfig = DaemonConfig.with(config);
-        if (!daemonConfig.autoupdate() || config.mimirVersion().isEmpty()) {
+        if (!daemonConfig.autoupdate()) {
             logger.debug("Not checking for Mimir updates; not enabled or version not detected");
             return;
         }
