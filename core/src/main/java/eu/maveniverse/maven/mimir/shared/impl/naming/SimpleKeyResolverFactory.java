@@ -10,10 +10,14 @@ package eu.maveniverse.maven.mimir.shared.impl.naming;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.naming.Key;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolverFactory;
+import java.net.URI;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
 
 @Singleton
 @Named(SimpleKeyResolverFactory.NAME)
@@ -33,5 +37,47 @@ public final class SimpleKeyResolverFactory implements KeyResolverFactory {
      * any direct tampering with cache contents. In essence, same rules applies as are in effect for Maven local repository:
      * no direct tampering. The layout should be considered "internal" and may change without any compatibility obligation.
      */
-    private static class SimpleKeyResolver implements KeyResolver {}
+    public static class SimpleKeyResolver implements KeyResolver {
+        /**
+         * Provides "path" for artifact.
+         */
+        public String artifactPath(Artifact artifact) {
+            String name = artifact.getGroupId() + "/" + artifact.getArtifactId() + "/" + artifact.getBaseVersion() + "/"
+                    + artifact.getArtifactId() + "-" + artifact.getVersion();
+            if (artifact.getClassifier() != null
+                    && !artifact.getClassifier().trim().isEmpty()) {
+                name += "-" + artifact.getClassifier();
+            }
+            name += "." + artifact.getExtension();
+            return name;
+        }
+
+        /**
+         * Resolves a cache key according to naming strategy.
+         */
+        @Override
+        public Key apply(URI key) {
+            if (key.isOpaque()) {
+                if ("mimir".equals(key.getScheme())) {
+                    String ssp = key.getSchemeSpecificPart();
+                    if (ssp.startsWith("artifact:")) {
+                        String[] bits = ssp.substring(9).split(":", 2);
+                        if (bits.length == 2) {
+                            String container = bits[0];
+                            Artifact artifact = new DefaultArtifact(bits[1]);
+                            return Key.of(container, artifactPath(artifact));
+                        }
+                    } else if (ssp.startsWith("file:")) {
+                        String[] bits = ssp.substring(5).split(":", 2);
+                        if (bits.length == 2) {
+                            String container = bits[0];
+                            String path = bits[1];
+                            return Key.of(container, path);
+                        }
+                    }
+                }
+            }
+            throw new IllegalArgumentException("Unexpected URI");
+        }
+    }
 }

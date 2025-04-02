@@ -52,7 +52,7 @@ public final class SessionFactoryImpl implements SessionFactory {
         if (localNodeFactory == null) {
             throw new IllegalArgumentException("Unknown local node: " + sessionConfig.localNode());
         }
-        LocalNode localNode = localNodeFactory.createNode(config);
+        LocalNode<?> localNode = localNodeFactory.createNode(config);
 
         KeyMapperFactory keyMapperFactory = nameMapperFactories.get(sessionConfig.keyMapper());
         if (keyMapperFactory == null) {

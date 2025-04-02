@@ -33,14 +33,14 @@ public final class SessionImpl implements Session {
     private final Predicate<RemoteRepository> repositoryPredicate;
     private final Predicate<Artifact> artifactPredicate;
     private final BiFunction<RemoteRepository, Artifact, URI> keyMapper;
-    private final LocalNode localNode;
+    private final LocalNode<?> localNode;
     private final Stats stats;
 
     public SessionImpl(
             Predicate<RemoteRepository> repositoryPredicate,
             Predicate<Artifact> artifactPredicate,
             BiFunction<RemoteRepository, Artifact, URI> keyMapper,
-            LocalNode localNode) {
+            LocalNode<?> localNode) {
         this.closed = new AtomicBoolean(false);
         this.repositoryPredicate = requireNonNull(repositoryPredicate, "repositoryPredicate");
         this.artifactPredicate = requireNonNull(artifactPredicate, "artifactPredicate");
