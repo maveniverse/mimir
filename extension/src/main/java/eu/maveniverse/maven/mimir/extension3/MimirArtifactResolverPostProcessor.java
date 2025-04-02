@@ -25,9 +25,10 @@ public class MimirArtifactResolverPostProcessor implements ArtifactResolverPostP
     public void postProcess(RepositorySystemSession session, List<ArtifactResult> artifactResults) {
         for (ArtifactResult artifactResult : artifactResults) {
             logger.info(
-                    "{} @ {}",
+                    "{} @ {} < {}",
                     artifactResult.getArtifact(),
-                    artifactResult.getRequest().getRequestContext());
+                    artifactResult.getRequest().getRequestContext(),
+                    artifactResult.getRepository().getId());
         }
     }
 }
