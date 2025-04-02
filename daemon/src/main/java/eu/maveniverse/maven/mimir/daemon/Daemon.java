@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import eu.maveniverse.maven.mimir.daemon.protocol.Request;
 import eu.maveniverse.maven.mimir.daemon.protocol.Session;
 import eu.maveniverse.maven.mimir.node.daemon.DaemonConfig;
 import eu.maveniverse.maven.mimir.shared.Config;
@@ -32,9 +33,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
@@ -168,11 +171,15 @@ public class Daemon implements Closeable {
         daemonData.put(Session.DAEMON_PID, Long.toString(ProcessHandle.current().pid()));
         daemonData.put(Session.DAEMON_VERSION, config.mimirVersion().orElse("UNKNOWN"));
 
+        Predicate<Request> clientPredicate =
+                req -> Objects.equals(req.requireData(Session.NODE_VERSION), daemonData.get(Session.DAEMON_VERSION));
+
         executor.submit(() -> {
             try {
                 while (serverSocketChannel.isOpen()) {
                     SocketChannel socketChannel = serverSocketChannel.accept();
-                    executor.submit(new DaemonServer(socketChannel, daemonData, systemNode, remoteNodes, this::close));
+                    executor.submit(new DaemonServer(
+                            socketChannel, daemonData, systemNode, remoteNodes, clientPredicate, this::close));
                 }
             } catch (AsynchronousCloseException ignored) {
                 // we are done

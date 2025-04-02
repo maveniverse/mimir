@@ -36,6 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +47,7 @@ final class DaemonServer implements Runnable {
     private final Map<String, String> daemonData;
     private final SystemNode<?> systemNode;
     private final List<RemoteNode<?>> remoteNodes;
+    private final Predicate<Request> clientPredicate;
     private final Runnable shutdownHook;
 
     DaemonServer(
@@ -53,11 +55,13 @@ final class DaemonServer implements Runnable {
             Map<String, String> daemonData,
             SystemNode<?> systemNode,
             List<RemoteNode<?>> remoteNodes,
+            Predicate<Request> clientPredicate,
             Runnable shutdownHook) {
         this.handle = new Handle(socketChannel);
         this.daemonData = daemonData;
         this.systemNode = systemNode;
         this.remoteNodes = remoteNodes;
+        this.clientPredicate = clientPredicate;
         this.shutdownHook = shutdownHook;
     }
 
@@ -70,13 +74,17 @@ final class DaemonServer implements Runnable {
                 switch (request.cmd()) {
                     case CMD_HELLO -> {
                         logger.debug("{} {}", request.cmd(), request.data());
-                        Map<String, String> session = new HashMap<>();
-                        session.put(Session.SESSION_ID, "todo");
-                        handle.writeResponse(ImmutableResponse.builder()
-                                .status(Response.STATUS_OK)
-                                .session(session)
-                                .data(daemonData)
-                                .build());
+                        if (clientPredicate.test(request)) {
+                            Map<String, String> session = new HashMap<>();
+                            session.put(Session.SESSION_ID, "todo");
+                            handle.writeResponse(ImmutableResponse.builder()
+                                    .status(Response.STATUS_OK)
+                                    .session(session)
+                                    .data(daemonData)
+                                    .build());
+                        } else {
+                            handle.writeResponse(Response.koMessage(request, "Bad client; align both versions"));
+                        }
                     }
                     case CMD_BYE -> {
                         logger.debug("{} {}", request.cmd(), request.data());
