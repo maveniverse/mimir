@@ -21,6 +21,7 @@ import eu.maveniverse.maven.mimir.node.daemon.protocol.Handle;
 import eu.maveniverse.maven.mimir.node.daemon.protocol.ImmutableResponse;
 import eu.maveniverse.maven.mimir.node.daemon.protocol.Request;
 import eu.maveniverse.maven.mimir.node.daemon.protocol.Response;
+import eu.maveniverse.maven.mimir.node.daemon.protocol.Session;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
@@ -70,7 +71,7 @@ final class DaemonServer implements Runnable {
                     case CMD_HELLO -> {
                         logger.debug("{} {}", request.cmd(), request.data());
                         Map<String, String> session = new HashMap<>();
-                        session.put(Request.SESSION_ID, "todo");
+                        session.put(Session.SESSION_ID, "todo");
                         handle.writeResponse(ImmutableResponse.builder()
                                 .status(Response.STATUS_OK)
                                 .session(session)

@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import eu.maveniverse.maven.mimir.node.daemon.DaemonConfig;
+import eu.maveniverse.maven.mimir.node.daemon.protocol.Session;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
@@ -164,8 +165,8 @@ public class Daemon implements Closeable {
         }
 
         HashMap<String, String> daemonData = new HashMap<>();
-        daemonData.put("daemon.version", config.mimirVersion().orElse("UNKNOWN"));
-        daemonData.put("daemon.pid", Long.toString(ProcessHandle.current().pid()));
+        daemonData.put(Session.DAEMON_PID, Long.toString(ProcessHandle.current().pid()));
+        daemonData.put(Session.DAEMON_VERSION, config.mimirVersion().orElse("UNKNOWN"));
 
         executor.submit(() -> {
             try {

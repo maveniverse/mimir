@@ -26,8 +26,6 @@ public abstract class Request extends Message {
     public static final String DATA_PATHSTRING = "pathString";
     public static final String DATA_SHUTDOWN = "shutdown";
 
-    public static final String SESSION_ID = "sessionId";
-
     public abstract String cmd();
 
     public static Request hello(Map<String, String> data) {
