@@ -18,14 +18,15 @@ public class DaemonConfig {
     public static DaemonConfig with(Config config) {
         requireNonNull(config, "config");
 
+        final boolean mimirVersionPresent = config.mimirVersion().isPresent();
         final String mimirVersion = config.mimirVersion().orElse("UNKNOWN");
 
         Path socketPath = config.basedir().resolve(Handle.DEFAULT_SOCKET_PATH);
         Path daemonJavaHome = Path.of(config.effectiveProperties()
                 .getOrDefault(
                         "mimir.daemon.java.home", config.effectiveProperties().get("java.home")));
-        boolean autoupdate = true;
-        boolean autostart = true;
+        boolean autoupdate = mimirVersionPresent; // without version GAV is wrong
+        boolean autostart = mimirVersionPresent;
         Duration autostartDuration = Duration.ofMinutes(1);
         boolean autostop = false;
         String daemonJarName = "daemon-" + mimirVersion + ".jar";
