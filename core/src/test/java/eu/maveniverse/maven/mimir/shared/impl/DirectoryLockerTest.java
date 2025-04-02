@@ -9,7 +9,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 public class DirectoryLockerTest {
     @Test
-    void shared(@TempDir Path basedir) throws IOException {
+    void sharedShared(@TempDir Path basedir) throws IOException {
         DirectoryLocker locker = new DirectoryLocker();
 
         try {
@@ -22,12 +22,36 @@ public class DirectoryLockerTest {
     }
 
     @Test
-    void exclusive(@TempDir Path basedir) throws IOException {
+    void exclusiveShared(@TempDir Path basedir) throws IOException {
         DirectoryLocker locker = new DirectoryLocker();
 
         try {
             locker.lockDirectory(basedir, true);
             assertThrows(IOException.class, () -> locker.lockDirectory(basedir, false));
+        } finally {
+            locker.unlockDirectory(basedir);
+        }
+    }
+
+    @Test
+    void sharedExclusive(@TempDir Path basedir) throws IOException {
+        DirectoryLocker locker = new DirectoryLocker();
+
+        try {
+            locker.lockDirectory(basedir, false);
+            assertThrows(IOException.class, () -> locker.lockDirectory(basedir, true));
+        } finally {
+            locker.unlockDirectory(basedir);
+        }
+    }
+
+    @Test
+    void exclusiveExclusive(@TempDir Path basedir) throws IOException {
+        DirectoryLocker locker = new DirectoryLocker();
+
+        try {
+            locker.lockDirectory(basedir, true);
+            assertThrows(IOException.class, () -> locker.lockDirectory(basedir, true));
         } finally {
             locker.unlockDirectory(basedir);
         }
