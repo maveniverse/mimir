@@ -29,7 +29,6 @@ import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -51,13 +50,13 @@ final class DaemonServer implements Runnable {
     private final Runnable shutdownHook;
 
     DaemonServer(
-            SocketChannel socketChannel,
+            Handle handle,
             Map<String, String> daemonData,
             SystemNode<?> systemNode,
             List<RemoteNode<?>> remoteNodes,
             Predicate<Request> clientPredicate,
             Runnable shutdownHook) {
-        this.handle = new Handle(socketChannel);
+        this.handle = handle;
         this.daemonData = daemonData;
         this.systemNode = systemNode;
         this.remoteNodes = remoteNodes;
