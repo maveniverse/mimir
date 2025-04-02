@@ -31,6 +31,7 @@ import java.net.URI;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -126,8 +127,9 @@ final class DaemonServer implements Runnable {
                     }
                     case CMD_LS_CHECKSUMS -> {
                         logger.debug("{} -> {}", request.cmd(), systemNode.checksumAlgorithms());
-                        handle.writeResponse(
-                                Response.okData(request, Handle.listToMap(systemNode.checksumAlgorithms())));
+                        LinkedHashMap<String, String> data = new LinkedHashMap<>();
+                        systemNode.checksumAlgorithms().forEach(c -> data.put(c, c));
+                        handle.writeResponse(Response.okData(request, data));
                     }
                     case CMD_STORE_PATH -> {
                         String keyString = request.requireData(Request.DATA_KEYSTRING);

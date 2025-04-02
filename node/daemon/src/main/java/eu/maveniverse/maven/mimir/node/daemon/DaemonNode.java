@@ -25,6 +25,7 @@ import java.net.URI;
 import java.net.UnixDomainSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +66,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
     public List<String> checksumAlgorithms() throws IOException {
         try (Handle handle = create()) {
             handle.writeRequest(Request.lsChecksums(session));
-            return Handle.mapToList(handle.readResponse().data());
+            return new ArrayList<>(handle.readResponse().data().keySet());
         }
     }
 

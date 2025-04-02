@@ -16,12 +16,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.Channels;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
@@ -99,7 +95,7 @@ public class Handle implements Closeable {
     }
 
     private Map<String, String> unpackMap(MessageUnpacker u) throws IOException {
-        HashMap<String, String> metadata = new HashMap<>();
+        LinkedHashMap<String, String> metadata = new LinkedHashMap<>();
         int entries = u.unpackMapHeader();
         for (int i = 0; i < entries; i++) {
             String key = u.unpackString();
@@ -107,25 +103,5 @@ public class Handle implements Closeable {
             metadata.put(key, value);
         }
         return metadata;
-    }
-
-    public static Map<String, String> listToMap(List<String> data) {
-        requireNonNull(data, "data");
-        AtomicInteger counter = new AtomicInteger(0);
-        return data.stream().collect(Collectors.toMap(e -> String.valueOf(counter.incrementAndGet()), e -> e));
-    }
-
-    public static List<String> mapToList(Map<String, String> data) {
-        requireNonNull(data, "data");
-        ArrayList<String> result = new ArrayList<>(data.size());
-        for (int i = 1; i < data.size(); i++) {
-            String value = data.get(String.valueOf(i));
-            if (value != null) {
-                result.add(value);
-            } else {
-                throw new IllegalArgumentException("Invalid map entry; no key for  " + i + "; data: " + data);
-            }
-        }
-        return result;
     }
 }
