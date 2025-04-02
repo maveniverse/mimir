@@ -9,7 +9,7 @@ package eu.maveniverse.maven.mimir.node.daemon;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.node.daemon.protocol.Session;
+import eu.maveniverse.maven.mimir.daemon.protocol.Session;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import java.io.IOException;

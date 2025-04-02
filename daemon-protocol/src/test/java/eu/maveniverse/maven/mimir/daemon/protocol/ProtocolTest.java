@@ -1,4 +1,4 @@
-package eu.maveniverse.maven.mimir.node.daemon.protocol;
+package eu.maveniverse.maven.mimir.daemon.protocol;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
