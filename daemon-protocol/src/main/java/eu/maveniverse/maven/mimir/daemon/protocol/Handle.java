@@ -14,8 +14,13 @@ import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.StandardProtocolFamily;
+import java.net.UnixDomainSocketAddress;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.Channels;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.msgpack.core.MessagePack;
@@ -32,7 +37,51 @@ public class Handle implements Closeable {
     private final DataOutputStream outputStream;
     private final DataInputStream inputStream;
 
-    public Handle(ByteChannel byteChannel) {
+    public interface ServerHandle extends Closeable {
+        boolean isOpen();
+
+        Handle accept() throws IOException;
+    }
+
+    public static ServerHandle serverDomainSocket(Path domainSocketPath) throws IOException {
+        requireNonNull(domainSocketPath, "domainSocketPath");
+        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
+        serverSocketChannel.configureBlocking(true);
+        serverSocketChannel.bind(UnixDomainSocketAddress.of(domainSocketPath));
+        return new ServerHandle() {
+            @Override
+            public boolean isOpen() {
+                return serverSocketChannel.isOpen();
+            }
+
+            @Override
+            public Handle accept() throws IOException {
+                return new Handle(serverSocketChannel.accept());
+            }
+
+            @Override
+            public void close() throws IOException {
+                serverSocketChannel.close();
+            }
+        };
+    }
+
+    public static Handle clientDomainSocket(Path domainSocketPath) throws IOException {
+        requireNonNull(domainSocketPath, "domainSocketPath");
+        SocketChannel socketChannel = SocketChannel.open(StandardProtocolFamily.UNIX);
+        socketChannel.configureBlocking(true);
+        socketChannel.connect(UnixDomainSocketAddress.of(domainSocketPath));
+        return new Handle(socketChannel);
+    }
+
+    /**
+     * This method is used in tests.
+     */
+    public static Handle byteChannel(ByteChannel byteChannel) {
+        return new Handle(byteChannel);
+    }
+
+    private Handle(ByteChannel byteChannel) {
         this.channel = requireNonNull(byteChannel, "byteChannel");
         this.outputStream = new DataOutputStream(Channels.newOutputStream(channel));
         this.inputStream = new DataInputStream(Channels.newInputStream(channel));

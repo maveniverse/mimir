@@ -24,7 +24,7 @@ public class ProtocolTest {
             Thread client = new Thread(
                     () -> {
                         try {
-                            Handle handle = new Handle(clientSck);
+                            Handle handle = Handle.byteChannel(clientSck);
                             handle.writeRequest(Request.hello(Map.of("hello", "world")));
                             messages.add(handle.readResponse());
                         } catch (IOException e) {
@@ -35,7 +35,7 @@ public class ProtocolTest {
             Thread server = new Thread(
                     () -> {
                         try {
-                            Handle handle = new Handle(serverSck);
+                            Handle handle = Handle.byteChannel(serverSck);
                             Request request = handle.readRequest();
                             messages.add(request);
                             handle.writeResponse(Response.okMessage(request, "hi!"));

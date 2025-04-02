@@ -22,8 +22,6 @@ import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.io.IOException;
 import java.net.URI;
-import java.net.UnixDomainSocketAddress;
-import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,7 +51,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
         this.checksumFactories = Collections.unmodifiableMap(requireNonNull(checksumFactories, "checksumFactories"));
         this.autostop = autostop;
 
-        try (Handle handle = create()) {
+        try (Handle handle = Handle.clientDomainSocket(socketPath)) {
             handle.writeRequest(Request.hello(clientData));
             Response helloResponse = handle.readResponse();
             this.session = helloResponse.session();
@@ -64,7 +62,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
 
     @Override
     public List<String> checksumAlgorithms() throws IOException {
-        try (Handle handle = create()) {
+        try (Handle handle = Handle.clientDomainSocket(socketPath)) {
             handle.writeRequest(Request.lsChecksums(session));
             return new ArrayList<>(handle.readResponse().data().keySet());
         }
@@ -79,7 +77,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
     public Optional<DaemonEntry> locate(URI key) throws IOException {
         String keyString = key.toASCIIString();
         logger.debug("LOCATE '{}'", keyString);
-        try (Handle handle = create()) {
+        try (Handle handle = Handle.clientDomainSocket(socketPath)) {
             handle.writeRequest(Request.locate(session, keyString));
             Response locateResponse = handle.readResponse();
             if (!locateResponse.data().isEmpty()) {
@@ -97,7 +95,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
         String keyString = key.toASCIIString();
         String filePath = Config.getCanonicalPath(file).toString();
         logger.debug("STORE PATH '{}' -> '{}'", keyString, filePath);
-        try (Handle handle = create()) {
+        try (Handle handle = Handle.clientDomainSocket(socketPath)) {
             handle.writeRequest(Request.storePath(session, keyString, filePath, mergeEntry(metadata, checksums)));
             Response storePathResponse = handle.readResponse();
             if (!storePathResponse.data().isEmpty()) {
@@ -112,7 +110,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
 
     @Override
     protected void doClose() throws IOException {
-        try (Handle handle = create()) {
+        try (Handle handle = Handle.clientDomainSocket(socketPath)) {
             if (autostop) {
                 logger.info("Daemon shutdown initiated");
             }
@@ -129,12 +127,6 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
                 + daemonData.getOrDefault("daemon.version", "n/a") + ")";
     }
 
-    private Handle create() throws IOException {
-        SocketChannel socketChannel = SocketChannel.open(UnixDomainSocketAddress.of(socketPath));
-        socketChannel.configureBlocking(true);
-        return new Handle(socketChannel);
-    }
-
     public class DaemonEntry extends EntrySupport implements LocalEntry {
         private final String keyString;
 
@@ -146,7 +138,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
         @Override
         public void transferTo(Path file) throws IOException {
             logger.debug("TRANSFER '{}'->'{}'", keyString, file);
-            try (Handle handle = create()) {
+            try (Handle handle = Handle.clientDomainSocket(socketPath)) {
                 handle.writeRequest(Request.transfer(
                         session, keyString, Config.getCanonicalPath(file).toString()));
                 handle.readResponse();

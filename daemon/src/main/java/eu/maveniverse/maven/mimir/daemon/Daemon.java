@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
 import eu.maveniverse.maven.mimir.daemon.protocol.Request;
 import eu.maveniverse.maven.mimir.daemon.protocol.Session;
 import eu.maveniverse.maven.mimir.shared.Config;
@@ -20,11 +21,7 @@ import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.StandardProtocolFamily;
-import java.net.UnixDomainSocketAddress;
 import java.nio.channels.AsynchronousCloseException;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -109,7 +106,7 @@ public class Daemon implements Closeable {
     private final Logger logger = LoggerFactory.getLogger(Daemon.class);
 
     private final Config config;
-    private final ServerSocketChannel serverSocketChannel;
+    private final Handle.ServerHandle serverHandle;
     private final ExecutorService executor;
     private final SystemNode<?> systemNode;
     private final List<RemoteNode<?>> remoteNodes;
@@ -147,18 +144,13 @@ public class Daemon implements Closeable {
                 logger.warn("Failed to delete socket path: {}", socketPath, e);
             }
         }));
+        this.serverHandle = Handle.serverDomainSocket(socketPath);
 
-        UnixDomainSocketAddress socketAddress = UnixDomainSocketAddress.of(socketPath);
-        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
-        serverSocketChannel.configureBlocking(true);
-        serverSocketChannel.bind(socketAddress);
-
-        this.serverSocketChannel = serverSocketChannel;
         logger.info("Mimir Daemon {} started", config.mimirVersion().orElse("UNKNOWN"));
         logger.info("  PID: {}", ProcessHandle.current().pid());
         logger.info("  Properties: {}", config.basedir().resolve(config.propertiesPath()));
         logger.info("  Supported checksums: {}", checksumAlgorithmFactories.keySet());
-        logger.info("  Socket: {}", socketAddress);
+        logger.info("  Socket: {}", socketPath);
         logger.info("  System Node: {}", systemNode);
         logger.info("  Using checksums: {}", systemNode.checksumAlgorithms());
         logger.info("  {} remote node(s):", remoteNodes.size());
@@ -175,10 +167,10 @@ public class Daemon implements Closeable {
 
         executor.submit(() -> {
             try {
-                while (serverSocketChannel.isOpen()) {
-                    SocketChannel socketChannel = serverSocketChannel.accept();
+                while (serverHandle.isOpen()) {
+                    Handle handle = serverHandle.accept();
                     executor.submit(new DaemonServer(
-                            socketChannel, daemonData, systemNode, remoteNodes, clientPredicate, this::close));
+                            handle, daemonData, systemNode, remoteNodes, clientPredicate, this::close));
                 }
             } catch (AsynchronousCloseException ignored) {
                 // we are done
@@ -192,7 +184,7 @@ public class Daemon implements Closeable {
     public void close() {
         try {
             try {
-                serverSocketChannel.close();
+                serverHandle.close();
             } catch (Exception e) {
                 logger.warn("Error closing server socket channel", e);
             }
