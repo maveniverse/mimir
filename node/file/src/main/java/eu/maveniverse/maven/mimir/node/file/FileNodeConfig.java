@@ -24,6 +24,7 @@ public final class FileNodeConfig {
         boolean mayLink = true;
         List<String> checksumAlgorithms = Arrays.asList("SHA-1", "SHA-512");
         String keyResolver = SimpleKeyResolverFactory.NAME;
+        boolean exclusiveAccess = false;
 
         if (config.effectiveProperties().containsKey("mimir.file.basedir")) {
             basedir =
@@ -42,13 +43,21 @@ public final class FileNodeConfig {
         if (config.effectiveProperties().containsKey("mimir.file.keyResolver")) {
             keyResolver = config.effectiveProperties().get("mimir.file.keyResolver");
         }
+        if (config.effectiveProperties().containsKey("mimir.file.exclusiveAccess")) {
+            exclusiveAccess = Boolean.parseBoolean(config.effectiveProperties().get("mimir.file.exclusiveAccess"));
+        }
 
-        return new FileNodeConfig(basedir, mayLink, checksumAlgorithms, keyResolver);
+        return new FileNodeConfig(basedir, mayLink, checksumAlgorithms, keyResolver, exclusiveAccess);
     }
 
     public static FileNodeConfig of(
-            Path basedir, boolean mayLink, List<String> checksumAlgorithms, String keyResolver) {
-        return new FileNodeConfig(Config.getCanonicalPath(basedir), mayLink, checksumAlgorithms, keyResolver);
+            Path basedir,
+            boolean mayLink,
+            List<String> checksumAlgorithms,
+            String keyResolver,
+            boolean exclusiveAccess) {
+        return new FileNodeConfig(
+                Config.getCanonicalPath(basedir), mayLink, checksumAlgorithms, keyResolver, exclusiveAccess);
     }
 
     public static final String NAME = "file";
@@ -57,12 +66,19 @@ public final class FileNodeConfig {
     private final boolean mayLink;
     private final List<String> checksumAlgorithms;
     private final String keyResolver;
+    private final boolean exclusiveAccess;
 
-    private FileNodeConfig(Path basedir, boolean mayLink, List<String> checksumAlgorithms, String keyResolver) {
+    private FileNodeConfig(
+            Path basedir,
+            boolean mayLink,
+            List<String> checksumAlgorithms,
+            String keyResolver,
+            boolean exclusiveAccess) {
         this.basedir = basedir;
         this.mayLink = mayLink;
         this.checksumAlgorithms = List.copyOf(checksumAlgorithms);
         this.keyResolver = keyResolver;
+        this.exclusiveAccess = exclusiveAccess;
     }
 
     public Path basedir() {
@@ -79,5 +95,9 @@ public final class FileNodeConfig {
 
     public String keyResolver() {
         return keyResolver;
+    }
+
+    public boolean exclusiveAccess() {
+        return exclusiveAccess;
     }
 }

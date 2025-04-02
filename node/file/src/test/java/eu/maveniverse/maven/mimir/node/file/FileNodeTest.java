@@ -3,13 +3,16 @@ package eu.maveniverse.maven.mimir.node.file;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.impl.DirectoryLocker;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.naming.KeyMapper;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,7 +45,8 @@ public class FileNodeTest {
                                 Sha1ChecksumAlgorithmFactory.NAME,
                                 new Sha1ChecksumAlgorithmFactory(),
                                 Sha512ChecksumAlgorithmFactory.NAME,
-                                new Sha512ChecksumAlgorithmFactory()))
+                                new Sha512ChecksumAlgorithmFactory()),
+                        new DirectoryLocker())
                 .createNode(config)) {
             Optional<FileEntry> entry = fileNode.locate(keyMapper.apply(central, junit));
             assertFalse(entry.isPresent());
@@ -84,7 +88,8 @@ public class FileNodeTest {
                                 Sha1ChecksumAlgorithmFactory.NAME,
                                 new Sha1ChecksumAlgorithmFactory(),
                                 Sha512ChecksumAlgorithmFactory.NAME,
-                                new Sha512ChecksumAlgorithmFactory()))
+                                new Sha512ChecksumAlgorithmFactory()),
+                        new DirectoryLocker())
                 .createNode(config)) {
             Optional<FileEntry> entry = fileNode.locate(keyMapper.apply(central, junit));
             assertFalse(entry.isPresent());
@@ -111,6 +116,45 @@ public class FileNodeTest {
             Path target = workdir.resolve("target.file");
             systemEntry.transferTo(target);
             assertArrayEquals(Files.readAllBytes(target), data);
+        }
+    }
+
+    @Test
+    void sharedAccess(@TempDir Path basedir, @TempDir Path workdir) throws Exception {
+        Config config = Config.defaults()
+                .basedir(basedir)
+                .setUserProperty("mimir.file.exclusiveAccess", "false")
+                .build();
+        FileNodeFactory fileNodeFactory = new FileNodeFactory(
+                Map.of(SimpleKeyResolverFactory.NAME, new SimpleKeyResolverFactory()),
+                Map.of(
+                        Sha1ChecksumAlgorithmFactory.NAME,
+                        new Sha1ChecksumAlgorithmFactory(),
+                        Sha512ChecksumAlgorithmFactory.NAME,
+                        new Sha512ChecksumAlgorithmFactory()),
+                new DirectoryLocker());
+        try (FileNode fileNode1 = fileNodeFactory.createNode(config);
+                FileNode fileNode2 = fileNodeFactory.createNode(config)) {
+            // should be ok
+        }
+    }
+
+    @Test
+    void exclusiveAccess(@TempDir Path basedir, @TempDir Path workdir) throws Exception {
+        Config config = Config.defaults()
+                .basedir(basedir)
+                .setUserProperty("mimir.file.exclusiveAccess", "true")
+                .build();
+        FileNodeFactory fileNodeFactory = new FileNodeFactory(
+                Map.of(SimpleKeyResolverFactory.NAME, new SimpleKeyResolverFactory()),
+                Map.of(
+                        Sha1ChecksumAlgorithmFactory.NAME,
+                        new Sha1ChecksumAlgorithmFactory(),
+                        Sha512ChecksumAlgorithmFactory.NAME,
+                        new Sha512ChecksumAlgorithmFactory()),
+                new DirectoryLocker());
+        try (FileNode fileNode = fileNodeFactory.createNode(config)) {
+            assertThrows(IOException.class, () -> fileNodeFactory.createNode(config));
         }
     }
 }

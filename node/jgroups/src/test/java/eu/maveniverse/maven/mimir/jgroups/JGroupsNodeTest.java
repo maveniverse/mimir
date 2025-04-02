@@ -7,6 +7,7 @@ import eu.maveniverse.maven.mimir.node.file.FileNode;
 import eu.maveniverse.maven.mimir.node.file.FileNodeConfig;
 import eu.maveniverse.maven.mimir.node.jgroups.JGroupsNode;
 import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.impl.DirectoryLocker;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.impl.publisher.ServerSocketPublisherFactory;
 import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
@@ -41,21 +42,25 @@ public class JGroupsNodeTest {
         Files.writeString(contentPath, content);
 
         FileNodeConfig configOne =
-                FileNodeConfig.of(one, true, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
+                FileNodeConfig.of(one, true, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME, false);
         FileNode nodeOne = new FileNode(
                 configOne.basedir(),
-                true,
+                configOne.mayLink(),
+                configOne.exclusiveAccess(),
                 new SimpleKeyResolverFactory().createKeyResolver(config),
                 List.of(Sha1ChecksumAlgorithmFactory.NAME),
-                Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()));
+                Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()),
+                new DirectoryLocker());
         FileNodeConfig configTwo =
-                FileNodeConfig.of(two, true, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME);
+                FileNodeConfig.of(two, true, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME, false);
         FileNode nodeTwo = new FileNode(
                 configTwo.basedir(),
-                true,
+                configTwo.mayLink(),
+                configTwo.exclusiveAccess(),
                 new SimpleKeyResolverFactory().createKeyResolver(config),
                 List.of(Sha1ChecksumAlgorithmFactory.NAME),
-                Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()));
+                Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()),
+                new DirectoryLocker());
 
         JChannel channelOne = new JChannel("udp-new.xml")
                 .name(InetAddress.getLocalHost().getHostName() + "-one")

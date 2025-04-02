@@ -17,6 +17,13 @@ import java.net.URI;
  */
 public interface SystemNode<E extends SystemEntry> extends LocalNode<E> {
     /**
+     * Returns {@code true} if it is guaranteed that this system node has exclusive access to storage.
+     */
+    default boolean exclusiveAccess() {
+        return false;
+    }
+
+    /**
      * Stores entry and provides new local entry for stored content.
      */
     E store(URI key, Entry entry) throws IOException;

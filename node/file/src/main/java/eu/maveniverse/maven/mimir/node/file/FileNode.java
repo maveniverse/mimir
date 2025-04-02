@@ -12,6 +12,7 @@ import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.impl.DirectoryLocker;
 import eu.maveniverse.maven.mimir.shared.impl.FileUtils;
 import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumEnforcer;
 import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumInputStream;
@@ -47,25 +48,32 @@ import org.msgpack.core.MessageUnpacker;
 public final class FileNode extends NodeSupport<FileEntry> implements SystemNode<FileEntry> {
     private final Path basedir;
     private final boolean mayLink;
+    private final boolean exclusiveAccess;
     private final Function<URI, Key> keyResolver;
     private final List<String> checksumAlgorithms;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
+    private final DirectoryLocker directoryLocker;
 
     public FileNode(
             Path basedir,
             boolean mayLink,
+            boolean exclusiveAccess,
             Function<URI, Key> keyResolver,
             List<String> checksumAlgorithms,
-            Map<String, ChecksumAlgorithmFactory> checksumFactories)
+            Map<String, ChecksumAlgorithmFactory> checksumFactories,
+            DirectoryLocker directoryLocker)
             throws IOException {
         super(FileNodeConfig.NAME);
         this.basedir = basedir;
         this.mayLink = mayLink;
+        this.exclusiveAccess = exclusiveAccess;
         this.keyResolver = requireNonNull(keyResolver, "keyResolver");
         this.checksumAlgorithms = List.copyOf(checksumAlgorithms);
         this.checksumFactories = Map.copyOf(checksumFactories);
+        this.directoryLocker = requireNonNull(directoryLocker);
 
         Files.createDirectories(basedir);
+        this.directoryLocker.lockDirectory(basedir, exclusiveAccess);
     }
 
     @Override
@@ -88,6 +96,40 @@ public final class FileNode extends NodeSupport<FileEntry> implements SystemNode
         } else {
             return Optional.empty();
         }
+    }
+
+    @Override
+    public FileEntry store(URI key, Path file, Map<String, String> md, Map<String, String> checksums)
+            throws IOException {
+        ensureOpen();
+        Path path = resolveKey(key);
+        HashMap<String, String> metadata = new HashMap<>(md);
+        FileTime fileTime = Files.getLastModifiedTime(file);
+        ChecksumEnforcer checksumEnforcer;
+        try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
+            try (InputStream enforced = new ChecksumInputStream(
+                    Files.newInputStream(file),
+                    checksumAlgorithms().stream()
+                            .map(a -> new AbstractMap.SimpleEntry<>(
+                                    a, checksumFactories.get(a).getAlgorithm()))
+                            .collect(Collectors.toMap(
+                                    AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)),
+                    checksumEnforcer = new ChecksumEnforcer(checksums))) {
+                Files.copy(enforced, f.getPath());
+                Files.setLastModifiedTime(f.getPath(), fileTime);
+            }
+
+            Entry.setContentLength(metadata, Files.size(file));
+            Entry.setContentLastModified(metadata, fileTime.toInstant());
+            storeMetadata(path, mergeEntry(metadata, checksumEnforcer.getChecksums()));
+            f.move();
+        }
+        return new FileEntry(metadata, checksumEnforcer.getChecksums(), path, mayLink);
+    }
+
+    @Override
+    public boolean exclusiveAccess() {
+        return exclusiveAccess;
     }
 
     @Override
@@ -121,35 +163,6 @@ public final class FileNode extends NodeSupport<FileEntry> implements SystemNode
         return createEntry(path, entry.metadata(), entry.checksums());
     }
 
-    @Override
-    public FileEntry store(URI key, Path file, Map<String, String> md, Map<String, String> checksums)
-            throws IOException {
-        ensureOpen();
-        Path path = resolveKey(key);
-        HashMap<String, String> metadata = new HashMap<>(md);
-        FileTime fileTime = Files.getLastModifiedTime(file);
-        ChecksumEnforcer checksumEnforcer;
-        try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
-            try (InputStream enforced = new ChecksumInputStream(
-                    Files.newInputStream(file),
-                    checksumAlgorithms().stream()
-                            .map(a -> new AbstractMap.SimpleEntry<>(
-                                    a, checksumFactories.get(a).getAlgorithm()))
-                            .collect(Collectors.toMap(
-                                    AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)),
-                    checksumEnforcer = new ChecksumEnforcer(checksums))) {
-                Files.copy(enforced, f.getPath());
-                Files.setLastModifiedTime(f.getPath(), fileTime);
-            }
-
-            Entry.setContentLength(metadata, Files.size(file));
-            Entry.setContentLastModified(metadata, fileTime.toInstant());
-            storeMetadata(path, mergeEntry(metadata, checksumEnforcer.getChecksums()));
-            f.move();
-        }
-        return new FileEntry(metadata, checksumEnforcer.getChecksums(), path, mayLink);
-    }
-
     private Path resolveKey(URI key) {
         Key resolved = keyResolver.apply(key);
         return basedir.resolve(resolved.container()).resolve(resolved.name());
@@ -161,6 +174,11 @@ public final class FileNode extends NodeSupport<FileEntry> implements SystemNode
         Entry.setContentLength(md, Files.size(file));
         Entry.setContentLastModified(md, Files.getLastModifiedTime(file).toInstant());
         return new FileEntry(md, checksums, file, mayLink);
+    }
+
+    @Override
+    protected void doClose() throws IOException {
+        directoryLocker.unlockDirectory(basedir);
     }
 
     private void storeMetadata(Path file, Map<String, String> metadata) throws IOException {
