@@ -45,10 +45,9 @@ public class Handle implements Closeable {
 
     public static ServerHandle serverDomainSocket(Path domainSocketPath) throws IOException {
         requireNonNull(domainSocketPath, "domainSocketPath");
-        UnixDomainSocketAddress socketAddress = UnixDomainSocketAddress.of(domainSocketPath);
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
         serverSocketChannel.configureBlocking(true);
-        serverSocketChannel.bind(socketAddress);
+        serverSocketChannel.bind(UnixDomainSocketAddress.of(domainSocketPath));
         return new ServerHandle() {
             @Override
             public boolean isOpen() {
@@ -69,8 +68,9 @@ public class Handle implements Closeable {
 
     public static Handle clientDomainSocket(Path domainSocketPath) throws IOException {
         requireNonNull(domainSocketPath, "domainSocketPath");
-        SocketChannel socketChannel = SocketChannel.open(UnixDomainSocketAddress.of(domainSocketPath));
+        SocketChannel socketChannel = SocketChannel.open(StandardProtocolFamily.UNIX);
         socketChannel.configureBlocking(true);
+        socketChannel.connect(UnixDomainSocketAddress.of(domainSocketPath));
         return new Handle(socketChannel);
     }
 
