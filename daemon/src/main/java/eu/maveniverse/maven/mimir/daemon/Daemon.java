@@ -144,9 +144,8 @@ public class Daemon implements Closeable {
                 logger.warn("Failed to delete socket path: {}", socketPath, e);
             }
         }));
-
         this.serverHandle = Handle.serverDomainSocket(socketPath);
-        ;
+
         logger.info("Mimir Daemon {} started", config.mimirVersion().orElse("UNKNOWN"));
         logger.info("  PID: {}", ProcessHandle.current().pid());
         logger.info("  Properties: {}", config.basedir().resolve(config.propertiesPath()));
