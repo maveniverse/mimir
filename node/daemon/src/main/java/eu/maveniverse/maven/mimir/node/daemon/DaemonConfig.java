@@ -38,6 +38,7 @@ public class DaemonConfig {
         String daemonGav = "eu.maveniverse.maven.mimir:daemon:jar:daemon:" + mimirVersion;
         String systemNode = "file";
         boolean passOnBasedir = false;
+        boolean debug = false;
 
         if (config.effectiveProperties().containsKey("mimir.daemon.socketPath")) {
             socketPath =
@@ -70,6 +71,9 @@ public class DaemonConfig {
         if (config.effectiveProperties().containsKey("mimir.daemon.passOnBasedir")) {
             passOnBasedir = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.passOnBasedir"));
         }
+        if (config.effectiveProperties().containsKey("mimir.daemon.debug")) {
+            debug = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.debug"));
+        }
         return new DaemonConfig(
                 socketPath,
                 daemonJavaHome,
@@ -81,7 +85,8 @@ public class DaemonConfig {
                 daemonLogName,
                 daemonGav,
                 systemNode,
-                passOnBasedir);
+                passOnBasedir,
+                debug);
     }
 
     public static final String NAME = "daemon";
@@ -97,6 +102,7 @@ public class DaemonConfig {
     private final String daemonGav;
     private final String systemNode;
     private final boolean passOnBasedir;
+    private final boolean debug;
 
     private DaemonConfig(
             Path socketPath,
@@ -109,7 +115,8 @@ public class DaemonConfig {
             String daemonLogName,
             String daemonGav,
             String systemNode,
-            boolean passOnBasedir) {
+            boolean passOnBasedir,
+            boolean debug) {
         this.socketPath = requireNonNull(socketPath);
         this.daemonJavaHome = requireNonNull(daemonJavaHome);
         this.autoupdate = autoupdate;
@@ -121,6 +128,7 @@ public class DaemonConfig {
         this.daemonGav = requireNonNull(daemonGav);
         this.systemNode = requireNonNull(systemNode);
         this.passOnBasedir = passOnBasedir;
+        this.debug = debug;
     }
 
     public Path socketPath() {
@@ -165,5 +173,9 @@ public class DaemonConfig {
 
     public boolean passOnBasedir() {
         return passOnBasedir;
+    }
+
+    public boolean debug() {
+        return debug;
     }
 }

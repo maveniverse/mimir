@@ -9,6 +9,7 @@ package eu.maveniverse.maven.mimir.node.daemon;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.node.daemon.protocol.Session;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import java.io.IOException;
@@ -51,8 +52,8 @@ public class DaemonNodeFactory implements LocalNodeFactory {
             }
         }
         HashMap<String, String> clientData = new HashMap<>();
-        clientData.put("node.version", config.mimirVersion().orElse("UNKNOWN"));
-        clientData.put("node.pid", Long.toString(ProcessHandle.current().pid()));
+        clientData.put(Session.NODE_PID, Long.toString(ProcessHandle.current().pid()));
+        clientData.put(Session.NODE_VERSION, config.mimirVersion().orElse("UNKNOWN"));
         return new DaemonNode(clientData, cfg.socketPath(), checksumAlgorithmFactories, cfg.autostop());
     }
 
@@ -76,6 +77,9 @@ public class DaemonNodeFactory implements LocalNodeFactory {
 
             ArrayList<String> command = new ArrayList<>();
             command.add(java);
+            if (daemonConfig.debug()) {
+                command.add("-Dorg.slf4j.simpleLogger.defaultLogLevel=debug");
+            }
             if (daemonConfig.passOnBasedir()) {
                 command.add("-Dmimir.basedir=" + basedir);
             }

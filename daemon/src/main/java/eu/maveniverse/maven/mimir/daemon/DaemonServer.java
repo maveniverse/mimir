@@ -7,39 +7,32 @@
  */
 package eu.maveniverse.maven.mimir.daemon;
 
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_BYE;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_HELLO;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_LOCATE;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_LS_CHECKSUMS;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_STORE_PATH;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.CMD_TRANSFER;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.readMap;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeByeRspOK;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeHelloRspOK;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeLocateRspOK;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeLsChecksumsRspOK;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeRspKO;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeStorePathRspOK;
-import static eu.maveniverse.maven.mimir.node.daemon.DaemonProtocol.writeTransferRspOK;
+import static eu.maveniverse.maven.mimir.node.daemon.protocol.Request.CMD_BYE;
+import static eu.maveniverse.maven.mimir.node.daemon.protocol.Request.CMD_HELLO;
+import static eu.maveniverse.maven.mimir.node.daemon.protocol.Request.CMD_LOCATE;
+import static eu.maveniverse.maven.mimir.node.daemon.protocol.Request.CMD_LS_CHECKSUMS;
+import static eu.maveniverse.maven.mimir.node.daemon.protocol.Request.CMD_STORE_PATH;
+import static eu.maveniverse.maven.mimir.node.daemon.protocol.Request.CMD_TRANSFER;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeEntry;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 
+import eu.maveniverse.maven.mimir.node.daemon.protocol.Handle;
+import eu.maveniverse.maven.mimir.node.daemon.protocol.ImmutableResponse;
+import eu.maveniverse.maven.mimir.node.daemon.protocol.Request;
+import eu.maveniverse.maven.mimir.node.daemon.protocol.Response;
+import eu.maveniverse.maven.mimir.node.daemon.protocol.Session;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,9 +41,8 @@ import org.slf4j.LoggerFactory;
 
 final class DaemonServer implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final DataOutputStream dos;
-    private final DataInputStream dis;
 
+    private final Handle handle;
     private final Map<String, String> daemonData;
     private final SystemNode<?> systemNode;
     private final List<RemoteNode<?>> remoteNodes;
@@ -62,8 +54,7 @@ final class DaemonServer implements Runnable {
             SystemNode<?> systemNode,
             List<RemoteNode<?>> remoteNodes,
             Runnable shutdownHook) {
-        this.dos = new DataOutputStream(Channels.newOutputStream(socketChannel));
-        this.dis = new DataInputStream(Channels.newInputStream(socketChannel));
+        this.handle = new Handle(socketChannel);
         this.daemonData = daemonData;
         this.systemNode = systemNode;
         this.remoteNodes = remoteNodes;
@@ -72,83 +63,99 @@ final class DaemonServer implements Runnable {
 
     @Override
     public void run() {
-        try (dos) {
+        try (handle) {
             Thread.currentThread().setName("DVT");
-            String cmd = dis.readUTF();
-            switch (cmd) {
-                case CMD_HELLO -> {
-                    Map<String, String> data = readMap(dis);
-                    logger.debug("{} {}", cmd, data);
-                    Map<String, String> session = new HashMap<>(daemonData);
-                    session.put("session.id", "todo");
-                    writeHelloRspOK(dos, session);
-                }
-                case CMD_BYE -> {
-                    Map<String, String> data = readMap(dis);
-                    logger.debug("{} {}", cmd, data);
-                    writeByeRspOK(dos, Map.of("message", "So Long, and Thanks for All the Fish"));
-
-                    if (Boolean.parseBoolean(data.getOrDefault("shutdown", "false"))) {
-                        shutdownHook.run();
+            Request request = handle.readRequest();
+            try {
+                switch (request.cmd()) {
+                    case CMD_HELLO -> {
+                        logger.debug("{} {}", request.cmd(), request.data());
+                        Map<String, String> session = new HashMap<>();
+                        session.put(Session.SESSION_ID, "todo");
+                        handle.writeResponse(ImmutableResponse.builder()
+                                .status(Response.STATUS_OK)
+                                .session(session)
+                                .data(daemonData)
+                                .build());
                     }
-                }
-                case CMD_LOCATE -> {
-                    String keyString = dis.readUTF();
-                    URI key = URI.create(keyString);
-                    Optional<? extends Entry> entry = systemNode.locate(key);
-                    if (entry.isEmpty()) {
-                        for (RemoteNode<?> node : remoteNodes) {
-                            Optional<? extends RemoteEntry> remoteEntry = node.locate(key);
-                            if (remoteEntry.isPresent()) {
-                                entry = Optional.of(systemNode.store(key, remoteEntry.orElseThrow()));
-                                break;
-                            }
+                    case CMD_BYE -> {
+                        logger.debug("{} {}", request.cmd(), request.data());
+                        handle.writeResponse(Response.okMessage(request, "So Long, and Thanks for All the Fish"));
+
+                        if (Boolean.parseBoolean(request.data().getOrDefault(Request.DATA_SHUTDOWN, "false"))) {
+                            shutdownHook.run();
                         }
                     }
-                    logger.debug("{} {} {}", cmd, entry.isPresent() ? "HIT" : "MISS", keyString);
-                    if (entry.isPresent()) {
-                        Entry entryValue = entry.orElseThrow();
-                        writeLocateRspOK(dos, mergeEntry(entryValue));
-                    } else {
-                        writeLocateRspOK(dos, Collections.emptyMap());
+                    case CMD_LOCATE -> {
+                        String keyString = request.requireData(Request.DATA_KEYSTRING);
+                        URI key = URI.create(keyString);
+                        Optional<? extends Entry> entry = systemNode.locate(key);
+                        if (entry.isEmpty()) {
+                            for (RemoteNode<?> node : remoteNodes) {
+                                Optional<? extends RemoteEntry> remoteEntry = node.locate(key);
+                                if (remoteEntry.isPresent()) {
+                                    entry = Optional.of(systemNode.store(key, remoteEntry.orElseThrow()));
+                                    break;
+                                }
+                            }
+                        }
+                        logger.debug("{} {} {}", request.cmd(), entry.isPresent() ? "HIT" : "MISS", keyString);
+                        if (entry.isPresent()) {
+                            Entry entryValue = entry.orElseThrow();
+                            handle.writeResponse(Response.okData(request, mergeEntry(entryValue)));
+                        } else {
+                            handle.writeResponse(Response.okData(request, Map.of()));
+                        }
                     }
-                }
-                case CMD_TRANSFER -> {
-                    String keyString = dis.readUTF();
-                    String pathString = dis.readUTF();
-                    URI key = URI.create(keyString);
-                    Path path = Path.of(pathString);
-                    Optional<? extends SystemEntry> entry = systemNode.locate(key);
-                    logger.debug("{} {} {} -> {}", cmd, entry.isPresent() ? "HIT" : "MISS", keyString, pathString);
-                    if (entry.isPresent()) {
-                        entry.orElseThrow().transferTo(path);
-                        writeTransferRspOK(dos);
-                    } else {
-                        writeRspKO(dos, "Not found");
+                    case CMD_TRANSFER -> {
+                        String keyString = request.requireData(Request.DATA_KEYSTRING);
+                        String pathString = request.requireData(Request.DATA_PATHSTRING);
+                        URI key = URI.create(keyString);
+                        Path path = Path.of(pathString);
+                        Optional<? extends SystemEntry> entry = systemNode.locate(key);
+                        logger.debug(
+                                "{} {} {} -> {}",
+                                request.cmd(),
+                                entry.isPresent() ? "HIT" : "MISS",
+                                keyString,
+                                pathString);
+                        if (entry.isPresent()) {
+                            entry.orElseThrow().transferTo(path);
+                            handle.writeResponse(Response.okData(request, Map.of()));
+                        } else {
+                            handle.writeResponse(Response.koMessage(request, "Not found"));
+                        }
                     }
+                    case CMD_LS_CHECKSUMS -> {
+                        logger.debug("{} -> {}", request.cmd(), systemNode.checksumAlgorithms());
+                        LinkedHashMap<String, String> data = new LinkedHashMap<>();
+                        systemNode.checksumAlgorithms().forEach(c -> data.put(c, c));
+                        handle.writeResponse(Response.okData(request, data));
+                    }
+                    case CMD_STORE_PATH -> {
+                        String keyString = request.requireData(Request.DATA_KEYSTRING);
+                        String pathString = request.requireData(Request.DATA_PATHSTRING);
+                        Map<String, String> data = request.data();
+                        logger.debug("{} {} <- {}", request.cmd(), keyString, pathString);
+                        handle.writeResponse(Response.okData(
+                                request,
+                                mergeEntry(systemNode.store(
+                                        URI.create(keyString),
+                                        Path.of(pathString),
+                                        splitMetadata(data),
+                                        splitChecksums(data)))));
+                    }
+                    default -> handle.writeResponse(Response.koMessage(request, "Bad command"));
                 }
-                case CMD_LS_CHECKSUMS -> {
-                    logger.debug("{} -> {}", cmd, systemNode.checksumAlgorithms());
-                    writeLsChecksumsRspOK(dos, new ArrayList<>(systemNode.checksumAlgorithms()));
+            } catch (IOException e) {
+                try {
+                    handle.writeResponse(Response.koMessage(request, e.getMessage()));
+                } catch (Exception ignored) {
+                    // fall thru
                 }
-                case CMD_STORE_PATH -> {
-                    String keyString = dis.readUTF();
-                    String pathString = dis.readUTF();
-                    Map<String, String> data = readMap(dis);
-                    Map<String, String> metadata = splitMetadata(data);
-                    Map<String, String> checksums = splitChecksums(data);
-                    logger.debug("{} {} <- {}", cmd, keyString, pathString);
-                    URI key = URI.create(keyString);
-                    Path path = Path.of(pathString);
-                    writeStorePathRspOK(dos, mergeEntry(systemNode.store(key, path, metadata, checksums)));
-                }
-                default -> writeRspKO(dos, "Bad command");
+                logger.warn("Server error", e);
             }
-        } catch (IOException e) {
-            try {
-                writeRspKO(dos, e.getMessage());
-            } catch (Exception ignored) {
-            }
+        } catch (Exception e) {
             logger.warn("Server error", e);
         }
     }
