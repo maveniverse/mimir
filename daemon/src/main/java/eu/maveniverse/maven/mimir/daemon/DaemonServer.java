@@ -7,21 +7,21 @@
  */
 package eu.maveniverse.maven.mimir.daemon;
 
-import static eu.maveniverse.maven.mimir.node.daemon.protocol.Request.CMD_BYE;
-import static eu.maveniverse.maven.mimir.node.daemon.protocol.Request.CMD_HELLO;
-import static eu.maveniverse.maven.mimir.node.daemon.protocol.Request.CMD_LOCATE;
-import static eu.maveniverse.maven.mimir.node.daemon.protocol.Request.CMD_LS_CHECKSUMS;
-import static eu.maveniverse.maven.mimir.node.daemon.protocol.Request.CMD_STORE_PATH;
-import static eu.maveniverse.maven.mimir.node.daemon.protocol.Request.CMD_TRANSFER;
+import static eu.maveniverse.maven.mimir.daemon.protocol.Request.CMD_BYE;
+import static eu.maveniverse.maven.mimir.daemon.protocol.Request.CMD_HELLO;
+import static eu.maveniverse.maven.mimir.daemon.protocol.Request.CMD_LOCATE;
+import static eu.maveniverse.maven.mimir.daemon.protocol.Request.CMD_LS_CHECKSUMS;
+import static eu.maveniverse.maven.mimir.daemon.protocol.Request.CMD_STORE_PATH;
+import static eu.maveniverse.maven.mimir.daemon.protocol.Request.CMD_TRANSFER;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeEntry;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 
-import eu.maveniverse.maven.mimir.node.daemon.protocol.Handle;
-import eu.maveniverse.maven.mimir.node.daemon.protocol.ImmutableResponse;
-import eu.maveniverse.maven.mimir.node.daemon.protocol.Request;
-import eu.maveniverse.maven.mimir.node.daemon.protocol.Response;
-import eu.maveniverse.maven.mimir.node.daemon.protocol.Session;
+import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
+import eu.maveniverse.maven.mimir.daemon.protocol.ImmutableResponse;
+import eu.maveniverse.maven.mimir.daemon.protocol.Request;
+import eu.maveniverse.maven.mimir.daemon.protocol.Response;
+import eu.maveniverse.maven.mimir.daemon.protocol.Session;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;

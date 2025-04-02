@@ -36,9 +36,10 @@
 
   <modules>
     <module>core</module>
+    <module>daemon-protocol</module>
     <module>node</module>
-    <module>extension</module>
     <module>daemon</module>
+    <module>extension</module>
     <module>it</module>
   </modules>
 

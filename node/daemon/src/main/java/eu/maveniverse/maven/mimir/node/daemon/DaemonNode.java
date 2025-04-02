@@ -12,9 +12,9 @@ import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.node.daemon.protocol.Handle;
-import eu.maveniverse.maven.mimir.node.daemon.protocol.Request;
-import eu.maveniverse.maven.mimir.node.daemon.protocol.Response;
+import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
+import eu.maveniverse.maven.mimir.daemon.protocol.Request;
+import eu.maveniverse.maven.mimir.daemon.protocol.Response;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.impl.node.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.impl.node.NodeSupport;
