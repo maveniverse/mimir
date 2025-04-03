@@ -66,12 +66,24 @@ public class Handle implements Closeable {
         };
     }
 
-    public static Handle clientDomainSocket(Path domainSocketPath) throws IOException {
+    public interface ClientHandle extends Closeable {
+        Handle getHandle() throws IOException;
+    }
+
+    public static ClientHandle clientDomainSocket(Path domainSocketPath) throws IOException {
         requireNonNull(domainSocketPath, "domainSocketPath");
-        SocketChannel socketChannel = SocketChannel.open(StandardProtocolFamily.UNIX);
-        socketChannel.configureBlocking(true);
-        socketChannel.connect(UnixDomainSocketAddress.of(domainSocketPath));
-        return new Handle(socketChannel);
+        return new ClientHandle() {
+            @Override
+            public Handle getHandle() throws IOException {
+                SocketChannel socketChannel = SocketChannel.open(StandardProtocolFamily.UNIX);
+                socketChannel.configureBlocking(true);
+                socketChannel.connect(UnixDomainSocketAddress.of(domainSocketPath));
+                return new Handle(socketChannel);
+            }
+
+            @Override
+            public void close() {}
+        };
     }
 
     /**
