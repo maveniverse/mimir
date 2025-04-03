@@ -23,6 +23,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
@@ -49,6 +50,8 @@ public class Handle implements Closeable {
         serverSocketChannel.configureBlocking(true);
         serverSocketChannel.bind(UnixDomainSocketAddress.of(domainSocketPath));
         return new ServerHandle() {
+            private final AtomicBoolean closed = new AtomicBoolean(false);
+
             @Override
             public boolean isOpen() {
                 return serverSocketChannel.isOpen();
@@ -61,17 +64,47 @@ public class Handle implements Closeable {
 
             @Override
             public void close() throws IOException {
-                serverSocketChannel.close();
+                if (closed.compareAndSet(false, true)) {
+                    serverSocketChannel.close();
+                }
             }
         };
     }
 
-    public static Handle clientDomainSocket(Path domainSocketPath) throws IOException {
+    public interface ClientHandle extends Closeable {
+        boolean isOpen();
+
+        Handle getHandle() throws IOException;
+    }
+
+    public static ClientHandle clientDomainSocket(Path domainSocketPath) throws IOException {
         requireNonNull(domainSocketPath, "domainSocketPath");
-        SocketChannel socketChannel = SocketChannel.open(StandardProtocolFamily.UNIX);
-        socketChannel.configureBlocking(true);
-        socketChannel.connect(UnixDomainSocketAddress.of(domainSocketPath));
-        return new Handle(socketChannel);
+        return new ClientHandle() {
+            private final AtomicBoolean closed = new AtomicBoolean(false);
+
+            @Override
+            public boolean isOpen() {
+                return !closed.get();
+            }
+
+            @Override
+            public Handle getHandle() throws IOException {
+                if (closed.get()) {
+                    throw new IllegalStateException("ClientHandle has been closed");
+                }
+                SocketChannel socketChannel = SocketChannel.open(StandardProtocolFamily.UNIX);
+                socketChannel.configureBlocking(true);
+                socketChannel.connect(UnixDomainSocketAddress.of(domainSocketPath));
+                return new Handle(socketChannel);
+            }
+
+            @Override
+            public void close() {
+                if (closed.compareAndSet(false, true)) {
+                    // nothing
+                }
+            }
+        };
     }
 
     /**

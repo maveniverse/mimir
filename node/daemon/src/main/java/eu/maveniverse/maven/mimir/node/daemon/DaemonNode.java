@@ -35,6 +35,7 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
  */
 public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements LocalNode<DaemonNode.DaemonEntry> {
     private final Path socketPath;
+    private final Handle.ClientHandle clientHandle;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
     private final boolean autostop;
     private final Map<String, String> session;
@@ -48,10 +49,11 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
             throws IOException {
         super(DaemonConfig.NAME);
         this.socketPath = requireNonNull(socketPath, "socketPath");
+        this.clientHandle = Handle.clientDomainSocket(socketPath);
         this.checksumFactories = Collections.unmodifiableMap(requireNonNull(checksumFactories, "checksumFactories"));
         this.autostop = autostop;
 
-        try (Handle handle = Handle.clientDomainSocket(socketPath)) {
+        try (Handle handle = clientHandle.getHandle()) {
             handle.writeRequest(Request.hello(clientData));
             Response helloResponse = handle.readResponse();
             this.session = helloResponse.session();
@@ -62,7 +64,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
 
     @Override
     public List<String> checksumAlgorithms() throws IOException {
-        try (Handle handle = Handle.clientDomainSocket(socketPath)) {
+        try (Handle handle = clientHandle.getHandle()) {
             handle.writeRequest(Request.lsChecksums(session));
             return new ArrayList<>(handle.readResponse().data().keySet());
         }
@@ -77,7 +79,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
     public Optional<DaemonEntry> locate(URI key) throws IOException {
         String keyString = key.toASCIIString();
         logger.debug("LOCATE '{}'", keyString);
-        try (Handle handle = Handle.clientDomainSocket(socketPath)) {
+        try (Handle handle = clientHandle.getHandle()) {
             handle.writeRequest(Request.locate(session, keyString));
             Response locateResponse = handle.readResponse();
             if (!locateResponse.data().isEmpty()) {
@@ -95,7 +97,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
         String keyString = key.toASCIIString();
         String filePath = Config.getCanonicalPath(file).toString();
         logger.debug("STORE PATH '{}' -> '{}'", keyString, filePath);
-        try (Handle handle = Handle.clientDomainSocket(socketPath)) {
+        try (Handle handle = clientHandle.getHandle()) {
             handle.writeRequest(Request.storePath(session, keyString, filePath, mergeEntry(metadata, checksums)));
             Response storePathResponse = handle.readResponse();
             if (!storePathResponse.data().isEmpty()) {
@@ -110,13 +112,15 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
 
     @Override
     protected void doClose() throws IOException {
-        try (Handle handle = Handle.clientDomainSocket(socketPath)) {
-            if (autostop) {
-                logger.info("Daemon shutdown initiated");
+        try (clientHandle) {
+            try (Handle handle = clientHandle.getHandle()) {
+                if (autostop) {
+                    logger.info("Daemon shutdown initiated");
+                }
+                handle.writeRequest(Request.bye(session, autostop));
+                Response byeResponse = handle.readResponse();
+                logger.debug("Bye OK {}", byeResponse.data());
             }
-            handle.writeRequest(Request.bye(session, autostop));
-            Response byeResponse = handle.readResponse();
-            logger.debug("Bye OK {}", byeResponse.data());
         }
     }
 
@@ -138,7 +142,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
         @Override
         public void transferTo(Path file) throws IOException {
             logger.debug("TRANSFER '{}'->'{}'", keyString, file);
-            try (Handle handle = Handle.clientDomainSocket(socketPath)) {
+            try (Handle handle = clientHandle.getHandle()) {
                 handle.writeRequest(Request.transfer(
                         session, keyString, Config.getCanonicalPath(file).toString()));
                 handle.readResponse();
