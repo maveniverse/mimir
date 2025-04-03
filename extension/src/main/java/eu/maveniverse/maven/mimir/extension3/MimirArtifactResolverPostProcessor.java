@@ -7,10 +7,14 @@
  */
 package eu.maveniverse.maven.mimir.extension3;
 
+import eu.maveniverse.maven.mimir.shared.Session;
 import java.util.List;
+import java.util.Optional;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.spi.resolution.ArtifactResolverPostProcessor;
 import org.slf4j.Logger;
@@ -24,11 +28,19 @@ public class MimirArtifactResolverPostProcessor implements ArtifactResolverPostP
     @Override
     public void postProcess(RepositorySystemSession session, List<ArtifactResult> artifactResults) {
         for (ArtifactResult artifactResult : artifactResults) {
-            logger.info(
-                    "{} @ {} < {}",
-                    artifactResult.getArtifact(),
-                    artifactResult.getRequest().getRequestContext(),
-                    artifactResult.getRepository().getId());
+            if (artifactResult.isResolved()
+                    && artifactResult.getRepository() instanceof RemoteRepository remoteRepository) {
+                Optional<Session> sessionOptional = MimirUtils.mayGetSession(session);
+                if (sessionOptional.isPresent()) {
+                    Artifact artifact = artifactResult.getArtifact();
+                    String requestContext = artifactResult.getRequest().getRequestContext();
+                    Session ms = sessionOptional.orElseThrow();
+                    if (ms.repositorySupported(remoteRepository) && ms.artifactSupported(artifact)) {
+                        // do something
+                        logger.info("{} @ {} < {}", artifact, requestContext, remoteRepository);
+                    }
+                }
+            }
         }
     }
 }
