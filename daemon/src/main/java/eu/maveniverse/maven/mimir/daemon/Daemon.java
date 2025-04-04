@@ -58,9 +58,7 @@ public class Daemon implements Closeable {
 
     public static void main(String[] args) {
         try {
-            Config config = Config.defaults()
-                    .propertiesPath(Path.of("daemon.properties"))
-                    .build();
+            Config config = Config.daemonDefaults().build();
 
             DaemonConfig daemonConfig = DaemonConfig.with(config);
             Daemon daemon = Guice.createInjector(new WireModule(
