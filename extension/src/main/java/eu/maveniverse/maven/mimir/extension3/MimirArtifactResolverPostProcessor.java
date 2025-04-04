@@ -28,16 +28,16 @@ public class MimirArtifactResolverPostProcessor implements ArtifactResolverPostP
     @Override
     public void postProcess(RepositorySystemSession session, List<ArtifactResult> artifactResults) {
         for (ArtifactResult artifactResult : artifactResults) {
-            if (artifactResult.isResolved()
-                    && artifactResult.getRepository() instanceof RemoteRepository remoteRepository) {
+            if (artifactResult.getRepository() instanceof RemoteRepository remoteRepository) {
                 Optional<Session> sessionOptional = MimirUtils.mayGetSession(session);
                 if (sessionOptional.isPresent()) {
+                    Session ms = sessionOptional.orElseThrow();
                     Artifact artifact = artifactResult.getArtifact();
                     String requestContext = artifactResult.getRequest().getRequestContext();
-                    Session ms = sessionOptional.orElseThrow();
+                    boolean resolved = artifactResult.isResolved();
                     if (ms.repositorySupported(remoteRepository) && ms.artifactSupported(artifact)) {
                         // do something
-                        logger.info("{} @ {} < {}", artifact, requestContext, remoteRepository);
+                        logger.debug("{} @ {} < {}", artifact, requestContext, remoteRepository);
                     }
                 }
             }
