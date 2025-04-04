@@ -62,14 +62,7 @@ public interface Config {
     }
 
     static Builder daemonDefaults() {
-        return new Builder(
-                null,
-                Utils.discoverArtifactVersion(
-                        Config.class.getClassLoader(), "eu.maveniverse.maven.mimir", "core", null),
-                discoverBaseDirectory(),
-                Path.of("daemon.properties"),
-                new HashMap<>(),
-                toMap(System.getProperties()));
+        return defaults().propertiesPath(Path.of("daemon.properties"));
     }
 
     class Builder {
