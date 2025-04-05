@@ -7,8 +7,12 @@
  */
 package eu.maveniverse.maven.mimir.extension3;
 
+import eu.maveniverse.maven.mimir.shared.Entry;
 import eu.maveniverse.maven.mimir.shared.Session;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -36,8 +40,21 @@ public class MimirArtifactResolverPostProcessor implements ArtifactResolverPostP
                     String requestContext = artifactResult.getRequest().getRequestContext();
                     boolean resolved = artifactResult.isResolved();
                     if (ms.repositorySupported(remoteRepository) && ms.artifactSupported(artifact)) {
-                        // do something
-                        logger.debug("{} @ {} < {}", artifact, requestContext, remoteRepository);
+                        try {
+                            Optional<Entry> localEntry = ms.locate(remoteRepository, artifact);
+                            if (localEntry.isEmpty()) {
+                                ms.store(
+                                        remoteRepository,
+                                        artifact,
+                                        artifact.getFile().toPath(),
+                                        Map.of(),
+                                        null);
+                            }
+                            // do something
+                            logger.debug("{} @ {} < {}", artifact, requestContext, remoteRepository);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
                     }
                 }
             }

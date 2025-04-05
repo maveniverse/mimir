@@ -30,7 +30,7 @@ public interface LocalNode<E extends LocalEntry> extends Node<E> {
     Map<String, ChecksumAlgorithmFactory> checksumFactories() throws IOException;
 
     /**
-     * Stores file as new entry.
+     * Stores file as new entry. If entry exists, method will fail if checksums are not same ("same file").
      */
     E store(URI key, Path file, Map<String, String> metadata, Map<String, String> checksums) throws IOException;
 }

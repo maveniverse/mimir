@@ -9,6 +9,7 @@ package eu.maveniverse.maven.mimir.shared.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.Entry;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
@@ -70,7 +71,7 @@ public final class SessionImpl implements Session {
     }
 
     @Override
-    public Optional<LocalEntry> locate(RemoteRepository remoteRepository, Artifact artifact) throws IOException {
+    public Optional<Entry> locate(RemoteRepository remoteRepository, Artifact artifact) throws IOException {
         checkState();
         requireNonNull(remoteRepository, "remoteRepository");
         requireNonNull(artifact, "artifact");
@@ -79,7 +80,7 @@ public final class SessionImpl implements Session {
             Optional<? extends LocalEntry> result = localNode.locate(key);
             if (result.isPresent()) {
                 LocalEntry entry = result.orElseThrow();
-                return stats.doLocate(Optional.of(new LocalEntry() {
+                return stats.doLocate(Optional.of(new Entry() {
                     @Override
                     public void transferTo(Path file) throws IOException {
                         try {
@@ -107,7 +108,7 @@ public final class SessionImpl implements Session {
     }
 
     @Override
-    public Optional<LocalEntry> store(
+    public void store(
             RemoteRepository remoteRepository,
             Artifact artifact,
             Path file,
@@ -121,9 +122,9 @@ public final class SessionImpl implements Session {
         requireNonNull(checksums, "checksums");
         if (repositoryPredicate.test(remoteRepository) && artifactPredicate.test(artifact)) {
             URI key = keyMapper.apply(remoteRepository, artifact);
-            return stats.doStore(Optional.of(localNode.store(key, file, metadata, checksums)));
+            stats.doStore(Optional.of(localNode.store(key, file, metadata, checksums)));
         } else {
-            return stats.doStore(Optional.empty());
+            stats.doStore(Optional.empty());
         }
     }
 
