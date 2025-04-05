@@ -47,4 +47,14 @@ public interface Session extends Closeable {
             Map<String, String> metadata,
             Map<String, String> checksums)
             throws IOException;
+
+    /**
+     * Returns {@code true} if given artifact from given remote repository was retrieved from cache using this session.
+     */
+    boolean retrievedFromCache(RemoteRepository remoteRepository, Artifact artifact);
+
+    /**
+     * Returns {@code true} if given artifact from given remote repository was stored to cache using this session.
+     */
+    boolean storedToCache(RemoteRepository remoteRepository, Artifact artifact);
 }

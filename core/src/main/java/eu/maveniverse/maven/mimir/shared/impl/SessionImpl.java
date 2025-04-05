@@ -17,14 +17,18 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +41,9 @@ public final class SessionImpl implements Session {
     private final LocalNode<?> localNode;
     private final Stats stats;
 
+    private final ConcurrentHashMap<RemoteRepository, Set<String>> retrievedFromCache;
+    private final ConcurrentHashMap<RemoteRepository, Set<String>> storedToCache;
+
     public SessionImpl(
             Predicate<RemoteRepository> repositoryPredicate,
             Predicate<Artifact> artifactPredicate,
@@ -48,6 +55,9 @@ public final class SessionImpl implements Session {
         this.keyMapper = requireNonNull(keyMapper, "nameMapper");
         this.localNode = requireNonNull(localNode, "localNode");
         this.stats = new Stats();
+
+        this.retrievedFromCache = new ConcurrentHashMap<>();
+        this.storedToCache = new ConcurrentHashMap<>();
 
         logger.info("Mimir session created with {}", localNode);
     }
@@ -86,6 +96,9 @@ public final class SessionImpl implements Session {
                         try {
                             entry.transferTo(file);
                             stats.doTransfer(true);
+                            storedToCache
+                                    .computeIfAbsent(remoteRepository, k -> new HashSet<>())
+                                    .add(ArtifactIdUtils.toId(artifact));
                         } catch (IOException e) {
                             stats.doTransfer(false);
                             throw e;
@@ -123,9 +136,30 @@ public final class SessionImpl implements Session {
         if (repositoryPredicate.test(remoteRepository) && artifactPredicate.test(artifact)) {
             URI key = keyMapper.apply(remoteRepository, artifact);
             stats.doStore(Optional.of(localNode.store(key, file, metadata, checksums)));
+            storedToCache
+                    .computeIfAbsent(remoteRepository, k -> new HashSet<>())
+                    .add(ArtifactIdUtils.toId(artifact));
         } else {
             stats.doStore(Optional.empty());
         }
+    }
+
+    @Override
+    public boolean retrievedFromCache(RemoteRepository remoteRepository, Artifact artifact) {
+        requireNonNull(remoteRepository, "remoteRepository");
+        requireNonNull(artifact, "artifact");
+        return retrievedFromCache
+                .computeIfAbsent(remoteRepository, k -> ConcurrentHashMap.newKeySet())
+                .contains(ArtifactIdUtils.toId(artifact));
+    }
+
+    @Override
+    public boolean storedToCache(RemoteRepository remoteRepository, Artifact artifact) {
+        requireNonNull(remoteRepository, "remoteRepository");
+        requireNonNull(artifact, "artifact");
+        return storedToCache
+                .computeIfAbsent(remoteRepository, k -> ConcurrentHashMap.newKeySet())
+                .contains(ArtifactIdUtils.toId(artifact));
     }
 
     private void checkState() {
