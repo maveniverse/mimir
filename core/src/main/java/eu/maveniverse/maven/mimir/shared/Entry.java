@@ -13,12 +13,12 @@ import java.util.Map;
 
 public interface Entry {
     /**
-     * The entry metadata.
+     * The entry immutable metadata, never {@code null}.
      */
     Map<String, String> metadata();
 
     /**
-     * Entry checksums.
+     * Entry immutable checksums, never {@code null}.
      */
     Map<String, String> checksums();
 

@@ -25,7 +25,7 @@ public interface SystemNode<E extends SystemEntry> extends LocalNode<E> {
 
     /**
      * Stores entry and provides new local entry for stored content. If entry already exists, method will fail if
-     * checksums are not matching ("same file").
+     * checksums are not matching (not "same file").
      */
     E store(URI key, Entry entry) throws IOException;
 }
