@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -97,7 +96,7 @@ public final class SessionImpl implements Session {
                             entry.transferTo(file);
                             stats.doTransfer(true);
                             storedToCache
-                                    .computeIfAbsent(remoteRepository, k -> new HashSet<>())
+                                    .computeIfAbsent(remoteRepository, k -> ConcurrentHashMap.newKeySet())
                                     .add(ArtifactIdUtils.toId(artifact));
                         } catch (IOException e) {
                             stats.doTransfer(false);
@@ -137,7 +136,7 @@ public final class SessionImpl implements Session {
             URI key = keyMapper.apply(remoteRepository, artifact);
             stats.doStore(Optional.of(localNode.store(key, file, metadata, checksums)));
             storedToCache
-                    .computeIfAbsent(remoteRepository, k -> new HashSet<>())
+                    .computeIfAbsent(remoteRepository, k -> ConcurrentHashMap.newKeySet())
                     .add(ArtifactIdUtils.toId(artifact));
         } else {
             stats.doStore(Optional.empty());
