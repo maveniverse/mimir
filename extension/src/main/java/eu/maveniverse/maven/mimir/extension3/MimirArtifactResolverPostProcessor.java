@@ -7,18 +7,23 @@
  */
 package eu.maveniverse.maven.mimir.extension3;
 
+import static java.util.Objects.requireNonNull;
+
 import eu.maveniverse.maven.mimir.shared.Session;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactorySelector;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmHelper;
 import org.eclipse.aether.spi.resolution.ArtifactResolverPostProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +32,13 @@ import org.slf4j.LoggerFactory;
 @Named
 public class MimirArtifactResolverPostProcessor implements ArtifactResolverPostProcessor {
     private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector;
+
+    @Inject
+    public MimirArtifactResolverPostProcessor(ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector) {
+        this.checksumAlgorithmFactorySelector =
+                requireNonNull(checksumAlgorithmFactorySelector, "checksumAlgorithmFactorySelector");
+    }
 
     @Override
     public void postProcess(RepositorySystemSession session, List<ArtifactResult> artifactResults) {
@@ -48,7 +60,9 @@ public class MimirArtifactResolverPostProcessor implements ArtifactResolverPostP
                                         artifact,
                                         artifact.getFile().toPath(),
                                         Map.of(),
-                                        null);
+                                        ChecksumAlgorithmHelper.calculate(
+                                                artifact.getFile(),
+                                                checksumAlgorithmFactorySelector.selectList(ms.checksumAlgorithms())));
                             }
                             // mark it
                             logger.debug("{} @ {} < {}", artifact, requestContext, remoteRepository);
