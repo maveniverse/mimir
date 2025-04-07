@@ -9,8 +9,8 @@ package eu.maveniverse.maven.mimir.extension3;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.Entry;
 import eu.maveniverse.maven.mimir.shared.Session;
-import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -77,10 +77,9 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                     ads.add(artifactDownload);
                 } else {
                     try {
-                        Optional<LocalEntry> entry =
-                                mimirSession.locate(remoteRepository, artifactDownload.getArtifact());
+                        Optional<Entry> entry = mimirSession.locate(remoteRepository, artifactDownload.getArtifact());
                         if (entry.isPresent()) {
-                            LocalEntry ce = entry.orElseThrow(() -> new IllegalStateException("Cache entry not found"));
+                            Entry ce = entry.orElseThrow();
                             logger.debug("Fetched {} from Mimir cache", artifactDownload.getArtifact());
                             Path artifactFile = artifactDownload.getFile().toPath();
                             ce.transferTo(artifactFile);

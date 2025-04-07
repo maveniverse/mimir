@@ -7,8 +7,8 @@
  */
 package eu.maveniverse.maven.mimir.extension3;
 
+import eu.maveniverse.maven.mimir.shared.Entry;
 import eu.maveniverse.maven.mimir.shared.Session;
-import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
@@ -39,9 +39,9 @@ public class MimirTrustedChecksumsSource implements TrustedChecksumsSource {
                 Session ms = sessionOptional.orElseThrow();
                 if (ms.repositorySupported(remoteRepository) && ms.artifactSupported(artifact)) {
                     try {
-                        Optional<LocalEntry> entry = ms.locate(remoteRepository, artifact);
+                        Optional<Entry> entry = ms.locate(remoteRepository, artifact);
                         if (entry.isPresent()) {
-                            LocalEntry cacheEntry = entry.orElseThrow();
+                            Entry cacheEntry = entry.orElseThrow();
                             HashMap<String, String> result = new HashMap<>();
                             for (ChecksumAlgorithmFactory checksumAlgorithmFactory : checksumAlgorithmFactories) {
                                 String checksum = cacheEntry.checksums().get(checksumAlgorithmFactory.getName());

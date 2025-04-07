@@ -9,6 +9,7 @@ package eu.maveniverse.maven.mimir.shared.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.Entry;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
@@ -19,11 +20,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +40,9 @@ public final class SessionImpl implements Session {
     private final LocalNode<?> localNode;
     private final Stats stats;
 
+    private final ConcurrentHashMap<RemoteRepository, Set<String>> retrievedFromCache;
+    private final ConcurrentHashMap<RemoteRepository, Set<String>> storedToCache;
+
     public SessionImpl(
             Predicate<RemoteRepository> repositoryPredicate,
             Predicate<Artifact> artifactPredicate,
@@ -47,6 +54,9 @@ public final class SessionImpl implements Session {
         this.keyMapper = requireNonNull(keyMapper, "nameMapper");
         this.localNode = requireNonNull(localNode, "localNode");
         this.stats = new Stats();
+
+        this.retrievedFromCache = new ConcurrentHashMap<>();
+        this.storedToCache = new ConcurrentHashMap<>();
 
         logger.info("Mimir session created with {}", localNode);
     }
@@ -70,7 +80,7 @@ public final class SessionImpl implements Session {
     }
 
     @Override
-    public Optional<LocalEntry> locate(RemoteRepository remoteRepository, Artifact artifact) throws IOException {
+    public Optional<Entry> locate(RemoteRepository remoteRepository, Artifact artifact) throws IOException {
         checkState();
         requireNonNull(remoteRepository, "remoteRepository");
         requireNonNull(artifact, "artifact");
@@ -79,12 +89,15 @@ public final class SessionImpl implements Session {
             Optional<? extends LocalEntry> result = localNode.locate(key);
             if (result.isPresent()) {
                 LocalEntry entry = result.orElseThrow();
-                return stats.doLocate(Optional.of(new LocalEntry() {
+                return stats.doLocate(Optional.of(new Entry() {
                     @Override
                     public void transferTo(Path file) throws IOException {
                         try {
                             entry.transferTo(file);
                             stats.doTransfer(true);
+                            storedToCache
+                                    .computeIfAbsent(remoteRepository, k -> ConcurrentHashMap.newKeySet())
+                                    .add(ArtifactIdUtils.toId(artifact));
                         } catch (IOException e) {
                             stats.doTransfer(false);
                             throw e;
@@ -107,7 +120,7 @@ public final class SessionImpl implements Session {
     }
 
     @Override
-    public Optional<LocalEntry> store(
+    public void store(
             RemoteRepository remoteRepository,
             Artifact artifact,
             Path file,
@@ -121,10 +134,31 @@ public final class SessionImpl implements Session {
         requireNonNull(checksums, "checksums");
         if (repositoryPredicate.test(remoteRepository) && artifactPredicate.test(artifact)) {
             URI key = keyMapper.apply(remoteRepository, artifact);
-            return stats.doStore(Optional.of(localNode.store(key, file, metadata, checksums)));
+            stats.doStore(Optional.of(localNode.store(key, file, metadata, checksums)));
+            storedToCache
+                    .computeIfAbsent(remoteRepository, k -> ConcurrentHashMap.newKeySet())
+                    .add(ArtifactIdUtils.toId(artifact));
         } else {
-            return stats.doStore(Optional.empty());
+            stats.doStore(Optional.empty());
         }
+    }
+
+    @Override
+    public boolean retrievedFromCache(RemoteRepository remoteRepository, Artifact artifact) {
+        requireNonNull(remoteRepository, "remoteRepository");
+        requireNonNull(artifact, "artifact");
+        return retrievedFromCache
+                .computeIfAbsent(remoteRepository, k -> ConcurrentHashMap.newKeySet())
+                .contains(ArtifactIdUtils.toId(artifact));
+    }
+
+    @Override
+    public boolean storedToCache(RemoteRepository remoteRepository, Artifact artifact) {
+        requireNonNull(remoteRepository, "remoteRepository");
+        requireNonNull(artifact, "artifact");
+        return storedToCache
+                .computeIfAbsent(remoteRepository, k -> ConcurrentHashMap.newKeySet())
+                .contains(ArtifactIdUtils.toId(artifact));
     }
 
     private void checkState() {
