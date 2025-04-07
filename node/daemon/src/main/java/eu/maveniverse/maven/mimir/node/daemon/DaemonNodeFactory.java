@@ -54,7 +54,12 @@ public class DaemonNodeFactory implements LocalNodeFactory {
         HashMap<String, String> clientData = new HashMap<>();
         clientData.put(Session.NODE_PID, Long.toString(ProcessHandle.current().pid()));
         clientData.put(Session.NODE_VERSION, config.mimirVersion().orElse("UNKNOWN"));
-        return new DaemonNode(clientData, cfg.socketPath(), checksumAlgorithmFactories, cfg.autostop());
+        try {
+            return new DaemonNode(clientData, cfg.socketPath(), checksumAlgorithmFactories, cfg.autostop());
+        } catch (IOException e) {
+            mayDumpDaemonLog(config.basedir().resolve(cfg.daemonLogName()));
+            throw e;
+        }
     }
 
     private Process startDaemon(Path basedir, Config config, DaemonConfig daemonConfig) throws IOException {
@@ -92,9 +97,7 @@ public class DaemonNodeFactory implements LocalNodeFactory {
             try {
                 while (p.isAlive() && !Files.exists(daemonConfig.socketPath())) {
                     if (Instant.now().isAfter(startingUntil)) {
-                        if (Files.isRegularFile(daemonLog)) {
-                            logger.error("Daemon log dump:\n{}", Files.readString(daemonLog));
-                        }
+                        mayDumpDaemonLog(daemonLog);
                         throw new IOException("Failed to start daemon in time " + daemonConfig.autostartDuration()
                                 + "; check daemon logs in " + daemonConfig.daemonLogName());
                     }
@@ -107,13 +110,17 @@ public class DaemonNodeFactory implements LocalNodeFactory {
             if (p.isAlive()) {
                 return p;
             } else {
-                if (Files.isRegularFile(daemonLog)) {
-                    logger.error("Daemon log dump:\n{}", Files.readString(daemonLog));
-                }
+                mayDumpDaemonLog(daemonLog);
                 throw new IOException("Failed to start daemon; check daemon logs in " + daemonConfig.daemonLogName());
             }
         }
         logger.warn("Mimir daemon is not present; cannot start it");
         return null;
+    }
+
+    private void mayDumpDaemonLog(Path daemonLog) throws IOException {
+        if (Files.isRegularFile(daemonLog)) {
+            logger.error("Daemon log dump:\n{}", Files.readString(daemonLog));
+        }
     }
 }
