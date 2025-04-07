@@ -49,11 +49,6 @@ public interface Session extends Closeable {
             throws IOException;
 
     /**
-     * Marks entry under given cache key.
-     */
-    void mark(RemoteRepository remoteRepository, Artifact artifact, Map<String, String> data) throws IOException;
-
-    /**
      * Returns {@code true} if given artifact from given remote repository was retrieved from cache using this session.
      */
     boolean retrievedFromCache(RemoteRepository remoteRepository, Artifact artifact);

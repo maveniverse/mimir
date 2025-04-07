@@ -144,19 +144,6 @@ public final class SessionImpl implements Session {
     }
 
     @Override
-    public void mark(RemoteRepository remoteRepository, Artifact artifact, Map<String, String> data)
-            throws IOException {
-        checkState();
-        requireNonNull(remoteRepository, "remoteRepository");
-        requireNonNull(artifact, "artifact");
-        requireNonNull(data, "data");
-        if (repositoryPredicate.test(remoteRepository) && artifactPredicate.test(artifact)) {
-            URI key = keyMapper.apply(remoteRepository, artifact);
-            localNode.mark(key, data);
-        }
-    }
-
-    @Override
     public boolean retrievedFromCache(RemoteRepository remoteRepository, Artifact artifact) {
         requireNonNull(remoteRepository, "remoteRepository");
         requireNonNull(artifact, "artifact");

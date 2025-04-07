@@ -53,7 +53,8 @@ public class MimirArtifactResolverPostProcessor implements ArtifactResolverPostP
                         try {
                             // store it; if needed
                             if (!ms.retrievedFromCache(remoteRepository, artifact)
-                                    && !ms.storedToCache(remoteRepository, artifact)) {
+                                    && !ms.storedToCache(remoteRepository, artifact)
+                                    && ms.locate(remoteRepository, artifact).isEmpty()) {
                                 ms.store(
                                         remoteRepository,
                                         artifact,
@@ -63,13 +64,6 @@ public class MimirArtifactResolverPostProcessor implements ArtifactResolverPostP
                                                 artifact.getFile(),
                                                 checksumAlgorithmFactorySelector.selectList(ms.checksumAlgorithms())));
                             }
-                            // mark it
-                            ms.mark(
-                                    remoteRepository,
-                                    artifact,
-                                    Map.of(
-                                            "context",
-                                            artifactResult.getRequest().getRequestContext()));
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
                         }
