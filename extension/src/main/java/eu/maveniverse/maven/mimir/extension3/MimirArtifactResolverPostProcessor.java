@@ -48,12 +48,11 @@ public class MimirArtifactResolverPostProcessor implements ArtifactResolverPostP
                 if (sessionOptional.isPresent()) {
                     Session ms = sessionOptional.orElseThrow();
                     Artifact artifact = artifactResult.getArtifact();
-                    String requestContext = artifactResult.getRequest().getRequestContext();
                     boolean resolved = artifactResult.isResolved();
-                    if (ms.repositorySupported(remoteRepository) && ms.artifactSupported(artifact)) {
+                    if (resolved && ms.repositorySupported(remoteRepository) && ms.artifactSupported(artifact)) {
                         try {
-                            if (resolved
-                                    && !ms.retrievedFromCache(remoteRepository, artifact)
+                            // store it; if needed
+                            if (!ms.retrievedFromCache(remoteRepository, artifact)
                                     && !ms.storedToCache(remoteRepository, artifact)) {
                                 ms.store(
                                         remoteRepository,
@@ -65,7 +64,12 @@ public class MimirArtifactResolverPostProcessor implements ArtifactResolverPostP
                                                 checksumAlgorithmFactorySelector.selectList(ms.checksumAlgorithms())));
                             }
                             // mark it
-                            logger.debug("{} @ {} < {}", artifact, requestContext, remoteRepository);
+                            ms.mark(
+                                    remoteRepository,
+                                    artifact,
+                                    Map.of(
+                                            "context",
+                                            artifactResult.getRequest().getRequestContext()));
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
                         }

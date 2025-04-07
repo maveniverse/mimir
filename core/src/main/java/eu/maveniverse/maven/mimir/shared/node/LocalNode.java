@@ -33,4 +33,9 @@ public interface LocalNode<E extends LocalEntry> extends Node<E> {
      * Stores file as new entry. If entry exists, method will fail if checksums are not same (not "same file").
      */
     E store(URI key, Path file, Map<String, String> metadata, Map<String, String> checksums) throws IOException;
+
+    /**
+     * Applies some data to entry.
+     */
+    default void mark(URI key, Map<String, String> data) throws IOException {}
 }
