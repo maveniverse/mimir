@@ -95,7 +95,7 @@ public final class SessionImpl implements Session {
                         try {
                             entry.transferTo(file);
                             stats.doTransfer(true);
-                            storedToCache
+                            retrievedFromCache
                                     .computeIfAbsent(remoteRepository, k -> ConcurrentHashMap.newKeySet())
                                     .add(ArtifactIdUtils.toId(artifact));
                         } catch (IOException e) {
