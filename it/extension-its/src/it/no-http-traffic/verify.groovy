@@ -11,15 +11,19 @@ assert thirdLog.exists()
 String third = thirdLog.text
 
 // Lets make strict assertion
-// Also, consider Maven 3 vs 4 diff: they resolve differently
-if (first.contains('Apache Maven 3.9.9')) {
-    assert first.contains('[INFO] Mimir session closed (RETRIEVED=0 CACHED=216)') // both empty: mimir connector cached
-    assert second.contains('[INFO] Mimir session closed (RETRIEVED=216 CACHED=0)') // mimir primed: all was retrieved
-    assert third.contains('[INFO] Mimir session closed (RETRIEVED=0 CACHED=216)') // local repo primed: all was cached
-} else if (first.contains('Apache Maven 4.0.0')) {
-    assert first.contains('[INFO] Mimir session closed (RETRIEVED=0 CACHED=174)')
-    assert second.contains('[INFO] Mimir session closed (RETRIEVED=174 CACHED=0)')
-    assert third.contains('[INFO] Mimir session closed (RETRIEVED=0 CACHED=174)')
-} else {
-    throw new IllegalStateException("What Maven version is this?")
-}
+// Also, consider Maven 3 vs 4 diff: they resolve differently; do not assert counts
+
+// first run: both were empty: retrieved==0 cached!=0
+assert first.contains('[INFO] Mimir session closed')
+assert first.contains('RETRIEVED=0')
+assert !first.contains('CACHED=0')
+
+// second run: mimir is primed, local repo is empty: retrieved!=0 cached==0
+assert second.contains('[INFO] Mimir session closed')
+assert !second.contains('RETRIEVED=0')
+assert second.contains('CACHED=0')
+
+// third run: mimir is empty, local repo is primed: retrieved==0 cached!=0
+assert third.contains('[INFO] Mimir session closed')
+assert third.contains('RETRIEVED=0')
+assert !third.contains('CACHED=0')
