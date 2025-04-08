@@ -131,6 +131,7 @@
                   <mavenHome>${project.build.directory}/dependency/apache-maven-${maven3Version}</mavenHome>
                   <cloneProjectsTo>${project.build.directory}/mvn3-it</cloneProjectsTo>
                   <localRepositoryPath>${project.build.directory}/it-repo</localRepositoryPath>
+                  <settingsFile>${project.build.directory}/it-user/.m2/settings.xml</settingsFile>
                   <mavenOpts>-Duser.home=${project.build.directory}/it-user</mavenOpts>
                   <properties>
                     <mimir.daemon.passOnBasedir>true</mimir.daemon.passOnBasedir>
@@ -154,6 +155,7 @@
                   <mavenHome>${project.build.directory}/dependency/apache-maven-${maven4Version}</mavenHome>
                   <cloneProjectsTo>${project.build.directory}/mvn4-it</cloneProjectsTo>
                   <localRepositoryPath>${project.build.directory}/it-repo</localRepositoryPath>
+                  <settingsFile>${project.build.directory}/it-user/.m2/settings.xml</settingsFile>
                   <mavenOpts>-Duser.home=${project.build.directory}/it-user</mavenOpts>
                   <properties>
                     <mimir.daemon.passOnBasedir>true</mimir.daemon.passOnBasedir>
