@@ -216,7 +216,7 @@ public interface Config {
         if (basedir == null) {
             return getCanonicalPath(discoverUserHomeDirectory().resolve(".mimir"));
         }
-        return getCanonicalPath(Path.of(basedir));
+        return getCanonicalPath(Path.of(System.getProperty("user.dir")).resolve(basedir));
     }
 
     static Path discoverUserHomeDirectory() {
