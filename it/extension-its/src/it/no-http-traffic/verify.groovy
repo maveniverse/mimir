@@ -11,9 +11,7 @@ assert thirdLog.exists()
 String third = thirdLog.text
 
 // Lets make strict assertion
-// Explanation: cache was primed, so aside of "tail repo" everything else was located and retrieved, and
-// nothing should be cached as cache was primed.
-// Also Maven 3 vs 4 diff: they resolve differently
+// Also, consider Maven 3 vs 4 diff: they resolve differently
 if (first.contains('Apache Maven 3.9.9')) {
     assert first.contains('[INFO] Mimir session closed (RETRIEVED=0 CACHED=216)') // both empty: mimir connector cached
     assert second.contains('[INFO] Mimir session closed (RETRIEVED=216 CACHED=0)') // mimir primed: all was retrieved
