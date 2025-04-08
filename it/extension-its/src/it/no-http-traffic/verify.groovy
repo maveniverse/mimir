@@ -16,14 +16,14 @@ String third = thirdLog.text
 // first run: both were empty: retrieved==0 cached!=0
 assert first.contains('[INFO] Mimir session closed')
 assert first.contains('RETRIEVED=0')
-assert !first.contains('CACHED=0')
+assert first.contains('CACHED=') && !first.contains('CACHED=0')
 
 // second run: mimir is primed, local repo is empty: retrieved!=0 cached==0
 assert second.contains('[INFO] Mimir session closed')
-assert !second.contains('RETRIEVED=0')
+assert second.contains('RETRIEVED=') && !second.contains('RETRIEVED=0')
 assert second.contains('CACHED=0')
 
 // third run: mimir is empty, local repo is primed: retrieved==0 cached!=0
 assert third.contains('[INFO] Mimir session closed')
 assert third.contains('RETRIEVED=0')
-assert !third.contains('CACHED=0')
+assert third.contains('CACHED=') && !third.contains('CACHED=0')
