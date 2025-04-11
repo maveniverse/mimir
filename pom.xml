@@ -214,7 +214,7 @@
       <dependency>
         <groupId>org.jgroups</groupId>
         <artifactId>jgroups</artifactId>
-        <version>5.4.5.Final</version>
+        <version>5.4.6.Final</version>
       </dependency>
 
       <dependency>
