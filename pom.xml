@@ -190,12 +190,6 @@
       </dependency>
 
       <dependency>
-        <groupId>org.apache.maven.plugin-tools</groupId>
-        <artifactId>maven-plugin-annotations</artifactId>
-        <version>${version.mavenPluginTools}</version>
-      </dependency>
-
-      <dependency>
         <groupId>org.immutables</groupId>
         <artifactId>value</artifactId>
         <version>2.10.1</version>
@@ -240,15 +234,6 @@
   </dependencyManagement>
 
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-plugin-plugin</artifactId>
-          <version>${version.mavenPluginTools}</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.eclipse.sisu</groupId>
