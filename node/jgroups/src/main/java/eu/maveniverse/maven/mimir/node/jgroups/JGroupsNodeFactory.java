@@ -10,6 +10,7 @@ package eu.maveniverse.maven.mimir.node.jgroups;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.impl.Utils;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.mimir.shared.publisher.PublisherFactory;
@@ -60,9 +61,14 @@ public class JGroupsNodeFactory implements RemoteNodeFactory {
     }
 
     private JChannel createChannel(JGroupsNodeConfig cfg) throws Exception {
-        if (cfg.jgroupsInterface() != null && System.getProperty("jgroups.bind_addr") == null) {
-            // hack, find better way
-            System.setProperty("jgroups.bind_addr", cfg.jgroupsInterface());
+        if (System.getProperty("jgroups.bind_addr") == null) {
+            if (cfg.jgroupsInterface() != null) {
+                // hack, find better way
+                System.setProperty("jgroups.bind_addr", cfg.jgroupsInterface());
+            } else {
+                // help it a bit; at least have it aligned with publisher
+                System.setProperty("jgroups.bind_addr", Utils.getLocalHost().getHostAddress());
+            }
         }
         return new JChannel(cfg.jgroupsProps()).name(cfg.jgroupsNodeName()).setDiscardOwnMessages(true);
     }
