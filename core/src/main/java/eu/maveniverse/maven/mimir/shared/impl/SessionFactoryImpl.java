@@ -71,6 +71,7 @@ public final class SessionFactoryImpl implements SessionFactory {
                     "  Supported checksums: {}", localNode.checksumFactories().keySet());
         }
 
-        return new SessionImpl(RemoteRepositories.httpsReleaseDirectOnly(), a -> !a.isSnapshot(), nameMapper, localNode);
+        return new SessionImpl(
+                RemoteRepositories.httpsReleaseDirectOnly(), a -> !a.isSnapshot(), nameMapper, localNode);
     }
 }

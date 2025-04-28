@@ -9,6 +9,8 @@ package eu.maveniverse.maven.mimir.shared.naming;
 
 import static java.util.Objects.requireNonNull;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Predicate;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -17,6 +19,12 @@ import org.eclipse.aether.repository.RemoteRepository;
  * Some handy predicates for {@link RemoteRepository} instances.
  */
 public final class RemoteRepositories {
+    private static final String CENTRAL_REPOSITORY_ID = "central";
+    private static final Collection<String> CENTRAL_URLS = List.of(
+            "https://repo.maven.apache.org/maven2",
+            "https://repo1.maven.org/maven2",
+            "https://maven-central.storage-download.googleapis.com/maven2");
+
     private RemoteRepositories() {}
 
     /**
@@ -24,10 +32,12 @@ public final class RemoteRepositories {
      * Repository is supported if:
      * <ul>
      *     <li>the {@link #httpsReleaseDirectOnlyWithId(String)} supports it; id is "central"</li>
+     *     <li>the URL is one of "real" Central URLs</li>
      * </ul>
      */
     public static Predicate<RemoteRepository> centralDirectOnly() {
-        return httpsReleaseDirectOnlyWithId("central");
+        return httpsReleaseDirectOnlyWithId(CENTRAL_REPOSITORY_ID).and(remoteRepository -> CENTRAL_URLS.stream()
+                .anyMatch(u -> remoteRepository.getUrl().startsWith(u)));
     }
 
     /**
@@ -39,7 +49,7 @@ public final class RemoteRepositories {
      */
     public static Predicate<RemoteRepository> httpsReleaseDirectOnlyWithId(String repositoryId) {
         requireNonNull(repositoryId, "repositoryId");
-        return httpsReleaseDirectOnly().and((remoteRepository) -> repositoryId.equals(remoteRepository.getId()));
+        return httpsReleaseDirectOnly().and(remoteRepository -> repositoryId.equals(remoteRepository.getId()));
     }
 
     /**
@@ -51,7 +61,7 @@ public final class RemoteRepositories {
      */
     public static Predicate<RemoteRepository> httpsReleaseDirectOnly() {
         return releaseDirectOnly()
-                .and((remoteRepository) ->
+                .and(remoteRepository ->
                         remoteRepository.getProtocol().toLowerCase(Locale.ROOT).contains("https"));
     }
 
@@ -67,7 +77,7 @@ public final class RemoteRepositories {
      * </ul>
      */
     public static Predicate<RemoteRepository> releaseDirectOnly() {
-        return (remoteRepository) -> remoteRepository != null
+        return remoteRepository -> remoteRepository != null
                 && remoteRepository.getPolicy(false).isEnabled()
                 && !remoteRepository.getPolicy(true).isEnabled()
                 && remoteRepository.getMirroredRepositories().isEmpty()

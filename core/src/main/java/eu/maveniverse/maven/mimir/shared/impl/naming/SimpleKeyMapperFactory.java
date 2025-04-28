@@ -12,12 +12,11 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.naming.KeyMapper;
 import eu.maveniverse.maven.mimir.shared.naming.KeyMapperFactory;
+import eu.maveniverse.maven.mimir.shared.naming.RemoteRepositories;
 import java.net.URI;
 import java.util.function.Predicate;
 import javax.inject.Named;
 import javax.inject.Singleton;
-
-import eu.maveniverse.maven.mimir.shared.naming.RemoteRepositories;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.util.StringDigestUtil;
