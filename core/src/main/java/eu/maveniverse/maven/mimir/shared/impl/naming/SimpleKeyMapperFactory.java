@@ -13,10 +13,14 @@ import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.naming.KeyMapper;
 import eu.maveniverse.maven.mimir.shared.naming.KeyMapperFactory;
 import java.net.URI;
+import java.util.function.Predicate;
 import javax.inject.Named;
 import javax.inject.Singleton;
+
+import eu.maveniverse.maven.mimir.shared.naming.RemoteRepositories;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.util.StringDigestUtil;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 
 @Singleton
@@ -37,11 +41,17 @@ public final class SimpleKeyMapperFactory implements KeyMapperFactory {
      * support repo aliases, mirrors, etc.
      */
     public static class SimpleKeyMapper implements KeyMapper {
+        private static final Predicate<RemoteRepository> CENTRAL_PREDICATE = RemoteRepositories.centralDirectOnly();
+
         /**
          * Provides default and simplistic "container" implementation.
          */
         public String container(RemoteRepository repository) {
-            return repository.getId();
+            if (CENTRAL_PREDICATE.test(repository)) {
+                return repository.getId();
+            } else {
+                return repository.getId() + "-" + StringDigestUtil.sha1(repository.getUrl());
+            }
         }
 
         /**
