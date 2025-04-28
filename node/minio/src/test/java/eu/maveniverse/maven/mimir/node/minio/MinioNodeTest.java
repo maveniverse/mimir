@@ -23,6 +23,7 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.internal.impl.checksum.Sha1ChecksumAlgorithmFactory;
 import org.eclipse.aether.internal.impl.checksum.Sha512ChecksumAlgorithmFactory;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmHelper;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.MinIOContainer;
@@ -30,15 +31,17 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers(disabledWithoutDocker = true)
 public class MinioNodeTest {
-    private final RemoteRepository central =
-            new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
+    private final RemoteRepository central = new RemoteRepository.Builder(
+                    "central", "default", "https://repo.maven.apache.org/maven2/")
+            .setSnapshotPolicy(new RepositoryPolicy(false, "", ""))
+            .build();
     private final Artifact junit = new DefaultArtifact("junit:junit:3.13.2");
     private final KeyMapper keyMapper =
             new SimpleKeyMapperFactory().createKeyMapper(Config.defaults().build());
 
     @Test
     void smoke() throws Exception {
-        try (MinIOContainer container = new MinIOContainer("minio/minio:RELEASE.2024-12-18T13-15-44Z")) {
+        try (MinIOContainer container = new MinIOContainer("minio/minio:RELEASE.2025-04-22T22-12-26Z")) {
             container.start();
             try (MinioClient minioClient = MinioClient.builder()
                     .endpoint(container.getS3URL())
