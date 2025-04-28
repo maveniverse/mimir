@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import org.eclipse.aether.internal.impl.checksum.Sha1ChecksumAlgorithmFactory;
 import org.jgroups.JChannel;
 import org.junit.jupiter.api.Test;
@@ -62,6 +63,7 @@ public class JGroupsNodeTest {
                 Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()),
                 new DirectoryLocker());
 
+        String testGroup = UUID.randomUUID().toString();
         JChannel channelOne = new JChannel("udp-new.xml")
                 .name(InetAddress.getLocalHost().getHostName() + "-one")
                 .setDiscardOwnMessages(true);
@@ -71,10 +73,8 @@ public class JGroupsNodeTest {
         Thread.sleep(1000);
 
         try (JGroupsNode publisher = new JGroupsNode(
-                        "mimir-jgroups",
-                        channelOne,
-                        new ServerSocketPublisherFactory().createPublisher(config, nodeOne));
-                JGroupsNode consumer = new JGroupsNode("mimir-jgroups", channelTwo)) {
+                        testGroup, channelOne, new ServerSocketPublisherFactory().createPublisher(config, nodeOne));
+                JGroupsNode consumer = new JGroupsNode(testGroup, channelTwo)) {
             URI key = URI.create("mimir:file:container:file.txt");
             Optional<? extends RemoteEntry> entry = consumer.locate(key);
             assertTrue(entry.isPresent());
