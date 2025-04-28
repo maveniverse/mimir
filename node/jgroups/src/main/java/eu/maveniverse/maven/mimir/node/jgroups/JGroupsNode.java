@@ -170,7 +170,7 @@ public class JGroupsNode extends RemoteNodeSupport<PublisherRemoteEntry> impleme
     @Override
     public String toString() {
         return getClass().getSimpleName() + " (distance=" + distance + " channel=" + channel.getAddress()
-                + " publisher=" + publisher + ")";
+                + " clusterName=" + channel.getClusterName() + " publisher=" + publisher + ")";
     }
 
     @Override
