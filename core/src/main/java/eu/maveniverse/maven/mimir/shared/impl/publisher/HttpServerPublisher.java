@@ -18,7 +18,6 @@ import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.time.ZoneId;
@@ -34,19 +33,23 @@ public class HttpServerPublisher extends PublisherSupport {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final HttpServer httpServer;
 
-    public HttpServerPublisher(SystemNode<?> systemNode, InetSocketAddress inetSocketAddress) throws IOException {
-        super(systemNode);
-        httpServer = HttpServer.create(inetSocketAddress, 0);
+    public HttpServerPublisher(SystemNode<?> systemNode, PublisherConfig publisherConfig) throws IOException {
+        super(systemNode, publisherConfig);
+        httpServer = HttpServer.create(new InetSocketAddress(publisherConfig.hostPort()), 0);
         // Java 21: httpServer.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
         httpServer.setExecutor(Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1));
         httpServer.createContext("/txid", new TxHandler(this::publishedEntry));
-        logger.info("HTTP publisher starting at {}", httpServer.getAddress());
+        logger.info(
+                "HTTP publisher starting at {} -> {}:{}",
+                httpServer.getAddress(),
+                publisherConfig.hostAddress(),
+                httpServer.getAddress().getPort());
         httpServer.start();
     }
 
     @Override
-    protected URI createHandle(String token) throws IOException {
-        return URI.create("http://" + InetAddress.getLocalHost().getHostAddress() + ":"
+    protected URI createHandle(String token) {
+        return URI.create("http://" + publisherConfig.hostAddress() + ":"
                 + httpServer.getAddress().getPort() + "/txid/" + token);
     }
 
@@ -58,7 +61,8 @@ public class HttpServerPublisher extends PublisherSupport {
 
     @Override
     public String toString() {
-        return "HTTP(" + httpServer.getAddress() + ")";
+        return "HTTP(" + publisherConfig.hostAddress() + ":"
+                + httpServer.getAddress().getPort() + ")";
     }
 
     private static class TxHandler implements HttpHandler {

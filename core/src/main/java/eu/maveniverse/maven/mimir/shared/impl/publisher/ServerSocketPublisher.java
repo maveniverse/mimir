@@ -12,7 +12,6 @@ import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -30,9 +29,10 @@ public class ServerSocketPublisher extends PublisherSupport {
     private final ServerSocket serverSocket;
     private final ExecutorService executor;
 
-    public ServerSocketPublisher(SystemNode<?> systemNode, InetSocketAddress inetSocketAddress) throws IOException {
-        super(systemNode);
+    public ServerSocketPublisher(SystemNode<?> systemNode, PublisherConfig publisherConfig) throws IOException {
+        super(systemNode, publisherConfig);
 
+        InetSocketAddress inetSocketAddress = new InetSocketAddress(publisherConfig.hostPort());
         this.serverSocket = new ServerSocket(inetSocketAddress.getPort(), 50, inetSocketAddress.getAddress());
         // Java 21: this.executor = Executors.newVirtualThreadPerTaskExecutor();
         this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1);
@@ -70,14 +70,18 @@ public class ServerSocketPublisher extends PublisherSupport {
             }
         });
         serverThread.setDaemon(true);
-        logger.info("Socket publisher starting at {}", serverSocket.getLocalSocketAddress());
+        logger.info(
+                "Socket publisher starting at {} -> {}:{}",
+                serverSocket.getLocalSocketAddress(),
+                publisherConfig.hostAddress(),
+                serverSocket.getLocalPort());
         serverThread.start();
     }
 
     @Override
-    protected URI createHandle(String token) throws IOException {
-        return URI.create("socket://" + InetAddress.getLocalHost().getHostAddress() + ":" + serverSocket.getLocalPort()
-                + "/" + token);
+    protected URI createHandle(String token) {
+        return URI.create(
+                "socket://" + publisherConfig.hostAddress() + ":" + serverSocket.getLocalPort() + "/" + token);
     }
 
     @Override
@@ -89,6 +93,6 @@ public class ServerSocketPublisher extends PublisherSupport {
 
     @Override
     public String toString() {
-        return "HTTP(" + serverSocket.getLocalSocketAddress() + ")";
+        return "socket(" + publisherConfig.hostAddress() + ":" + serverSocket.getLocalPort() + ")";
     }
 }
