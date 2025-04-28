@@ -60,7 +60,7 @@ public class JGroupsNodeFactory implements RemoteNodeFactory {
     }
 
     private JChannel createChannel(JGroupsNodeConfig cfg) throws Exception {
-        if (cfg.jgroupsInterface() != null && System.getProperty("jgroups.bind_addr") == null) {
+        if (System.getProperty("jgroups.bind_addr") == null && cfg.jgroupsInterface() != null) {
             // hack, find better way
             System.setProperty("jgroups.bind_addr", cfg.jgroupsInterface());
         }

@@ -1,13 +1,17 @@
+File buildLog = new File( basedir, 'build.log' )
+assert buildLog.exists()
+String build = buildLog.text
+
 File firstLog = new File( basedir, 'first.log' )
-assert firstLog.exists()
+assert firstLog.exists() : build
 String first = firstLog.text
 
 File secondLog = new File( basedir, 'second.log' )
-assert secondLog.exists()
+assert secondLog.exists() : first
 String second = secondLog.text
 
 File thirdLog = new File( basedir, 'third.log' )
-assert thirdLog.exists()
+assert thirdLog.exists() : second
 String third = thirdLog.text
 
 // Lets make strict assertion

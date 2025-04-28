@@ -10,13 +10,14 @@ package eu.maveniverse.maven.mimir.shared.impl.publisher;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.impl.Utils;
 import java.io.IOException;
 
 public class PublisherConfig {
     public static PublisherConfig with(Config config) throws IOException {
         requireNonNull(config, "config");
 
-        String hostAddress = PublisherSupport.getLocalHost().getHostAddress();
+        String hostAddress = Utils.getLocalHost().getHostAddress();
         int hostPort = 0;
 
         if (config.effectiveProperties().containsKey("mimir.publisher.hostAddress")) {
