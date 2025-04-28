@@ -48,10 +48,12 @@ public abstract class PublisherSupport implements Publisher {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final SystemNode<?> systemNode;
+    protected final PublisherConfig publisherConfig;
     protected final ConcurrentMap<String, SystemEntry> publishedEntries;
 
-    protected PublisherSupport(SystemNode<?> systemNode) {
+    protected PublisherSupport(SystemNode<?> systemNode, PublisherConfig publisherConfig) {
         this.systemNode = requireNonNull(systemNode, "systemNode");
+        this.publisherConfig = requireNonNull(publisherConfig, "publisherConfig");
         this.publishedEntries = new ConcurrentHashMap<>();
     }
 
@@ -121,7 +123,7 @@ public abstract class PublisherSupport implements Publisher {
      *                if the local host name could not be resolved into an
      *                address.
      */
-    protected static InetAddress getLocalHost() throws UnknownHostException {
+    static InetAddress getLocalHost() throws UnknownHostException {
         try {
             InetAddress candidateAddress = null;
             // Iterate all NICs (network interface cards)...

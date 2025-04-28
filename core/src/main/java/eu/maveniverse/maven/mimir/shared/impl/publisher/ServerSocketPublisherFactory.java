@@ -14,7 +14,6 @@ import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.mimir.shared.publisher.Publisher;
 import eu.maveniverse.maven.mimir.shared.publisher.PublisherFactory;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
@@ -27,6 +26,6 @@ public class ServerSocketPublisherFactory implements PublisherFactory {
     public Publisher createPublisher(Config config, SystemNode<?> systemNode) throws IOException {
         requireNonNull(config, "config");
         requireNonNull(systemNode, "systemNode");
-        return new ServerSocketPublisher(systemNode, new InetSocketAddress(0));
+        return new ServerSocketPublisher(systemNode, PublisherConfig.with(config));
     }
 }
