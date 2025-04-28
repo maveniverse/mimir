@@ -17,12 +17,18 @@ public class JGroupsNodeConfig {
     public static JGroupsNodeConfig with(Config config) throws IOException {
         requireNonNull(config, "config");
 
+        String groupSuffix = "@n/a";
+        if (config.mimirVersion().isPresent()) {
+            String version = config.mimirVersion().orElseThrow();
+            groupSuffix = "@" + version.substring(0, version.lastIndexOf('.'));
+        }
+
         boolean enabled = true;
         boolean publisherEnabled = true;
         String publisherTransport = "socket";
         String jgroupsProps = "udp-new.xml";
         String jgroupsNodeName = InetAddress.getLocalHost().getHostName();
-        String jgroupsClusterName = "mimir-jgroups";
+        String jgroupsClusterName = "mimir-jgroups" + groupSuffix;
         String jgroupsInterface = null;
 
         if (config.effectiveProperties().containsKey("mimir.jgroups.enabled")) {
