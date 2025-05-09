@@ -12,10 +12,10 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 /**
- * Lifecycle participant that enforces Njord requirements.
+ * Lifecycle participant that enforces Mimir requirements.
  * <p>
  * This class is intentionally self-contained and compiled with Java 8 to make it able to run on wide range of
- * Maven and Java versions, to report sane error for user why Njord refuses to work in their environment.
+ * Maven and Java versions, to report sane error for user why Mimir refuses to work in their environment.
  */
 @Singleton
 @Named

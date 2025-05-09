@@ -21,7 +21,7 @@ public class JGroupsNodeConfig {
         if (config.mimirVersion().isPresent()) {
             String version = config.mimirVersion().orElseThrow();
             if (version.endsWith("-SNAPSHOT")) {
-                groupSuffix = version;
+                groupSuffix = "@" + version;
             } else {
                 groupSuffix = "@" + version.substring(0, version.lastIndexOf('.'));
             }
