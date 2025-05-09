@@ -15,6 +15,7 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
+import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -26,11 +27,8 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class HttpServerPublisher extends PublisherSupport {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final HttpServer httpServer;
 
     public HttpServerPublisher(SystemNode<?> systemNode, PublisherConfig publisherConfig) throws IOException {
@@ -54,7 +52,7 @@ public class HttpServerPublisher extends PublisherSupport {
     }
 
     @Override
-    public void close() {
+    protected void doClose() {
         logger.info("HTTP publisher stopping at {}", httpServer.getAddress());
         httpServer.stop(0);
     }
@@ -65,8 +63,7 @@ public class HttpServerPublisher extends PublisherSupport {
                 + httpServer.getAddress().getPort() + ")";
     }
 
-    private static class TxHandler implements HttpHandler {
-        private final Logger logger = LoggerFactory.getLogger(getClass());
+    private static class TxHandler extends ComponentSupport implements HttpHandler {
         private final Function<String, Optional<SystemEntry>> entrySupplier;
 
         private final DateTimeFormatter rfc7231 = DateTimeFormatter.ofPattern(

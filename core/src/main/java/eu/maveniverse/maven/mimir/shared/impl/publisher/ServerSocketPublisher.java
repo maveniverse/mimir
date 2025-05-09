@@ -21,11 +21,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ServerSocketPublisher extends PublisherSupport {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ServerSocket serverSocket;
     private final ExecutorService executor;
 
@@ -85,7 +82,7 @@ public class ServerSocketPublisher extends PublisherSupport {
     }
 
     @Override
-    public void close() throws IOException {
+    protected void doClose() throws IOException {
         logger.info("Socket publisher stopping at {}", serverSocket.getLocalSocketAddress());
         executor.shutdown();
         serverSocket.close();

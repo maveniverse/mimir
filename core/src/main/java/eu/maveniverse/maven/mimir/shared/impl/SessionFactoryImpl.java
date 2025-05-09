@@ -16,6 +16,7 @@ import eu.maveniverse.maven.mimir.shared.naming.KeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.naming.RemoteRepositories;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
+import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
@@ -25,13 +26,10 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Singleton
 @Named
-public final class SessionFactoryImpl implements SessionFactory {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+public final class SessionFactoryImpl extends ComponentSupport implements SessionFactory {
     private final Map<String, LocalNodeFactory> localNodeFactories;
     private final Map<String, KeyMapperFactory> nameMapperFactories;
 

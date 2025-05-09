@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Entry;
 import eu.maveniverse.maven.mimir.shared.Session;
+import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -35,14 +36,11 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 import org.eclipse.aether.transfer.ArtifactTransferException;
 import org.eclipse.aether.util.FileUtils;
 import org.eclipse.aether.util.listener.ChainedTransferListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Mimir connector wraps another connector that does real job.
  */
-public class MimirRepositoryConnector implements RepositoryConnector {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+public class MimirRepositoryConnector extends ComponentSupport implements RepositoryConnector {
     private final Session mimirSession;
     private final RemoteRepository remoteRepository;
     private final RepositoryConnector delegate;

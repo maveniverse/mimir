@@ -19,6 +19,7 @@ import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
+import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
@@ -43,12 +44,10 @@ import org.eclipse.sisu.space.BeanScanning;
 import org.eclipse.sisu.space.SpaceModule;
 import org.eclipse.sisu.space.URLClassSpace;
 import org.eclipse.sisu.wire.WireModule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Named
 @Singleton
-public class Daemon implements Closeable {
+public class Daemon extends ComponentSupport implements Closeable {
     static {
         // make Slf4j-simple go for stdout and not default stderr (unless re-configured by user)
         if (System.getProperty("org.slf4j.simpleLogger.logFile") == null) {
@@ -75,7 +74,7 @@ public class Daemon implements Closeable {
 
             Runtime.getRuntime().addShutdownHook(new Thread(daemon::close));
         } catch (Exception e) {
-            LoggerFactory.getLogger(Daemon.class).error(e.getMessage(), e);
+            e.printStackTrace(System.err);
         }
     }
 
@@ -100,8 +99,6 @@ public class Daemon implements Closeable {
             return systemNode;
         }
     }
-
-    private final Logger logger = LoggerFactory.getLogger(Daemon.class);
 
     private final Config config;
     private final Handle.ServerHandle serverHandle;

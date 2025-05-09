@@ -88,7 +88,7 @@ public final class FileNode extends NodeSupport<FileEntry> implements SystemNode
 
     @Override
     public Optional<FileEntry> locate(URI key) throws IOException {
-        ensureOpen();
+        checkClosed();
         Path path = resolveKey(key);
         if (Files.isRegularFile(path)) {
             Map<String, String> data = loadMetadata(path);
@@ -101,7 +101,7 @@ public final class FileNode extends NodeSupport<FileEntry> implements SystemNode
     @Override
     public FileEntry store(URI key, Path file, Map<String, String> md, Map<String, String> checksums)
             throws IOException {
-        ensureOpen();
+        checkClosed();
         Path path = resolveKey(key);
         HashMap<String, String> metadata = new HashMap<>(md);
         FileTime fileTime = Files.getLastModifiedTime(file);
@@ -134,7 +134,7 @@ public final class FileNode extends NodeSupport<FileEntry> implements SystemNode
 
     @Override
     public FileEntry store(URI key, Entry entry) throws IOException {
-        ensureOpen();
+        checkClosed();
         Path path = resolveKey(key);
         if (entry instanceof RemoteEntry remoteEntry) {
             try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {

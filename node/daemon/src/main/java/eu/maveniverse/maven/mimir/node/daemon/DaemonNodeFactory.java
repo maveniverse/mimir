@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.mimir.daemon.protocol.Session;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
+import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,14 +24,10 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Singleton
 @Named(DaemonConfig.NAME)
-public class DaemonNodeFactory implements LocalNodeFactory {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
+public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFactory {
     private final Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories;
 
     @Inject

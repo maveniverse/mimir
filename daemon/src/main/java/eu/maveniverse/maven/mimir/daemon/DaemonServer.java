@@ -27,6 +27,7 @@ import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
+import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -36,12 +37,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-final class DaemonServer implements Runnable {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
+final class DaemonServer extends ComponentSupport implements Runnable {
     private final Handle handle;
     private final Map<String, String> daemonData;
     private final SystemNode<?> systemNode;

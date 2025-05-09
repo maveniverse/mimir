@@ -13,6 +13,7 @@ import eu.maveniverse.maven.mimir.shared.Entry;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
+import eu.maveniverse.maven.shared.core.component.CloseableSupport;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -22,18 +23,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public final class SessionImpl implements Session {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final AtomicBoolean closed;
+public final class SessionImpl extends CloseableSupport implements Session {
     private final Predicate<RemoteRepository> repositoryPredicate;
     private final Predicate<Artifact> artifactPredicate;
     private final BiFunction<RemoteRepository, Artifact, URI> keyMapper;
@@ -48,7 +44,6 @@ public final class SessionImpl implements Session {
             Predicate<Artifact> artifactPredicate,
             BiFunction<RemoteRepository, Artifact, URI> keyMapper,
             LocalNode<?> localNode) {
-        this.closed = new AtomicBoolean(false);
         this.repositoryPredicate = requireNonNull(repositoryPredicate, "repositoryPredicate");
         this.artifactPredicate = requireNonNull(artifactPredicate, "artifactPredicate");
         this.keyMapper = requireNonNull(keyMapper, "nameMapper");
@@ -63,25 +58,25 @@ public final class SessionImpl implements Session {
 
     @Override
     public boolean repositorySupported(RemoteRepository repository) {
-        checkState();
+        checkClosed();
         return repositoryPredicate.test(repository);
     }
 
     @Override
     public boolean artifactSupported(Artifact artifact) {
-        checkState();
+        checkClosed();
         return artifactPredicate.test(artifact);
     }
 
     @Override
     public List<String> checksumAlgorithms() throws IOException {
-        checkState();
+        checkClosed();
         return localNode.checksumAlgorithms();
     }
 
     @Override
     public Optional<Entry> locate(RemoteRepository remoteRepository, Artifact artifact) throws IOException {
-        checkState();
+        checkClosed();
         requireNonNull(remoteRepository, "remoteRepository");
         requireNonNull(artifact, "artifact");
         if (repositoryPredicate.test(remoteRepository) && artifactPredicate.test(artifact)) {
@@ -127,7 +122,7 @@ public final class SessionImpl implements Session {
             Map<String, String> metadata,
             Map<String, String> checksums)
             throws IOException {
-        checkState();
+        checkClosed();
         requireNonNull(remoteRepository, "remoteRepository");
         requireNonNull(artifact, "artifact");
         requireNonNull(file, "file");
@@ -161,27 +156,19 @@ public final class SessionImpl implements Session {
                 .contains(ArtifactIdUtils.toId(artifact));
     }
 
-    private void checkState() {
-        if (closed.get()) {
-            throw new IllegalStateException("Session is closed");
-        }
-    }
-
     @Override
-    public void close() throws IOException {
-        if (closed.compareAndSet(false, true)) {
-            ArrayList<IOException> exceptions = new ArrayList<>();
-            try {
-                localNode.close();
-            } catch (IOException e) {
-                exceptions.add(e);
-            }
-            if (!exceptions.isEmpty()) {
-                IOException closeException = new IOException("Could not close session");
-                exceptions.forEach(closeException::addSuppressed);
-                throw closeException;
-            }
-            logger.info("Mimir session closed (RETRIEVED={} CACHED={})", stats.transferSuccess(), stats.storeSuccess());
+    protected void doClose() throws IOException {
+        ArrayList<IOException> exceptions = new ArrayList<>();
+        try {
+            localNode.close();
+        } catch (IOException e) {
+            exceptions.add(e);
         }
+        if (!exceptions.isEmpty()) {
+            IOException closeException = new IOException("Could not close session");
+            exceptions.forEach(closeException::addSuppressed);
+            throw closeException;
+        }
+        logger.info("Mimir session closed (RETRIEVED={} CACHED={})", stats.transferSuccess(), stats.storeSuccess());
     }
 }
