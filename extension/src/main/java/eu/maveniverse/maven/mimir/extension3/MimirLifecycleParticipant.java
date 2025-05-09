@@ -97,7 +97,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
             try {
                 logger.info(
                         "Resolving Mimir daemon version {}",
-                        config.mimirVersion().orElseThrow());
+                        config.mimirVersion().orElseThrow(() -> new IllegalStateException("Value is not present")));
                 ArtifactRequest artifactRequest =
                         new ArtifactRequest(new DefaultArtifact(daemonConfig.daemonGav()), remoteRepositories, "mimir");
                 ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, artifactRequest);
@@ -117,7 +117,8 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
             return;
         }
         try {
-            String mimirVersion = config.mimirVersion().orElseThrow();
+            String mimirVersion =
+                    config.mimirVersion().orElseThrow(() -> new IllegalStateException("Value is not present"));
             logger.debug("Checking for Mimir updates...");
             VersionRangeRequest versionRangeRequest = new VersionRangeRequest(
                     new DefaultArtifact(daemonConfig.daemonGav()).setVersion("[" + mimirVersion + ",)"),

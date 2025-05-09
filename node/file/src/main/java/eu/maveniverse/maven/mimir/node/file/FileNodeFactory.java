@@ -10,10 +10,10 @@ package eu.maveniverse.maven.mimir.node.file;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Config;
-import eu.maveniverse.maven.mimir.shared.impl.DirectoryLocker;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
+import eu.maveniverse.maven.shared.core.fs.DirectoryLocker;
 import java.io.IOException;
 import java.util.Map;
 import javax.inject.Inject;

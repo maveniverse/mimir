@@ -52,11 +52,15 @@ public class MimirRepositoryConnectorFactory implements RepositoryConnectorFacto
             throws NoRepositoryConnectorException {
         String message = "Mimir is disabled";
         Optional<Config> mimirConfigOptional = MimirUtils.mayGetConfig(session);
-        if (mimirConfigOptional.isPresent() && mimirConfigOptional.orElseThrow().enabled()) {
+        if (mimirConfigOptional.isPresent()
+                && mimirConfigOptional
+                        .orElseThrow(() -> new IllegalStateException("Value is not present"))
+                        .enabled()) {
             message = "Mimir session not yet created";
             Optional<Session> mimirSessionOptional = MimirUtils.mayGetSession(session);
             if (mimirSessionOptional.isPresent()) {
-                Session mimirSession = mimirSessionOptional.orElseThrow();
+                Session mimirSession =
+                        mimirSessionOptional.orElseThrow(() -> new IllegalStateException("Value is not present"));
                 message = "Unsupported repository: " + repository;
                 if (mimirSession.repositorySupported(repository)) {
                     RepositoryConnector repositoryConnector =
