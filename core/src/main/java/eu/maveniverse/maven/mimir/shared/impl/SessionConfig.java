@@ -42,9 +42,9 @@ public final class SessionConfig {
     private final Set<String> repositories;
 
     private SessionConfig(String keyMapper, String localNode, Set<String> repositories) {
-        this.keyMapper = keyMapper;
-        this.localNode = localNode;
-        this.repositories = repositories;
+        this.keyMapper = requireNonNull(keyMapper);
+        this.localNode = requireNonNull(localNode);
+        this.repositories = requireNonNull(repositories);
     }
 
     public String keyMapper() {
