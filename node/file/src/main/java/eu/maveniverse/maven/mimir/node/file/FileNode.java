@@ -181,7 +181,13 @@ public final class FileNode extends NodeSupport<FileEntry> implements SystemNode
 
     @Override
     protected void doClose() throws IOException {
-        directoryLocker.unlockDirectory(basedir);
+        try {
+            if (exclusiveAccess && cachePurge) {
+                logger.info("Purging caches...");
+            }
+        } finally {
+            directoryLocker.unlockDirectory(basedir);
+        }
     }
 
     private void storeMetadata(Path file, Map<String, String> metadata) throws IOException {
