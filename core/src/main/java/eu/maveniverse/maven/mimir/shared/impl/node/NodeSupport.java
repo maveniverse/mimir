@@ -11,40 +11,19 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.Node;
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import eu.maveniverse.maven.shared.core.component.CloseableSupport;
 
-public abstract class NodeSupport<E extends Entry> implements Node<E> {
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
+public abstract class NodeSupport<E extends Entry> extends CloseableSupport implements Node<E> {
     protected final String name;
-    protected final AtomicBoolean closed;
 
     public NodeSupport(String name) {
         this.name = requireNonNull(name, "name");
-        this.closed = new AtomicBoolean(false);
     }
 
     @Override
     public String name() {
         return name;
     }
-
-    @Override
-    public final void close() throws IOException {
-        if (closed.compareAndSet(false, true)) {
-            doClose();
-        }
-    }
-
-    protected void ensureOpen() {
-        if (closed.get()) {
-            throw new IllegalStateException("Node already closed");
-        }
-    }
-
-    protected void doClose() throws IOException {}
 
     @Override
     public abstract String toString();

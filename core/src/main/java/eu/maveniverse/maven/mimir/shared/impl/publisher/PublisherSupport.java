@@ -12,16 +12,15 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.mimir.shared.publisher.Publisher;
+import eu.maveniverse.maven.shared.core.component.CloseableSupport;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public abstract class PublisherSupport implements Publisher {
+public abstract class PublisherSupport extends CloseableSupport implements Publisher {
     protected static final class HandleImpl implements Publisher.Handle {
         private final URI handle;
         private final SystemEntry systemEntry;
@@ -42,7 +41,6 @@ public abstract class PublisherSupport implements Publisher {
         }
     }
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final SystemNode<?> systemNode;
     protected final PublisherConfig publisherConfig;
     protected final ConcurrentMap<String, SystemEntry> publishedEntries;

@@ -80,7 +80,7 @@ public final class MinioNode extends NodeSupport<MinioEntry> implements SystemNo
 
     @Override
     public Optional<MinioEntry> locate(URI key) throws IOException {
-        ensureOpen();
+        checkClosed();
         Key localKey = keyResolver.apply(key);
         try {
             StatObjectResponse stat = minioClient.statObject(StatObjectArgs.builder()
@@ -102,7 +102,7 @@ public final class MinioNode extends NodeSupport<MinioEntry> implements SystemNo
 
     @Override
     public MinioEntry store(URI key, Entry entry) throws IOException {
-        ensureOpen();
+        checkClosed();
         Key localKey = keyResolver.apply(key);
         long contentLength = entry.getContentLength();
         if (entry instanceof RemoteEntry remoteEntry) {
@@ -185,7 +185,7 @@ public final class MinioNode extends NodeSupport<MinioEntry> implements SystemNo
     @Override
     public MinioEntry store(URI key, Path file, Map<String, String> md, Map<String, String> checksums)
             throws IOException {
-        ensureOpen();
+        checkClosed();
         Key localKey = keyResolver.apply(key);
         long contentLength = Files.size(file);
         HashMap<String, String> metadata = new HashMap<>(md);

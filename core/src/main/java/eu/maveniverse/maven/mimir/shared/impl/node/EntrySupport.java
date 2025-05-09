@@ -8,12 +8,10 @@
 package eu.maveniverse.maven.mimir.shared.impl.node;
 
 import eu.maveniverse.maven.mimir.shared.node.Entry;
+import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public abstract class EntrySupport implements Entry {
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
+public abstract class EntrySupport extends ComponentSupport implements Entry {
     protected final Map<String, String> metadata;
     protected final Map<String, String> checksums;
 

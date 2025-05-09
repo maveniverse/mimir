@@ -10,6 +10,7 @@ package eu.maveniverse.maven.mimir.extension3;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Session;
+import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collections;
@@ -25,13 +26,10 @@ import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactorySelector;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmHelper;
 import org.eclipse.aether.spi.resolution.ArtifactResolverPostProcessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Singleton
 @Named
-public class MimirArtifactResolverPostProcessor implements ArtifactResolverPostProcessor {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+public class MimirArtifactResolverPostProcessor extends ComponentSupport implements ArtifactResolverPostProcessor {
     private final ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector;
 
     @Inject
