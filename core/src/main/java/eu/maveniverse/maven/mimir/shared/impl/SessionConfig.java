@@ -13,8 +13,6 @@ import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.naming.RemoteRepositories;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
 public final class SessionConfig {
@@ -23,7 +21,7 @@ public final class SessionConfig {
 
         String keyMapper = SimpleKeyMapperFactory.NAME;
         String localNode = "daemon";
-        Set<String> repositories = Collections.singleton(RemoteRepositories.CENTRAL_REPOSITORY_ID);
+        Set<String> repositories = Set.of(RemoteRepositories.CENTRAL_REPOSITORY_ID);
 
         if (config.effectiveProperties().containsKey("mimir.session.keyMapper")) {
             keyMapper = config.effectiveProperties().get("mimir.session.keyMapper");
@@ -33,7 +31,7 @@ public final class SessionConfig {
         }
         if (config.effectiveProperties().containsKey("mimir.session.repositories")) {
             String value = config.effectiveProperties().get("mimir.session.repositories");
-            repositories = new HashSet<>(Arrays.asList(value.split(",")));
+            repositories = Set.copyOf(Arrays.asList(value.split(",")));
         }
 
         return new SessionConfig(keyMapper, localNode, repositories);
