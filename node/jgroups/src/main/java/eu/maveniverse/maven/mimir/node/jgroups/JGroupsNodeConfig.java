@@ -20,7 +20,11 @@ public class JGroupsNodeConfig {
         String groupSuffix = "@n/a";
         if (config.mimirVersion().isPresent()) {
             String version = config.mimirVersion().orElseThrow();
-            groupSuffix = "@" + version.substring(0, version.lastIndexOf('.'));
+            if (version.endsWith("-SNAPSHOT")) {
+                groupSuffix = version;
+            } else {
+                groupSuffix = "@" + version.substring(0, version.lastIndexOf('.'));
+            }
         }
 
         boolean enabled = true;

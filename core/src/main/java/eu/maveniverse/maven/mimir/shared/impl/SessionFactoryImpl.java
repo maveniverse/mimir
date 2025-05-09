@@ -20,7 +20,9 @@ import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -46,30 +48,41 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
 
         SessionConfig sessionConfig = SessionConfig.with(config);
 
+        KeyMapperFactory keyMapperFactory = nameMapperFactories.get(sessionConfig.keyMapper());
+        if (keyMapperFactory == null) {
+            throw new IllegalStateException("No keyMapper: " + sessionConfig.keyMapper());
+        }
+        BiFunction<RemoteRepository, Artifact, URI> keyMapper =
+                requireNonNull(keyMapperFactory.createKeyMapper(config), "keyMapper");
+
         LocalNodeFactory localNodeFactory = localNodeFactories.get(sessionConfig.localNode());
         if (localNodeFactory == null) {
             throw new IllegalArgumentException("Unknown local node: " + sessionConfig.localNode());
         }
         LocalNode<?> localNode = localNodeFactory.createNode(config);
 
-        KeyMapperFactory keyMapperFactory = nameMapperFactories.get(sessionConfig.keyMapper());
-        if (keyMapperFactory == null) {
-            throw new IllegalStateException("No keyMapper: " + sessionConfig.keyMapper());
+        Set<String> repositories = sessionConfig.repositories();
+        Predicate<RemoteRepository> repositoryPredicate;
+        if (repositories.isEmpty()) {
+            throw new IllegalStateException("No repositories to handle");
         }
-        BiFunction<RemoteRepository, Artifact, URI> nameMapper =
-                requireNonNull(keyMapperFactory.createKeyMapper(config), "keyMapper");
+        if (repositories.size() == 1 && repositories.contains(RemoteRepositories.CENTRAL_REPOSITORY_ID)) {
+            repositoryPredicate = RemoteRepositories.centralDirectOnly();
+        } else {
+            repositoryPredicate = RemoteRepositories.httpsReleaseDirectOnlyWithIds(repositories);
+        }
 
         if (logger.isDebugEnabled()) {
             logger.debug("Mimir {} session created", config.mimirVersion().orElse("UNKNOWN"));
             logger.debug("  Properties: {}", config.basedir().resolve(config.propertiesPath()));
-            logger.debug("  Name mapper: {}", nameMapper.getClass().getSimpleName());
+            logger.debug("  Key mapper: {}", keyMapper.getClass().getSimpleName());
             logger.debug("  Local Node: {}", localNode);
+            logger.debug("  Repositories: {}", repositories);
             logger.debug("  Used checksums: {}", localNode.checksumAlgorithms());
             logger.debug(
                     "  Supported checksums: {}", localNode.checksumFactories().keySet());
         }
 
-        return new SessionImpl(
-                RemoteRepositories.httpsReleaseDirectOnly(), a -> !a.isSnapshot(), nameMapper, localNode);
+        return new SessionImpl(repositoryPredicate, a -> !a.isSnapshot(), keyMapper, localNode);
     }
 }
