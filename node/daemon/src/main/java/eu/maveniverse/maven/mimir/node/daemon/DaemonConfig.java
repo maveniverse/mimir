@@ -29,6 +29,7 @@ public class DaemonConfig {
         boolean autostart = mimirVersionPresent;
         Duration autostartDuration = Duration.ofMinutes(1);
         boolean autostop = false;
+        boolean cachePurge = false;
         String daemonJarName = "daemon-" + mimirVersion + ".jar";
         String daemonLogName = "daemon-" + mimirVersion + ".log";
         String daemonGav = "eu.maveniverse.maven.mimir:daemon:jar:daemon:" + mimirVersion;
@@ -50,6 +51,9 @@ public class DaemonConfig {
         }
         if (config.effectiveProperties().containsKey("mimir.daemon.autostop")) {
             autostop = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.autostop"));
+        }
+        if (config.effectiveProperties().containsKey("mimir.daemon.cachePurge")) {
+            cachePurge = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.cachePurge"));
         }
         if (config.effectiveProperties().containsKey("mimir.daemon.daemonJarName")) {
             daemonJarName = config.effectiveProperties().get("mimir.daemon.daemonJarName");
@@ -73,6 +77,7 @@ public class DaemonConfig {
                 autostart,
                 autostartDuration,
                 autostop,
+                cachePurge,
                 daemonJarName,
                 daemonLogName,
                 daemonGav,
@@ -88,6 +93,7 @@ public class DaemonConfig {
     private final boolean autostart;
     private final Duration autostartDuration;
     private final boolean autostop;
+    private final boolean cachePurge;
     private final String daemonJarName;
     private final String daemonLogName;
     private final String daemonGav;
@@ -101,6 +107,7 @@ public class DaemonConfig {
             boolean autostart,
             Duration autostartDuration,
             boolean autostop,
+            boolean cachePurge,
             String daemonJarName,
             String daemonLogName,
             String daemonGav,
@@ -112,6 +119,7 @@ public class DaemonConfig {
         this.autostart = autostart;
         this.autostartDuration = requireNonNull(autostartDuration);
         this.autostop = autostop;
+        this.cachePurge = cachePurge;
         this.daemonJarName = requireNonNull(daemonJarName);
         this.daemonLogName = requireNonNull(daemonLogName);
         this.daemonGav = requireNonNull(daemonGav);
@@ -141,6 +149,10 @@ public class DaemonConfig {
 
     public boolean autostop() {
         return autostop;
+    }
+
+    public boolean cachePurge() {
+        return cachePurge;
     }
 
     public String daemonJarName() {

@@ -36,6 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 final class DaemonServer extends ComponentSupport implements Runnable {
@@ -44,6 +45,8 @@ final class DaemonServer extends ComponentSupport implements Runnable {
     private final SystemNode<?> systemNode;
     private final List<RemoteNode<?>> remoteNodes;
     private final Predicate<Request> clientPredicate;
+    private final DaemonSession daemonSession;
+    private final Consumer<String> cachePurge;
     private final Runnable shutdownHook;
 
     DaemonServer(
@@ -52,12 +55,16 @@ final class DaemonServer extends ComponentSupport implements Runnable {
             SystemNode<?> systemNode,
             List<RemoteNode<?>> remoteNodes,
             Predicate<Request> clientPredicate,
+            DaemonSession daemonSession,
+            Consumer<String> cachePurge,
             Runnable shutdownHook) {
         this.handle = handle;
         this.daemonData = daemonData;
         this.systemNode = systemNode;
         this.remoteNodes = remoteNodes;
         this.clientPredicate = clientPredicate;
+        this.daemonSession = daemonSession;
+        this.cachePurge = cachePurge;
         this.shutdownHook = shutdownHook;
     }
 
@@ -72,7 +79,7 @@ final class DaemonServer extends ComponentSupport implements Runnable {
                         logger.debug("{} {}", request.cmd(), request.data());
                         if (clientPredicate.test(request)) {
                             Map<String, String> session = new HashMap<>();
-                            session.put(Session.SESSION_ID, "todo");
+                            session.put(Session.SESSION_ID, daemonSession.createSession());
                             handle.writeResponse(ImmutableResponse.builder()
                                     .status(Response.STATUS_OK)
                                     .session(session)
@@ -84,8 +91,14 @@ final class DaemonServer extends ComponentSupport implements Runnable {
                     }
                     case CMD_BYE -> {
                         logger.debug("{} {}", request.cmd(), request.data());
+                        String sessionId = request.session().get(Session.SESSION_ID);
+                        if (Boolean.parseBoolean(request.data().getOrDefault(Request.DATA_CACHE_PURGE, "false"))) {
+                            cachePurge.accept(sessionId);
+                        }
+                        if (!daemonSession.dropSession(sessionId)) {
+                            logger.warn("Session not dropped: {} -> {}", sessionId, request.session());
+                        }
                         handle.writeResponse(Response.okMessage(request, "So Long, and Thanks for All the Fish"));
-
                         if (Boolean.parseBoolean(request.data().getOrDefault(Request.DATA_SHUTDOWN, "false"))) {
                             shutdownHook.run();
                         }
@@ -105,6 +118,7 @@ final class DaemonServer extends ComponentSupport implements Runnable {
                         }
                         logger.debug("{} {} {}", request.cmd(), entry.isPresent() ? "HIT" : "MISS", keyString);
                         if (entry.isPresent()) {
+                            daemonSession.markKeyInSession(request.session().get(Session.SESSION_ID), key);
                             Entry entryValue = entry.orElseThrow();
                             handle.writeResponse(Response.okData(request, mergeEntry(entryValue)));
                         } else {
@@ -141,13 +155,12 @@ final class DaemonServer extends ComponentSupport implements Runnable {
                         String pathString = request.requireData(Request.DATA_PATHSTRING);
                         Map<String, String> data = request.data();
                         logger.debug("{} {} <- {}", request.cmd(), keyString, pathString);
+                        URI key = URI.create(keyString);
                         handle.writeResponse(Response.okData(
                                 request,
                                 mergeEntry(systemNode.store(
-                                        URI.create(keyString),
-                                        Path.of(pathString),
-                                        splitMetadata(data),
-                                        splitChecksums(data)))));
+                                        key, Path.of(pathString), splitMetadata(data), splitChecksums(data)))));
+                        daemonSession.markKeyInSession(request.session().get(Session.SESSION_ID), key);
                     }
                     default -> handle.writeResponse(Response.koMessage(request, "Bad command"));
                 }

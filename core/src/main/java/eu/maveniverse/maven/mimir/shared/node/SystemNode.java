@@ -24,6 +24,14 @@ public interface SystemNode<E extends SystemEntry> extends LocalNode<E> {
     }
 
     /**
+     * Returns {@code true} if caches were purged. Implementation may choose to not purge caches, among other
+     * things due lack of {@link #exclusiveAccess()}.
+     */
+    default boolean purgeCaches() {
+        return false;
+    }
+
+    /**
      * Stores entry and provides new local entry for stored content. If entry already exists, method will fail if
      * checksums are not matching (not "same file").
      */

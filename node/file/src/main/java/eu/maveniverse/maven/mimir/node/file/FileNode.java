@@ -234,6 +234,7 @@ public final class FileNode extends NodeSupport<FileEntry> implements SystemNode
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + " (basedir=" + basedir + " mayLink=" + mayLink + ")";
+        return getClass().getSimpleName() + " (basedir=" + basedir + " mayLink=" + mayLink + " exclusiveAccess="
+                + exclusiveAccess + ")";
     }
 }

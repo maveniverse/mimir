@@ -38,6 +38,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
     private final Handle.ClientHandle clientHandle;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
     private final boolean autostop;
+    private final boolean cachePurge;
     private final Map<String, String> session;
     private final Map<String, String> daemonData;
 
@@ -45,13 +46,15 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
             Map<String, String> clientData,
             Path socketPath,
             Map<String, ChecksumAlgorithmFactory> checksumFactories,
-            boolean autostop)
+            boolean autostop,
+            boolean cachePurge)
             throws IOException {
         super(DaemonConfig.NAME);
         this.socketPath = requireNonNull(socketPath, "socketPath");
         this.clientHandle = Handle.clientDomainSocket(socketPath);
         this.checksumFactories = Collections.unmodifiableMap(requireNonNull(checksumFactories, "checksumFactories"));
         this.autostop = autostop;
+        this.cachePurge = cachePurge;
 
         try (Handle handle = clientHandle.getHandle()) {
             handle.writeRequest(Request.hello(clientData));
@@ -115,9 +118,13 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
         try (clientHandle) {
             try (Handle handle = clientHandle.getHandle()) {
                 if (autostop) {
-                    logger.info("Daemon shutdown initiated");
+                    if (cachePurge) {
+                        logger.info("Daemon shutdown with cache-purge initiated");
+                    } else {
+                        logger.info("Daemon shutdown initiated");
+                    }
                 }
-                handle.writeRequest(Request.bye(session, autostop));
+                handle.writeRequest(Request.bye(session, autostop, cachePurge));
                 Response byeResponse = handle.readResponse();
                 logger.debug("Bye OK {}", byeResponse.data());
             }

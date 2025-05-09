@@ -52,7 +52,8 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
         clientData.put(Session.NODE_PID, Long.toString(ProcessHandle.current().pid()));
         clientData.put(Session.NODE_VERSION, config.mimirVersion().orElse("UNKNOWN"));
         try {
-            return new DaemonNode(clientData, cfg.socketPath(), checksumAlgorithmFactories, cfg.autostop());
+            return new DaemonNode(
+                    clientData, cfg.socketPath(), checksumAlgorithmFactories, cfg.autostop(), cfg.cachePurge());
         } catch (IOException e) {
             mayDumpDaemonLog(config.basedir().resolve(cfg.daemonLogName()));
             throw e;

@@ -101,6 +101,8 @@ public class Daemon extends ComponentSupport implements Closeable {
     }
 
     private final Config config;
+    private final DaemonConfig daemonConfig;
+    private final DaemonSession daemonSession;
     private final Handle.ServerHandle serverHandle;
     private final ExecutorService executor;
     private final SystemNode<?> systemNode;
@@ -110,12 +112,14 @@ public class Daemon extends ComponentSupport implements Closeable {
     public Daemon(
             Config config,
             DaemonConfig daemonConfig,
+            DaemonSession daemonSession,
             SystemNode<?> systemNode,
             Map<String, RemoteNodeFactory> remoteNodeFactories,
             Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories)
             throws IOException {
         this.config = requireNonNull(config, "config");
-        requireNonNull(daemonConfig, "daemonConfig");
+        this.daemonConfig = requireNonNull(daemonConfig, "daemonConfig");
+        this.daemonSession = requireNonNull(daemonSession, "daemonSession");
         requireNonNull(systemNode, "systemNode");
         requireNonNull(remoteNodeFactories, "remoteNodeFactories");
 
@@ -165,7 +169,14 @@ public class Daemon extends ComponentSupport implements Closeable {
                 while (serverHandle.isOpen()) {
                     Handle handle = serverHandle.accept();
                     executor.submit(new DaemonServer(
-                            handle, daemonData, systemNode, remoteNodes, clientPredicate, this::close));
+                            handle,
+                            daemonData,
+                            systemNode,
+                            remoteNodes,
+                            clientPredicate,
+                            daemonSession,
+                            this::cachePurge,
+                            this::close));
                 }
             } catch (AsynchronousCloseException ignored) {
                 // we are done
@@ -173,6 +184,17 @@ public class Daemon extends ComponentSupport implements Closeable {
                 logger.error("Error while accepting client connection", e);
             }
         });
+    }
+
+    private void cachePurge(String sessionId) {
+        if (!systemNode.exclusiveAccess()) {
+            logger.info(
+                    "Cache purge asked, but SystemNode {} does not offer exclusive access; ignoring",
+                    systemNode.name());
+            return;
+        }
+        logger.info("Cache purge: {}", sessionId);
+        systemNode.purgeCaches();
     }
 
     @Override
@@ -199,6 +221,11 @@ public class Daemon extends ComponentSupport implements Closeable {
                 systemNode.close();
             } catch (IOException e) {
                 logger.warn("Error closing local node", e);
+            }
+            try {
+                daemonSession.close();
+            } catch (IOException e) {
+                logger.warn("Error closing session store", e);
             }
         } finally {
             logger.info("Daemon stopped");
