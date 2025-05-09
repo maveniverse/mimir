@@ -183,7 +183,7 @@ public final class FileNode extends NodeSupport<FileEntry> implements SystemNode
     protected void doClose() throws IOException {
         try {
             if (exclusiveAccess && cachePurge) {
-                logger.info("Purging caches...");
+                logger.info("Purging caches... Not implemented yet ;)");
             }
         } finally {
             directoryLocker.unlockDirectory(basedir);
