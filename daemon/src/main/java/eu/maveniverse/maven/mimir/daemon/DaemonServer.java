@@ -156,11 +156,11 @@ final class DaemonServer extends ComponentSupport implements Runnable {
                         Map<String, String> data = request.data();
                         logger.debug("{} {} <- {}", request.cmd(), keyString, pathString);
                         URI key = URI.create(keyString);
+                        daemonSession.markKeyInSession(request.session().get(Session.SESSION_ID), key);
                         handle.writeResponse(Response.okData(
                                 request,
                                 mergeEntry(systemNode.store(
                                         key, Path.of(pathString), splitMetadata(data), splitChecksums(data)))));
-                        daemonSession.markKeyInSession(request.session().get(Session.SESSION_ID), key);
                     }
                     default -> handle.writeResponse(Response.koMessage(request, "Bad command"));
                 }
