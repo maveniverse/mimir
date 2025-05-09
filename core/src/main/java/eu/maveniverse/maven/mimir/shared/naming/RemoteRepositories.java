@@ -10,8 +10,10 @@ package eu.maveniverse.maven.mimir.shared.naming;
 import static java.util.Objects.requireNonNull;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.eclipse.aether.repository.RemoteRepository;
 
@@ -19,7 +21,7 @@ import org.eclipse.aether.repository.RemoteRepository;
  * Some handy predicates for {@link RemoteRepository} instances.
  */
 public final class RemoteRepositories {
-    private static final String CENTRAL_REPOSITORY_ID = "central";
+    public static final String CENTRAL_REPOSITORY_ID = "central";
     private static final Collection<String> CENTRAL_URLS = List.of(
             "https://repo.maven.apache.org/maven2",
             "https://repo1.maven.org/maven2",
@@ -31,13 +33,14 @@ public final class RemoteRepositories {
      * For simplicity's sake: this one supports ONLY Maven Central (direct access).
      * Repository is supported if:
      * <ul>
-     *     <li>the {@link #httpsReleaseDirectOnlyWithId(String)} supports it; id is "central"</li>
+     *     <li>the {@link #httpsReleaseDirectOnlyWithIds(Set)} supports it; id is "central"</li>
      *     <li>the URL is one of "real" Central URLs</li>
      * </ul>
      */
     public static Predicate<RemoteRepository> centralDirectOnly() {
-        return httpsReleaseDirectOnlyWithId(CENTRAL_REPOSITORY_ID).and(remoteRepository -> CENTRAL_URLS.stream()
-                .anyMatch(u -> remoteRepository.getUrl().startsWith(u)));
+        return httpsReleaseDirectOnlyWithIds(Collections.singleton(CENTRAL_REPOSITORY_ID))
+                .and(remoteRepository -> CENTRAL_URLS.stream()
+                        .anyMatch(u -> remoteRepository.getUrl().startsWith(u)));
     }
 
     /**
@@ -47,9 +50,9 @@ public final class RemoteRepositories {
      *     <li>repository.id equals to given ID</li>
      * </ul>
      */
-    public static Predicate<RemoteRepository> httpsReleaseDirectOnlyWithId(String repositoryId) {
-        requireNonNull(repositoryId, "repositoryId");
-        return httpsReleaseDirectOnly().and(remoteRepository -> repositoryId.equals(remoteRepository.getId()));
+    public static Predicate<RemoteRepository> httpsReleaseDirectOnlyWithIds(Set<String> repositoryIds) {
+        requireNonNull(repositoryIds, "repositoryIds");
+        return httpsReleaseDirectOnly().and(remoteRepository -> repositoryIds.contains(remoteRepository.getId()));
     }
 
     /**
