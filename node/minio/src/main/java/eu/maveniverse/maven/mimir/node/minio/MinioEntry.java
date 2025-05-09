@@ -9,10 +9,10 @@ package eu.maveniverse.maven.mimir.node.minio;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.impl.FileUtils;
 import eu.maveniverse.maven.mimir.shared.impl.node.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.naming.Key;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
+import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import io.minio.DownloadObjectArgs;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;

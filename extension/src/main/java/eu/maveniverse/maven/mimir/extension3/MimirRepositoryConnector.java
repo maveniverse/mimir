@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,7 +80,7 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                     try {
                         Optional<Entry> entry = mimirSession.locate(remoteRepository, artifactDownload.getArtifact());
                         if (entry.isPresent()) {
-                            Entry ce = entry.orElseThrow();
+                            Entry ce = entry.orElseThrow(() -> new IllegalStateException("Value not present"));
                             logger.debug("Fetched {} from Mimir cache", artifactDownload.getArtifact());
                             Path artifactFile = artifactDownload.getFile().toPath();
                             ce.transferTo(artifactFile);
@@ -94,7 +95,7 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                                                     .getParent()
                                                     .resolve(artifactFile.getFileName() + "."
                                                             + checksumAlgorithmFactory.getFileExtension()),
-                                            p -> Files.writeString(p, chk, StandardCharsets.UTF_8));
+                                            p -> Files.write(p, chk.getBytes(StandardCharsets.UTF_8)));
                                     break;
                                 }
                             }
@@ -150,8 +151,8 @@ public class MimirRepositoryConnector implements RepositoryConnector {
                                 remoteRepository,
                                 potentiallyCached.artifact,
                                 artifactDownload.getFile().toPath(),
-                                Map.of(),
-                                potentiallyCached.checksumCalculator().getChecksums());
+                                Collections.emptyMap(),
+                                potentiallyCached.checksumCalculator.getChecksums());
                     } catch (IOException e) {
                         artifactDownload.setException(
                                 new ArtifactTransferException(artifactDownload.getArtifact(), remoteRepository, e));
@@ -174,6 +175,16 @@ public class MimirRepositoryConnector implements RepositoryConnector {
         delegate.close();
     }
 
-    private record PotentiallyCached(
-            Artifact artifact, ChecksumCalculator checksumCalculator, MimirTransferListener transferListener) {}
+    private static class PotentiallyCached {
+        private final Artifact artifact;
+        private final ChecksumCalculator checksumCalculator;
+        private final MimirTransferListener transferListener;
+
+        public PotentiallyCached(
+                Artifact artifact, ChecksumCalculator checksumCalculator, MimirTransferListener transferListener) {
+            this.artifact = artifact;
+            this.checksumCalculator = checksumCalculator;
+            this.transferListener = transferListener;
+        }
+    }
 }

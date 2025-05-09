@@ -7,10 +7,9 @@
  */
 package eu.maveniverse.maven.mimir.shared;
 
-import static eu.maveniverse.maven.mimir.shared.impl.Utils.toMap;
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.impl.Utils;
+import eu.maveniverse.maven.shared.core.maven.MavenUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -53,12 +52,12 @@ public interface Config {
     static Builder defaults() {
         return new Builder(
                 null,
-                Utils.discoverArtifactVersion(
+                MavenUtils.discoverArtifactVersion(
                         Config.class.getClassLoader(), "eu.maveniverse.maven.mimir", "core", null),
                 discoverBaseDirectory(),
                 Path.of("mimir.properties"),
                 new HashMap<>(),
-                toMap(System.getProperties()));
+                MavenUtils.toMap(System.getProperties()));
     }
 
     static Builder daemonDefaults() {
@@ -166,7 +165,7 @@ public interface Config {
                 this.systemProperties = Map.copyOf(requireNonNull(systemProperties, "systemProperties"));
                 HashMap<String, String> eff = new HashMap<>();
                 eff.putAll(systemProperties);
-                eff.putAll(toMap(mimirProperties));
+                eff.putAll(MavenUtils.toMap(mimirProperties));
                 eff.putAll(userProperties);
                 this.effectiveProperties = Map.copyOf(eff);
             }

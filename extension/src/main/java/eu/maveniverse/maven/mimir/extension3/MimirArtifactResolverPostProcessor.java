@@ -12,8 +12,8 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.mimir.shared.Session;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -43,10 +43,11 @@ public class MimirArtifactResolverPostProcessor implements ArtifactResolverPostP
     @Override
     public void postProcess(RepositorySystemSession session, List<ArtifactResult> artifactResults) {
         for (ArtifactResult artifactResult : artifactResults) {
-            if (artifactResult.getRepository() instanceof RemoteRepository remoteRepository) {
+            if (artifactResult.getRepository() instanceof RemoteRepository) {
+                RemoteRepository remoteRepository = (RemoteRepository) artifactResult.getRepository();
                 Optional<Session> sessionOptional = MimirUtils.mayGetSession(session);
                 if (sessionOptional.isPresent()) {
-                    Session ms = sessionOptional.orElseThrow();
+                    Session ms = sessionOptional.orElseThrow(() -> new IllegalStateException("Value not present"));
                     Artifact artifact = artifactResult.getArtifact();
                     boolean resolved = artifactResult.isResolved();
                     if (resolved && ms.repositorySupported(remoteRepository) && ms.artifactSupported(artifact)) {
@@ -54,12 +55,12 @@ public class MimirArtifactResolverPostProcessor implements ArtifactResolverPostP
                             // store it; if needed
                             if (!ms.retrievedFromCache(remoteRepository, artifact)
                                     && !ms.storedToCache(remoteRepository, artifact)
-                                    && ms.locate(remoteRepository, artifact).isEmpty()) {
+                                    && !ms.locate(remoteRepository, artifact).isPresent()) {
                                 ms.store(
                                         remoteRepository,
                                         artifact,
                                         artifact.getFile().toPath(),
-                                        Map.of(),
+                                        Collections.emptyMap(),
                                         ChecksumAlgorithmHelper.calculate(
                                                 artifact.getFile(),
                                                 checksumAlgorithmFactorySelector.selectList(ms.checksumAlgorithms())));
