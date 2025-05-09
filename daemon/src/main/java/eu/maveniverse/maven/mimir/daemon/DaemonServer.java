@@ -36,6 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Predicate;
 
 final class DaemonServer extends ComponentSupport implements Runnable {
@@ -72,7 +73,7 @@ final class DaemonServer extends ComponentSupport implements Runnable {
                         logger.debug("{} {}", request.cmd(), request.data());
                         if (clientPredicate.test(request)) {
                             Map<String, String> session = new HashMap<>();
-                            session.put(Session.SESSION_ID, "todo");
+                            session.put(Session.SESSION_ID, UUID.randomUUID().toString());
                             handle.writeResponse(ImmutableResponse.builder()
                                     .status(Response.STATUS_OK)
                                     .session(session)
@@ -85,7 +86,6 @@ final class DaemonServer extends ComponentSupport implements Runnable {
                     case CMD_BYE -> {
                         logger.debug("{} {}", request.cmd(), request.data());
                         handle.writeResponse(Response.okMessage(request, "So Long, and Thanks for All the Fish"));
-
                         if (Boolean.parseBoolean(request.data().getOrDefault(Request.DATA_SHUTDOWN, "false"))) {
                             shutdownHook.run();
                         }
@@ -141,13 +141,11 @@ final class DaemonServer extends ComponentSupport implements Runnable {
                         String pathString = request.requireData(Request.DATA_PATHSTRING);
                         Map<String, String> data = request.data();
                         logger.debug("{} {} <- {}", request.cmd(), keyString, pathString);
+                        URI key = URI.create(keyString);
                         handle.writeResponse(Response.okData(
                                 request,
                                 mergeEntry(systemNode.store(
-                                        URI.create(keyString),
-                                        Path.of(pathString),
-                                        splitMetadata(data),
-                                        splitChecksums(data)))));
+                                        key, Path.of(pathString), splitMetadata(data), splitChecksums(data)))));
                     }
                     default -> handle.writeResponse(Response.koMessage(request, "Bad command"));
                 }

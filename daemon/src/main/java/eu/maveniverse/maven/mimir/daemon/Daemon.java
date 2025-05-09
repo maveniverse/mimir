@@ -101,6 +101,7 @@ public class Daemon extends ComponentSupport implements Closeable {
     }
 
     private final Config config;
+    private final DaemonConfig daemonConfig;
     private final Handle.ServerHandle serverHandle;
     private final ExecutorService executor;
     private final SystemNode<?> systemNode;
@@ -115,7 +116,7 @@ public class Daemon extends ComponentSupport implements Closeable {
             Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories)
             throws IOException {
         this.config = requireNonNull(config, "config");
-        requireNonNull(daemonConfig, "daemonConfig");
+        this.daemonConfig = requireNonNull(daemonConfig, "daemonConfig");
         requireNonNull(systemNode, "systemNode");
         requireNonNull(remoteNodeFactories, "remoteNodeFactories");
 
