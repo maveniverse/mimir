@@ -49,6 +49,7 @@ public final class FileNode extends NodeSupport<FileEntry> implements SystemNode
     private final Path basedir;
     private final boolean mayLink;
     private final boolean exclusiveAccess;
+    private final boolean cachePurge;
     private final Function<URI, Key> keyResolver;
     private final List<String> checksumAlgorithms;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
@@ -58,6 +59,7 @@ public final class FileNode extends NodeSupport<FileEntry> implements SystemNode
             Path basedir,
             boolean mayLink,
             boolean exclusiveAccess,
+            boolean cachePurge,
             Function<URI, Key> keyResolver,
             List<String> checksumAlgorithms,
             Map<String, ChecksumAlgorithmFactory> checksumFactories,
@@ -67,6 +69,7 @@ public final class FileNode extends NodeSupport<FileEntry> implements SystemNode
         this.basedir = basedir;
         this.mayLink = mayLink;
         this.exclusiveAccess = exclusiveAccess;
+        this.cachePurge = cachePurge;
         this.keyResolver = requireNonNull(keyResolver, "keyResolver");
         this.checksumAlgorithms = List.copyOf(checksumAlgorithms);
         this.checksumFactories = Map.copyOf(checksumFactories);
@@ -235,6 +238,6 @@ public final class FileNode extends NodeSupport<FileEntry> implements SystemNode
     @Override
     public String toString() {
         return getClass().getSimpleName() + " (basedir=" + basedir + " mayLink=" + mayLink + " exclusiveAccess="
-                + exclusiveAccess + ")";
+                + exclusiveAccess + " cachePurge=" + cachePurge + ")";
     }
 }

@@ -60,6 +60,7 @@ public final class FileNodeFactory implements SystemNodeFactory {
                 fileNodeConfig.basedir(),
                 fileNodeConfig.mayLink(),
                 fileNodeConfig.exclusiveAccess(),
+                fileNodeConfig.cachePurge(),
                 keyResolver,
                 fileNodeConfig.checksumAlgorithms(),
                 checksumFactories,

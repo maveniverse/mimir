@@ -169,14 +169,7 @@ public class Daemon extends ComponentSupport implements Closeable {
                 while (serverHandle.isOpen()) {
                     Handle handle = serverHandle.accept();
                     executor.submit(new DaemonServer(
-                            handle,
-                            daemonData,
-                            systemNode,
-                            remoteNodes,
-                            clientPredicate,
-                            daemonSession,
-                            this::cachePurge,
-                            this::close));
+                            handle, daemonData, systemNode, remoteNodes, clientPredicate, daemonSession, this::close));
                 }
             } catch (AsynchronousCloseException ignored) {
                 // we are done
@@ -184,17 +177,6 @@ public class Daemon extends ComponentSupport implements Closeable {
                 logger.error("Error while accepting client connection", e);
             }
         });
-    }
-
-    private void cachePurge(String sessionId) {
-        if (!systemNode.exclusiveAccess()) {
-            logger.info(
-                    "Cache purge asked, but SystemNode {} does not offer exclusive access; ignoring",
-                    systemNode.name());
-            return;
-        }
-        logger.info("Cache purge: {}", sessionId);
-        systemNode.purgeCaches();
     }
 
     @Override

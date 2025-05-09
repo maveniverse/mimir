@@ -36,7 +36,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 final class DaemonServer extends ComponentSupport implements Runnable {
@@ -46,7 +45,6 @@ final class DaemonServer extends ComponentSupport implements Runnable {
     private final List<RemoteNode<?>> remoteNodes;
     private final Predicate<Request> clientPredicate;
     private final DaemonSession daemonSession;
-    private final Consumer<String> cachePurge;
     private final Runnable shutdownHook;
 
     DaemonServer(
@@ -56,7 +54,6 @@ final class DaemonServer extends ComponentSupport implements Runnable {
             List<RemoteNode<?>> remoteNodes,
             Predicate<Request> clientPredicate,
             DaemonSession daemonSession,
-            Consumer<String> cachePurge,
             Runnable shutdownHook) {
         this.handle = handle;
         this.daemonData = daemonData;
@@ -64,7 +61,6 @@ final class DaemonServer extends ComponentSupport implements Runnable {
         this.remoteNodes = remoteNodes;
         this.clientPredicate = clientPredicate;
         this.daemonSession = daemonSession;
-        this.cachePurge = cachePurge;
         this.shutdownHook = shutdownHook;
     }
 
@@ -92,9 +88,6 @@ final class DaemonServer extends ComponentSupport implements Runnable {
                     case CMD_BYE -> {
                         logger.debug("{} {}", request.cmd(), request.data());
                         String sessionId = request.session().get(Session.SESSION_ID);
-                        if (Boolean.parseBoolean(request.data().getOrDefault(Request.DATA_CACHE_PURGE, "false"))) {
-                            cachePurge.accept(sessionId);
-                        }
                         if (!daemonSession.dropSession(sessionId)) {
                             logger.warn("Session not dropped: {} -> {}", sessionId, request.session());
                         }

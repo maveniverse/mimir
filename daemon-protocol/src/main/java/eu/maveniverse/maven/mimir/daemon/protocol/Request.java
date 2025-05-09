@@ -24,7 +24,6 @@ public abstract class Request extends Message {
 
     public static final String DATA_KEYSTRING = "keyString";
     public static final String DATA_PATHSTRING = "pathString";
-    public static final String DATA_CACHE_PURGE = "cachePurge";
     public static final String DATA_SHUTDOWN = "shutdown";
 
     public abstract String cmd();
@@ -34,14 +33,11 @@ public abstract class Request extends Message {
         return request(Map.of(), CMD_HELLO, data);
     }
 
-    public static Request bye(Map<String, String> session, boolean shutdown, boolean cachePurge) {
+    public static Request bye(Map<String, String> session, boolean shutdown) {
         requireNonNull(session, "session");
         Map<String, String> data = new HashMap<>();
         if (shutdown) {
             data.put(DATA_SHUTDOWN, Boolean.TRUE.toString());
-        }
-        if (cachePurge) {
-            data.put(DATA_CACHE_PURGE, Boolean.TRUE.toString());
         }
         return request(session, CMD_BYE, data);
     }
