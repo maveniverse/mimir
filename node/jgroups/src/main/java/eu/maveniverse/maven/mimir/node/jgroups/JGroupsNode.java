@@ -93,13 +93,15 @@ public class JGroupsNode extends RemoteNodeSupport<PublisherRemoteEntry> impleme
                     messageDispatcher.castMessage(null, new ObjectMessage(null, req), RequestOptions.SYNC());
             for (Address responder : responses.keySet()) {
                 Map<String, String> data = responses.get(responder).getValue();
-                if (!data.isEmpty()) {
+                if (data != null && !data.isEmpty()) {
                     if (data.containsKey(PUBLISHER_HANDLE)) {
                         URI handle = URI.create(requireNonNull(data.remove(PUBLISHER_HANDLE), PUBLISHER_HANDLE));
                         return Optional.of(new PublisherRemoteEntry(splitMetadata(data), splitChecksums(data), handle));
                     } else {
                         throw new IOException(data.remove(RSP_ERROR));
                     }
+                } else {
+                    logger.info("Ignoring null/empty response from {}", responder);
                 }
             }
         } catch (Exception e) {
@@ -116,12 +118,12 @@ public class JGroupsNode extends RemoteNodeSupport<PublisherRemoteEntry> impleme
         if (prev != null) {
             List<Address> newMembers = View.newMembers(prev, view);
             if (!newMembers.isEmpty()) {
-                logger.info("  New members: {}", newMembers);
+                logger.debug("  New members: {}", newMembers);
             }
 
             List<Address> leftMembers = View.leftMembers(prev, view);
             if (!leftMembers.isEmpty()) {
-                logger.info("  Left members: {}", leftMembers);
+                logger.debug("  Left members: {}", leftMembers);
             }
         }
         lastView.compareAndSet(prev, view);
