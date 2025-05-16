@@ -53,7 +53,13 @@ public class MinioNodeFactory implements SystemNodeFactory {
         }
         MinioClient minioClient = createMinioClient(minioNodeConfig);
         return new MinioNode(
-                minioNodeConfig, minioClient, keyResolver, minioNodeConfig.checksumAlgorithms(), checksumFactories);
+                minioNodeConfig,
+                minioClient,
+                minioNodeConfig.exclusiveAccess(),
+                minioNodeConfig.cachePurge(),
+                keyResolver,
+                minioNodeConfig.checksumAlgorithms(),
+                checksumFactories);
     }
 
     private MinioClient createMinioClient(MinioNodeConfig minioNodeConfig) {

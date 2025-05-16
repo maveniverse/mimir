@@ -50,6 +50,8 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 public final class MinioNode extends NodeSupport<MinioEntry> implements SystemNode<MinioEntry> {
     private final MinioNodeConfig config;
     private final MinioClient minioClient;
+    private final boolean exclusiveAccess;
+    private final boolean cachePurge;
     private final Function<URI, Key> keyResolver;
     private final List<String> checksumAlgorithms;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
@@ -57,12 +59,16 @@ public final class MinioNode extends NodeSupport<MinioEntry> implements SystemNo
     public MinioNode(
             MinioNodeConfig config,
             MinioClient minioClient,
+            boolean exclusiveAccess,
+            boolean cachePurge,
             Function<URI, Key> keyResolver,
             List<String> checksumAlgorithms,
             Map<String, ChecksumAlgorithmFactory> checksumFactories) {
         super(MinioNodeConfig.NAME);
         this.config = requireNonNull(config, "config");
         this.minioClient = requireNonNull(minioClient, "minioClient");
+        this.exclusiveAccess = exclusiveAccess;
+        this.cachePurge = cachePurge;
         this.keyResolver = requireNonNull(keyResolver, "keyResolver");
         this.checksumAlgorithms = requireNonNull(checksumAlgorithms, "checksumAlgorithms");
         this.checksumFactories = requireNonNull(checksumFactories, "checksumFactories");
@@ -98,6 +104,11 @@ public final class MinioNode extends NodeSupport<MinioEntry> implements SystemNo
         } catch (Exception e) {
             throw new IOException("inputStream()", e);
         }
+    }
+
+    @Override
+    public boolean exclusiveAccess() {
+        return exclusiveAccess;
     }
 
     @Override
@@ -229,6 +240,24 @@ public final class MinioNode extends NodeSupport<MinioEntry> implements SystemNo
         } catch (Exception e) {
             throw new IOException("inputStream()", e);
         }
+    }
+
+    @Override
+    protected void doClose() throws IOException {
+        if (exclusiveAccess && cachePurge) {
+            purgeCaches();
+        }
+        try {
+            minioClient.close();
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+    }
+
+    private void purgeCaches() {
+        logger.info("Purging caches...");
+        // purge all unused entries (+ apply some window from "now" to +time)
+        // all - touched - not in timeframe (if not "now") -> delete?
     }
 
     @Override

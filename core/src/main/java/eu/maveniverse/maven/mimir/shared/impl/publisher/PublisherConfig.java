@@ -17,7 +17,8 @@ public class PublisherConfig {
     public static PublisherConfig with(Config config) throws IOException {
         requireNonNull(config, "config");
 
-        String hostAddress = Utils.getLocalHost().getHostAddress();
+        String hostAddress =
+                Utils.getLocalHost(config.localHostHint().orElse(null)).getHostAddress();
         int hostPort = 0;
 
         if (config.effectiveProperties().containsKey("mimir.publisher.hostAddress")) {

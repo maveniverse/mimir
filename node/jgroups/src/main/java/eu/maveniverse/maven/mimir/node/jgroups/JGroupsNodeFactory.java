@@ -49,20 +49,28 @@ public class JGroupsNodeFactory implements RemoteNodeFactory {
                 }
                 return Optional.of(new JGroupsNode(
                         cfg.jgroupsClusterName(),
-                        createChannel(cfg),
+                        createChannel(config, cfg),
                         publisherFactory.createPublisher(config, systemNode)));
             } else {
-                return Optional.of(new JGroupsNode(cfg.jgroupsClusterName(), createChannel(cfg)));
+                return Optional.of(new JGroupsNode(cfg.jgroupsClusterName(), createChannel(config, cfg)));
             }
         } catch (Exception e) {
             throw new IOException("Failed to create JChannel", e);
         }
     }
 
-    private JChannel createChannel(JGroupsNodeConfig cfg) throws Exception {
-        if (System.getProperty("jgroups.bind_addr") == null && cfg.jgroupsInterface() != null) {
-            // hack, find better way
-            System.setProperty("jgroups.bind_addr", cfg.jgroupsInterface());
+    private JChannel createChannel(Config config, JGroupsNodeConfig cfg) throws Exception {
+        if (System.getProperty("jgroups.bind_addr") == null) {
+            String hint = null;
+            if (cfg.jgroupsInterface() != null) {
+                hint = cfg.jgroupsInterface();
+            } else if (config.localHostHint().isPresent()) {
+                hint = config.localHostHint().orElseThrow();
+            }
+            if (hint != null) {
+                // hack, find better way
+                System.setProperty("jgroups.bind_addr", hint);
+            }
         }
         return new JChannel(cfg.jgroupsProps()).name(cfg.jgroupsNodeName()).setDiscardOwnMessages(true);
     }
