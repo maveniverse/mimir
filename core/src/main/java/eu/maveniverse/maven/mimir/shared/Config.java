@@ -25,6 +25,33 @@ import java.util.Properties;
  * Simple Mimir configuration.
  */
 public interface Config {
+    String NAME = "mimir";
+
+    String CONF_PREFIX = NAME + ".";
+
+    /**
+     * Mimir "local host hint": on hosts where there is running Docker, Tailscale etc. it may be impossible to "figure out"
+     * which interface and which address correspond to LAN address, if any. Hence, one can give Mimir a "hint" that is
+     * globally applied at Mimir level (like publishers or LAN sharing is). Accepted hints are:
+     *
+     * <ul>
+     *     <li><code>match-interface:value</code></li>
+     *     <li><code>match-address:value</code></li>
+     * </ul>
+     *
+     * In both cases "value" may end with "*" (asterisk). If no asterisk, value equality is checked, if it ends with
+     * asterisk, then "starts with value" is checked.
+     * Examples:
+     *
+     * <ul>
+     *     <li><code>match-interface:enp*</code> means "use interface whose name starts with enp"</li>
+     *     <li><code>match-address:192.168.1.10</code> means "use address that equals to 192.168.1.10"</li>
+     * </ul>
+     *
+     * These hints may still produce wrong address selection, so one should check logs to ensure about them.
+     */
+    String CONF_LOCAL_HOST_HINT = CONF_PREFIX + "localHostHint";
+
     boolean enabled();
 
     Optional<String> mimirVersion();
@@ -38,6 +65,10 @@ public interface Config {
     Map<String, String> systemProperties();
 
     Map<String, String> effectiveProperties();
+
+    default Optional<String> localHostHint() {
+        return Optional.ofNullable(effectiveProperties().get(CONF_LOCAL_HOST_HINT));
+    }
 
     default Builder toBuilder() {
         return new Builder(

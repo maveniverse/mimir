@@ -25,6 +25,8 @@ public class MinioNodeConfig {
         String secretKey = "minioadmin";
         List<String> checksumAlgorithms = Arrays.asList("SHA-1", "SHA-512");
         String keyResolver = SimpleKeyResolverFactory.NAME;
+        boolean exclusiveAccess = false;
+        boolean cachePurge = false;
 
         if (config.effectiveProperties().containsKey("mimir.minio.endpoint")) {
             endpoint = config.effectiveProperties().get("mimir.minio.endpoint");
@@ -45,7 +47,14 @@ public class MinioNodeConfig {
         if (config.effectiveProperties().containsKey("mimir.minio.keyResolver")) {
             keyResolver = config.effectiveProperties().get("mimir.minio.keyResolver");
         }
-        return new MinioNodeConfig(endpoint, accessKey, secretKey, checksumAlgorithms, keyResolver);
+        if (config.effectiveProperties().containsKey("mimir.minio.exclusiveAccess")) {
+            exclusiveAccess = Boolean.parseBoolean(config.effectiveProperties().get("mimir.minio.exclusiveAccess"));
+        }
+        if (config.effectiveProperties().containsKey("mimir.minio.cachePurge")) {
+            cachePurge = Boolean.parseBoolean(config.effectiveProperties().get("mimir.minio.cachePurge"));
+        }
+        return new MinioNodeConfig(
+                endpoint, accessKey, secretKey, checksumAlgorithms, keyResolver, exclusiveAccess, cachePurge);
     }
 
     public static final String NAME = "minio";
@@ -55,14 +64,24 @@ public class MinioNodeConfig {
     private final String secretKey;
     private final List<String> checksumAlgorithms;
     private final String keyResolver;
+    private final boolean exclusiveAccess;
+    private final boolean cachePurge;
 
     private MinioNodeConfig(
-            String endpoint, String accessKey, String secretKey, List<String> checksumAlgorithms, String keyResolver) {
+            String endpoint,
+            String accessKey,
+            String secretKey,
+            List<String> checksumAlgorithms,
+            String keyResolver,
+            boolean exclusiveAccess,
+            boolean cachePurge) {
         this.endpoint = endpoint;
         this.accessKey = accessKey;
         this.secretKey = secretKey;
         this.checksumAlgorithms = checksumAlgorithms;
         this.keyResolver = keyResolver;
+        this.exclusiveAccess = exclusiveAccess;
+        this.cachePurge = cachePurge;
     }
 
     public String endpoint() {
@@ -83,5 +102,13 @@ public class MinioNodeConfig {
 
     public String keyResolver() {
         return keyResolver;
+    }
+
+    public boolean exclusiveAccess() {
+        return exclusiveAccess;
+    }
+
+    public boolean cachePurge() {
+        return cachePurge;
     }
 }

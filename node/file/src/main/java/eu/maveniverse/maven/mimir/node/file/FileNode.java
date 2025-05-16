@@ -183,11 +183,17 @@ public final class FileNode extends NodeSupport<FileEntry> implements SystemNode
     protected void doClose() throws IOException {
         try {
             if (exclusiveAccess && cachePurge) {
-                logger.info("Purging caches... Not implemented yet ;)");
+                purgeCaches();
             }
         } finally {
             directoryLocker.unlockDirectory(basedir);
         }
+    }
+
+    private void purgeCaches() {
+        logger.info("Purging caches...");
+        // purge all unused entries (+ apply some window from "now" to +time)
+        // all - touched - not in timeframe (if not "now") -> delete?
     }
 
     private void storeMetadata(Path file, Map<String, String> metadata) throws IOException {

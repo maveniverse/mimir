@@ -18,6 +18,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 public final class Utils {
     private Utils() {}
@@ -108,30 +109,44 @@ public final class Utils {
      * algorithm, it will fall back to calling and returning the result of JDK
      * method <code>InetAddress.getLocalHost</code>.
      *
+     * @param hint A nullable string, may be {@code "match-interface:name"} or {@code "match-address:addr"}. Both values
+     *             can end with "*" (asterisk) which means "starts with". For example a valid hint string is
+     *             {@code match-address:192.168.1*} which would mean "match address that starts with 192.168.1".
      * @exception UnknownHostException
      *                if the local host name could not be resolved into an
      *                address.
      */
-    public static InetAddress getLocalHost() throws UnknownHostException {
+    public static InetAddress getLocalHost(String hint) throws UnknownHostException {
+        Predicate<NetworkInterface> interfacePredicate = interfaceMatcher(hint);
+        Predicate<InetAddress> addressPredicate = addressMatcher(hint);
+        if (hint != null && interfacePredicate == null && addressPredicate == null) {
+            throw new IllegalArgumentException("Invalid hint " + hint);
+        }
         try {
             InetAddress candidateAddress = null;
             // Iterate all NICs (network interface cards)...
             for (Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
                     ifaces.hasMoreElements(); ) {
                 NetworkInterface iface = ifaces.nextElement();
-                // Iterate all IP addresses assigned to each card...
-                for (Enumeration<InetAddress> inetAddrs = iface.getInetAddresses(); inetAddrs.hasMoreElements(); ) {
-                    InetAddress inetAddr = inetAddrs.nextElement();
-                    if (!inetAddr.isLoopbackAddress()) {
-                        if (inetAddr.isSiteLocalAddress()) {
-                            // Found non-loopback site-local address. Return it immediately...
-                            return inetAddr;
-                        } else if (candidateAddress == null) {
-                            // Found non-loopback address, but not necessarily site-local.
-                            // Store it as a candidate to be returned if site-local address is not subsequently found...
-                            // Note that we don't repeatedly assign non-loopback non-site-local addresses as candidates,
-                            // only the first. For subsequent iterations, candidateAddress will be non-null.
-                            candidateAddress = inetAddr;
+                if (iface.isUp() && (interfacePredicate == null || interfacePredicate.test(iface))) {
+                    // Iterate all IP addresses assigned to each card...
+                    for (Enumeration<InetAddress> inetAddrs = iface.getInetAddresses(); inetAddrs.hasMoreElements(); ) {
+                        InetAddress inetAddr = inetAddrs.nextElement();
+                        if (addressPredicate == null || addressPredicate.test(inetAddr)) {
+                            if (!inetAddr.isLoopbackAddress()) {
+                                if (inetAddr.isSiteLocalAddress()) {
+                                    // Found non-loopback site-local address. Return it immediately...
+                                    return inetAddr;
+                                } else if (candidateAddress == null) {
+                                    // Found non-loopback address, but not necessarily site-local.
+                                    // Store it as a candidate to be returned if site-local address is not subsequently
+                                    // found...
+                                    // Note that we don't repeatedly assign non-loopback non-site-local addresses as
+                                    // candidates,
+                                    // only the first. For subsequent iterations, candidateAddress will be non-null.
+                                    candidateAddress = inetAddr;
+                                }
+                            }
                         }
                     }
                 }
@@ -155,6 +170,38 @@ public final class Utils {
                     new UnknownHostException("Failed to determine LAN address: " + e.getMessage());
             unknownHostException.initCause(e);
             throw unknownHostException;
+        }
+    }
+
+    private static Predicate<NetworkInterface> interfaceMatcher(String hint) {
+        if (hint == null || !hint.startsWith("match-interface:")) {
+            return null;
+        }
+        String name = hint.substring("match-interface:".length());
+        if (name.contains("*") && !name.endsWith("*")) {
+            throw new IllegalArgumentException("Invalid match-interface: " + hint);
+        }
+        if (name.endsWith("*")) {
+            String fname = name.substring(0, name.length() - 1);
+            return iface -> iface.getName().startsWith(fname);
+        } else {
+            return iface -> iface.getName().equals(name);
+        }
+    }
+
+    private static Predicate<InetAddress> addressMatcher(String hint) {
+        if (hint == null || !hint.startsWith("match-address:")) {
+            return null;
+        }
+        String name = hint.substring("match-address:".length());
+        if (name.contains("*") && !name.endsWith("*")) {
+            throw new IllegalArgumentException("Invalid match-address: " + hint);
+        }
+        if (name.endsWith("*")) {
+            String fname = name.substring(0, name.length() - 1);
+            return addr -> addr.getHostAddress().startsWith(fname);
+        } else {
+            return addr -> addr.getHostAddress().equals(name);
         }
     }
 }
