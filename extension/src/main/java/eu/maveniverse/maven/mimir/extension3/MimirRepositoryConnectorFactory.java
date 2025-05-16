@@ -8,17 +8,17 @@
 package eu.maveniverse.maven.mimir.extension3;
 
 import static java.util.Objects.requireNonNull;
-import static org.eclipse.aether.internal.impl.Maven2RepositoryLayoutFactory.CONFIG_PROP_CHECKSUMS_ALGORITHMS;
 
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.Session;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.spi.connector.RepositoryConnector;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
@@ -34,15 +34,15 @@ import org.eclipse.aether.util.ConfigUtils;
 public class MimirRepositoryConnectorFactory implements RepositoryConnectorFactory {
     public static final String NAME = "mimir";
 
-    private final BasicRepositoryConnectorFactory basicRepositoryConnectorFactory;
+    private final Map<String, Provider<RepositoryConnectorFactory>> repositoryConnectorFactories;
     private final ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector;
 
     @Inject
     public MimirRepositoryConnectorFactory(
-            BasicRepositoryConnectorFactory basicRepositoryConnectorFactory,
+            Map<String, Provider<RepositoryConnectorFactory>> repositoryConnectorFactories,
             ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector) {
-        this.basicRepositoryConnectorFactory =
-                requireNonNull(basicRepositoryConnectorFactory, "basicRepositoryConnectorFactory");
+        this.repositoryConnectorFactories =
+                requireNonNull(repositoryConnectorFactories, "repositoryConnectorFactories");
         this.checksumAlgorithmFactorySelector =
                 requireNonNull(checksumAlgorithmFactorySelector, "checksumAlgorithmFactorySelector");
     }
@@ -63,14 +63,19 @@ public class MimirRepositoryConnectorFactory implements RepositoryConnectorFacto
                         mimirSessionOptional.orElseThrow(() -> new IllegalStateException("Value is not present"));
                 message = "Unsupported repository: " + repository;
                 if (mimirSession.repositorySupported(repository)) {
+                    RepositoryConnectorFactory basicRepositoryConnectorFactory = requireNonNull(
+                            repositoryConnectorFactories.get("basic").get(),
+                            "No basic repository connector factory found");
                     RepositoryConnector repositoryConnector =
                             basicRepositoryConnectorFactory.newInstance(session, repository);
                     List<ChecksumAlgorithmFactory> checksumsAlgorithms = checksumAlgorithmFactorySelector.selectList(
                             ConfigUtils.parseCommaSeparatedUniqueNames(ConfigUtils.getString(
                                     session,
                                     "SHA-1,MD5", // copied from Maven2RepositoryLayoutFactory
-                                    CONFIG_PROP_CHECKSUMS_ALGORITHMS + "." + repository.getId(),
-                                    CONFIG_PROP_CHECKSUMS_ALGORITHMS)));
+                                    "aether.checksums.algorithms." + repository.getId(),
+                                    "aether.checksums.algorithms",
+                                    "aether.layout.maven2.checksumAlgorithms" + repository.getId(),
+                                    "aether.layout.maven2.checksumAlgorithms")));
                     return new MimirRepositoryConnector(
                             mimirSession,
                             repository,

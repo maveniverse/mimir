@@ -74,7 +74,7 @@ public class Daemon extends ComponentSupport implements Closeable {
 
             Runtime.getRuntime().addShutdownHook(new Thread(daemon::close));
         } catch (Exception e) {
-            e.printStackTrace(System.err);
+            e.printStackTrace(System.out);
         }
     }
 

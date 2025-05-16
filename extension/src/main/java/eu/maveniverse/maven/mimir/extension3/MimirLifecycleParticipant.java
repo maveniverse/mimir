@@ -52,7 +52,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
     }
 
     @Override
-    public void afterSessionStart(MavenSession session) throws MavenExecutionException {
+    public void afterProjectsRead(MavenSession session) throws MavenExecutionException {
         try {
             RepositorySystemSession repoSession = session.getRepositorySession();
             Config config = Config.defaults()
