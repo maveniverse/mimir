@@ -46,23 +46,22 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
     public Session createSession(SessionConfig config) throws IOException {
         requireNonNull(config, "config");
 
-        eu.maveniverse.maven.mimir.shared.impl.SessionConfig sessionConfig =
-                eu.maveniverse.maven.mimir.shared.impl.SessionConfig.with(config);
+        SessionImplConfig cfg = SessionImplConfig.with(config);
 
-        KeyMapperFactory keyMapperFactory = nameMapperFactories.get(sessionConfig.keyMapper());
+        KeyMapperFactory keyMapperFactory = nameMapperFactories.get(cfg.keyMapper());
         if (keyMapperFactory == null) {
-            throw new IllegalStateException("No keyMapper: " + sessionConfig.keyMapper());
+            throw new IllegalStateException("No keyMapper: " + cfg.keyMapper());
         }
         BiFunction<RemoteRepository, Artifact, URI> keyMapper =
                 requireNonNull(keyMapperFactory.createKeyMapper(config), "keyMapper");
 
-        LocalNodeFactory localNodeFactory = localNodeFactories.get(sessionConfig.localNode());
+        LocalNodeFactory localNodeFactory = localNodeFactories.get(cfg.localNode());
         if (localNodeFactory == null) {
-            throw new IllegalArgumentException("Unknown local node: " + sessionConfig.localNode());
+            throw new IllegalArgumentException("Unknown local node: " + cfg.localNode());
         }
         LocalNode<?> localNode = localNodeFactory.createNode(config);
 
-        Set<String> repositories = sessionConfig.repositories();
+        Set<String> repositories = cfg.repositories();
         Predicate<RemoteRepository> repositoryPredicate;
         if (repositories.isEmpty()) {
             throw new IllegalStateException("No repositories to handle");

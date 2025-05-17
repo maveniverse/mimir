@@ -9,13 +9,14 @@ package eu.maveniverse.maven.mimir.shared.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.naming.RemoteRepositories;
 import java.util.Arrays;
 import java.util.Set;
 
-public final class SessionConfig {
-    public static SessionConfig with(eu.maveniverse.maven.mimir.shared.SessionConfig sessionConfig) {
+public final class SessionImplConfig {
+    public static SessionImplConfig with(SessionConfig sessionConfig) {
         requireNonNull(sessionConfig, "config");
 
         String keyMapper = SimpleKeyMapperFactory.NAME;
@@ -33,14 +34,14 @@ public final class SessionConfig {
             repositories = Set.copyOf(Arrays.asList(value.split(",")));
         }
 
-        return new SessionConfig(keyMapper, localNode, repositories);
+        return new SessionImplConfig(keyMapper, localNode, repositories);
     }
 
     private final String keyMapper;
     private final String localNode;
     private final Set<String> repositories;
 
-    private SessionConfig(String keyMapper, String localNode, Set<String> repositories) {
+    private SessionImplConfig(String keyMapper, String localNode, Set<String> repositories) {
         this.keyMapper = requireNonNull(keyMapper);
         this.localNode = requireNonNull(localNode);
         this.repositories = requireNonNull(repositories);
