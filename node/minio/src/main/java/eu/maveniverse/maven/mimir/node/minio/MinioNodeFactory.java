@@ -9,7 +9,7 @@ package eu.maveniverse.maven.mimir.node.minio;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
@@ -36,13 +36,13 @@ public class MinioNodeFactory implements SystemNodeFactory {
     }
 
     @Override
-    public MinioNode createNode(Config config) throws IOException {
-        MinioNodeConfig minioNodeConfig = MinioNodeConfig.with(config);
+    public MinioNode createNode(SessionConfig sessionConfig) throws IOException {
+        MinioNodeConfig minioNodeConfig = MinioNodeConfig.with(sessionConfig);
         KeyResolverFactory keyResolverFactory = keyResolverFactories.get(minioNodeConfig.keyResolver());
         if (keyResolverFactory == null) {
             throw new IllegalArgumentException("Unknown keyResolver: " + minioNodeConfig.keyResolver());
         }
-        KeyResolver keyResolver = requireNonNull(keyResolverFactory.createKeyResolver(config), "keyResolver");
+        KeyResolver keyResolver = requireNonNull(keyResolverFactory.createKeyResolver(sessionConfig), "keyResolver");
 
         // verify checksums
         for (String alg : minioNodeConfig.checksumAlgorithms()) {

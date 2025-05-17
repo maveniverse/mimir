@@ -9,7 +9,7 @@ package eu.maveniverse.maven.mimir.shared.impl.publisher;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.mimir.shared.publisher.Publisher;
 import eu.maveniverse.maven.mimir.shared.publisher.PublisherFactory;
@@ -23,9 +23,9 @@ public class ServerSocketPublisherFactory implements PublisherFactory {
     public static final String NAME = "socket";
 
     @Override
-    public Publisher createPublisher(Config config, SystemNode<?> systemNode) throws IOException {
-        requireNonNull(config, "config");
-        requireNonNull(systemNode, "systemNode");
-        return new ServerSocketPublisher(systemNode, PublisherConfig.with(config));
+    public Publisher createPublisher(SessionConfig sessionConfig, SystemNode<?> systemNode) throws IOException {
+        requireNonNull(sessionConfig);
+        requireNonNull(systemNode);
+        return new ServerSocketPublisher(systemNode, PublisherConfig.with(sessionConfig));
     }
 }

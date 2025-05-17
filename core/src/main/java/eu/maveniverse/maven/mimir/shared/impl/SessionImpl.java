@@ -11,9 +11,10 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Entry;
 import eu.maveniverse.maven.mimir.shared.Session;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
-import eu.maveniverse.maven.shared.core.component.CloseableSupport;
+import eu.maveniverse.maven.shared.core.component.CloseableConfigSupport;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -29,7 +30,7 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 
-public final class SessionImpl extends CloseableSupport implements Session {
+public final class SessionImpl extends CloseableConfigSupport<SessionConfig> implements Session {
     private final Predicate<RemoteRepository> repositoryPredicate;
     private final Predicate<Artifact> artifactPredicate;
     private final BiFunction<RemoteRepository, Artifact, URI> keyMapper;
@@ -40,20 +41,27 @@ public final class SessionImpl extends CloseableSupport implements Session {
     private final ConcurrentHashMap<RemoteRepository, Set<String>> storedToCache;
 
     public SessionImpl(
+            SessionConfig sessionConfig,
             Predicate<RemoteRepository> repositoryPredicate,
             Predicate<Artifact> artifactPredicate,
             BiFunction<RemoteRepository, Artifact, URI> keyMapper,
             LocalNode<?> localNode) {
-        this.repositoryPredicate = requireNonNull(repositoryPredicate, "repositoryPredicate");
-        this.artifactPredicate = requireNonNull(artifactPredicate, "artifactPredicate");
-        this.keyMapper = requireNonNull(keyMapper, "nameMapper");
-        this.localNode = requireNonNull(localNode, "localNode");
+        super(sessionConfig);
+        this.repositoryPredicate = requireNonNull(repositoryPredicate);
+        this.artifactPredicate = requireNonNull(artifactPredicate);
+        this.keyMapper = requireNonNull(keyMapper);
+        this.localNode = requireNonNull(localNode);
         this.stats = new Stats();
 
         this.retrievedFromCache = new ConcurrentHashMap<>();
         this.storedToCache = new ConcurrentHashMap<>();
 
         logger.info("Mimir session created with {}", localNode);
+    }
+
+    @Override
+    public SessionConfig config() {
+        return config;
     }
 
     @Override

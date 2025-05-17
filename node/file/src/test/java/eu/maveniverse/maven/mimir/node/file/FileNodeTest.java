@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.naming.KeyMapper;
@@ -32,12 +32,12 @@ public class FileNodeTest {
     private final RemoteRepository central =
             new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
     private final Artifact junit = new DefaultArtifact("junit:junit:3.13.2");
-    private final KeyMapper keyMapper =
-            new SimpleKeyMapperFactory().createKeyMapper(Config.defaults().build());
+    private final KeyMapper keyMapper = new SimpleKeyMapperFactory()
+            .createKeyMapper(SessionConfig.defaults().build());
 
     @Test
     void smoke(@TempDir Path basedir, @TempDir Path workdir) throws Exception {
-        Config config = Config.defaults().basedir(basedir).build();
+        SessionConfig sessionConfig = SessionConfig.defaults().basedir(basedir).build();
         try (FileNode fileNode = new FileNodeFactory(
                         Map.of(SimpleKeyResolverFactory.NAME, new SimpleKeyResolverFactory()),
                         Map.of(
@@ -45,7 +45,7 @@ public class FileNodeTest {
                                 new Sha1ChecksumAlgorithmFactory(),
                                 Sha512ChecksumAlgorithmFactory.NAME,
                                 new Sha512ChecksumAlgorithmFactory()))
-                .createNode(config)) {
+                .createNode(sessionConfig)) {
             Optional<FileEntry> entry = fileNode.locate(keyMapper.apply(central, junit));
             assertFalse(entry.isPresent());
 
@@ -76,7 +76,7 @@ public class FileNodeTest {
 
     @Test
     void smokeNoLink(@TempDir Path basedir, @TempDir Path workdir) throws Exception {
-        Config config = Config.defaults()
+        SessionConfig sessionConfig = SessionConfig.defaults()
                 .basedir(basedir)
                 .setUserProperty("mimir.file.mayLink", "false")
                 .build();
@@ -87,7 +87,7 @@ public class FileNodeTest {
                                 new Sha1ChecksumAlgorithmFactory(),
                                 Sha512ChecksumAlgorithmFactory.NAME,
                                 new Sha512ChecksumAlgorithmFactory()))
-                .createNode(config)) {
+                .createNode(sessionConfig)) {
             Optional<FileEntry> entry = fileNode.locate(keyMapper.apply(central, junit));
             assertFalse(entry.isPresent());
 
@@ -118,7 +118,7 @@ public class FileNodeTest {
 
     @Test
     void sharedAccess(@TempDir Path basedir, @TempDir Path workdir) throws Exception {
-        Config config = Config.defaults()
+        SessionConfig sessionConfig = SessionConfig.defaults()
                 .basedir(basedir)
                 .setUserProperty("mimir.file.exclusiveAccess", "false")
                 .build();
@@ -129,15 +129,15 @@ public class FileNodeTest {
                         new Sha1ChecksumAlgorithmFactory(),
                         Sha512ChecksumAlgorithmFactory.NAME,
                         new Sha512ChecksumAlgorithmFactory()));
-        try (FileNode fileNode1 = fileNodeFactory.createNode(config);
-                FileNode fileNode2 = fileNodeFactory.createNode(config)) {
+        try (FileNode fileNode1 = fileNodeFactory.createNode(sessionConfig);
+                FileNode fileNode2 = fileNodeFactory.createNode(sessionConfig)) {
             // should be ok
         }
     }
 
     @Test
     void exclusiveAccess(@TempDir Path basedir, @TempDir Path workdir) throws Exception {
-        Config config = Config.defaults()
+        SessionConfig sessionConfig = SessionConfig.defaults()
                 .basedir(basedir)
                 .setUserProperty("mimir.file.exclusiveAccess", "true")
                 .build();
@@ -148,8 +148,8 @@ public class FileNodeTest {
                         new Sha1ChecksumAlgorithmFactory(),
                         Sha512ChecksumAlgorithmFactory.NAME,
                         new Sha512ChecksumAlgorithmFactory()));
-        try (FileNode fileNode = fileNodeFactory.createNode(config)) {
-            assertThrows(IOException.class, () -> fileNodeFactory.createNode(config));
+        try (FileNode fileNode = fileNodeFactory.createNode(sessionConfig)) {
+            assertThrows(IOException.class, () -> fileNodeFactory.createNode(sessionConfig));
         }
     }
 }

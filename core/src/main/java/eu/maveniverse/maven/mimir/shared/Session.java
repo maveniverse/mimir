@@ -18,6 +18,11 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 public interface Session extends Closeable {
     /**
+     * The config used to create session.
+     */
+    SessionConfig config();
+
+    /**
      * Tells whether session is configured to support given remote repository.
      */
     boolean repositorySupported(RemoteRepository remoteRepository);

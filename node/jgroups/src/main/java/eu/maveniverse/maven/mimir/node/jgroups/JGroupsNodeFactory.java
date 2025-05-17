@@ -9,7 +9,7 @@ package eu.maveniverse.maven.mimir.node.jgroups;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.mimir.shared.publisher.PublisherFactory;
@@ -34,11 +34,11 @@ public class JGroupsNodeFactory implements RemoteNodeFactory {
     }
 
     @Override
-    public Optional<JGroupsNode> createNode(Config config) throws IOException {
-        requireNonNull(config, "config");
+    public Optional<JGroupsNode> createNode(SessionConfig sessionConfig) throws IOException {
+        requireNonNull(sessionConfig, "config");
 
         try {
-            JGroupsNodeConfig cfg = JGroupsNodeConfig.with(config);
+            JGroupsNodeConfig cfg = JGroupsNodeConfig.with(sessionConfig);
             if (!cfg.enabled()) {
                 return Optional.empty();
             }
@@ -49,23 +49,23 @@ public class JGroupsNodeFactory implements RemoteNodeFactory {
                 }
                 return Optional.of(new JGroupsNode(
                         cfg.jgroupsClusterName(),
-                        createChannel(config, cfg),
-                        publisherFactory.createPublisher(config, systemNode)));
+                        createChannel(sessionConfig, cfg),
+                        publisherFactory.createPublisher(sessionConfig, systemNode)));
             } else {
-                return Optional.of(new JGroupsNode(cfg.jgroupsClusterName(), createChannel(config, cfg)));
+                return Optional.of(new JGroupsNode(cfg.jgroupsClusterName(), createChannel(sessionConfig, cfg)));
             }
         } catch (Exception e) {
             throw new IOException("Failed to create JChannel", e);
         }
     }
 
-    private JChannel createChannel(Config config, JGroupsNodeConfig cfg) throws Exception {
+    private JChannel createChannel(SessionConfig sessionConfig, JGroupsNodeConfig cfg) throws Exception {
         if (System.getProperty("jgroups.bind_addr") == null) {
             String hint = null;
             if (cfg.jgroupsInterface() != null) {
                 hint = cfg.jgroupsInterface();
-            } else if (config.localHostHint().isPresent()) {
-                hint = config.localHostHint().orElseThrow();
+            } else if (sessionConfig.localHostHint().isPresent()) {
+                hint = sessionConfig.localHostHint().orElseThrow();
             }
             if (hint != null) {
                 // hack, find better way

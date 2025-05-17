@@ -9,8 +9,8 @@ package eu.maveniverse.maven.mimir.shared.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.Session;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
 import eu.maveniverse.maven.mimir.shared.naming.KeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.naming.RemoteRepositories;
@@ -43,25 +43,25 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
     }
 
     @Override
-    public Session createSession(Config config) throws IOException {
-        requireNonNull(config, "config");
+    public Session createSession(SessionConfig config) throws IOException {
+        requireNonNull(config);
 
-        SessionConfig sessionConfig = SessionConfig.with(config);
+        SessionImplConfig cfg = SessionImplConfig.with(config);
 
-        KeyMapperFactory keyMapperFactory = nameMapperFactories.get(sessionConfig.keyMapper());
+        KeyMapperFactory keyMapperFactory = nameMapperFactories.get(cfg.keyMapper());
         if (keyMapperFactory == null) {
-            throw new IllegalStateException("No keyMapper: " + sessionConfig.keyMapper());
+            throw new IllegalStateException("No keyMapper: " + cfg.keyMapper());
         }
         BiFunction<RemoteRepository, Artifact, URI> keyMapper =
                 requireNonNull(keyMapperFactory.createKeyMapper(config), "keyMapper");
 
-        LocalNodeFactory localNodeFactory = localNodeFactories.get(sessionConfig.localNode());
+        LocalNodeFactory localNodeFactory = localNodeFactories.get(cfg.localNode());
         if (localNodeFactory == null) {
-            throw new IllegalArgumentException("Unknown local node: " + sessionConfig.localNode());
+            throw new IllegalArgumentException("Unknown local node: " + cfg.localNode());
         }
         LocalNode<?> localNode = localNodeFactory.createNode(config);
 
-        Set<String> repositories = sessionConfig.repositories();
+        Set<String> repositories = cfg.repositories();
         Predicate<RemoteRepository> repositoryPredicate;
         if (repositories.isEmpty()) {
             throw new IllegalStateException("No repositories to handle");
@@ -83,6 +83,6 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
                     "  Supported checksums: {}", localNode.checksumFactories().keySet());
         }
 
-        return new SessionImpl(repositoryPredicate, a -> !a.isSnapshot(), keyMapper, localNode);
+        return new SessionImpl(config, repositoryPredicate, a -> !a.isSnapshot(), keyMapper, localNode);
     }
 }

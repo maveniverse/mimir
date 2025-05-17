@@ -9,7 +9,7 @@ package eu.maveniverse.maven.mimir.extension3;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.MimirUtils;
 import eu.maveniverse.maven.mimir.shared.Session;
 import java.util.List;
 import java.util.Map;
@@ -51,39 +51,30 @@ public class MimirRepositoryConnectorFactory implements RepositoryConnectorFacto
     public RepositoryConnector newInstance(RepositorySystemSession session, RemoteRepository repository)
             throws NoRepositoryConnectorException {
         String message = "Mimir is disabled";
-        Optional<Config> mimirConfigOptional = MimirUtils.mayGetConfig(session);
-        if (mimirConfigOptional.isPresent()
-                && mimirConfigOptional
-                        .orElseThrow(() -> new IllegalStateException("Value is not present"))
-                        .enabled()) {
-            message = "Mimir session not yet created";
-            Optional<Session> mimirSessionOptional = MimirUtils.mayGetSession(session);
-            if (mimirSessionOptional.isPresent()) {
-                Session mimirSession =
-                        mimirSessionOptional.orElseThrow(() -> new IllegalStateException("Value is not present"));
-                message = "Unsupported repository: " + repository;
-                if (mimirSession.repositorySupported(repository)) {
-                    RepositoryConnectorFactory basicRepositoryConnectorFactory = requireNonNull(
-                            repositoryConnectorFactories.get("basic").get(),
-                            "No basic repository connector factory found");
-                    RepositoryConnector repositoryConnector =
-                            basicRepositoryConnectorFactory.newInstance(session, repository);
-                    List<ChecksumAlgorithmFactory> checksumsAlgorithms = checksumAlgorithmFactorySelector.selectList(
-                            ConfigUtils.parseCommaSeparatedUniqueNames(ConfigUtils.getString(
-                                    session,
-                                    "SHA-1,MD5", // copied from Maven2RepositoryLayoutFactory
-                                    "aether.checksums.algorithms." + repository.getId(),
-                                    "aether.checksums.algorithms",
-                                    "aether.layout.maven2.checksumAlgorithms" + repository.getId(),
-                                    "aether.layout.maven2.checksumAlgorithms")));
-                    return new MimirRepositoryConnector(
-                            mimirSession,
-                            repository,
-                            repositoryConnector,
-                            checksumsAlgorithms,
-                            checksumAlgorithmFactorySelector.getChecksumAlgorithmFactories().stream()
-                                    .collect(Collectors.toMap(ChecksumAlgorithmFactory::getName, f -> f)));
-                }
+        Optional<Session> mimirSessionOptional = MimirUtils.mayGetSession(session);
+        if (mimirSessionOptional.isPresent()) {
+            Session mimirSession = mimirSessionOptional.orElseThrow();
+            message = "Unsupported repository: " + repository;
+            if (mimirSession.repositorySupported(repository)) {
+                RepositoryConnectorFactory basicRepositoryConnectorFactory = requireNonNull(
+                        repositoryConnectorFactories.get("basic").get(), "No basic repository connector factory found");
+                RepositoryConnector repositoryConnector =
+                        basicRepositoryConnectorFactory.newInstance(session, repository);
+                List<ChecksumAlgorithmFactory> checksumsAlgorithms = checksumAlgorithmFactorySelector.selectList(
+                        ConfigUtils.parseCommaSeparatedUniqueNames(ConfigUtils.getString(
+                                session,
+                                "SHA-1,MD5", // copied from Maven2RepositoryLayoutFactory
+                                "aether.checksums.algorithms." + repository.getId(),
+                                "aether.checksums.algorithms",
+                                "aether.layout.maven2.checksumAlgorithms" + repository.getId(),
+                                "aether.layout.maven2.checksumAlgorithms")));
+                return new MimirRepositoryConnector(
+                        mimirSession,
+                        repository,
+                        repositoryConnector,
+                        checksumsAlgorithms,
+                        checksumAlgorithmFactorySelector.getChecksumAlgorithmFactories().stream()
+                                .collect(Collectors.toMap(ChecksumAlgorithmFactory::getName, f -> f)));
             }
         }
         throw new NoRepositoryConnectorException(repository, message);

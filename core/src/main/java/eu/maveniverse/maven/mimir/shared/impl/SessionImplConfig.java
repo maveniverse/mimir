@@ -9,39 +9,39 @@ package eu.maveniverse.maven.mimir.shared.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.naming.RemoteRepositories;
 import java.util.Arrays;
 import java.util.Set;
 
-public final class SessionConfig {
-    public static SessionConfig with(Config config) {
-        requireNonNull(config, "config");
+public final class SessionImplConfig {
+    public static SessionImplConfig with(SessionConfig sessionConfig) {
+        requireNonNull(sessionConfig);
 
         String keyMapper = SimpleKeyMapperFactory.NAME;
         String localNode = "daemon";
         Set<String> repositories = Set.of(RemoteRepositories.CENTRAL_REPOSITORY_ID);
 
-        if (config.effectiveProperties().containsKey("mimir.session.keyMapper")) {
-            keyMapper = config.effectiveProperties().get("mimir.session.keyMapper");
+        if (sessionConfig.effectiveProperties().containsKey("mimir.session.keyMapper")) {
+            keyMapper = sessionConfig.effectiveProperties().get("mimir.session.keyMapper");
         }
-        if (config.effectiveProperties().containsKey("mimir.session.localNode")) {
-            localNode = config.effectiveProperties().get("mimir.session.localNode");
+        if (sessionConfig.effectiveProperties().containsKey("mimir.session.localNode")) {
+            localNode = sessionConfig.effectiveProperties().get("mimir.session.localNode");
         }
-        if (config.effectiveProperties().containsKey("mimir.session.repositories")) {
-            String value = config.effectiveProperties().get("mimir.session.repositories");
+        if (sessionConfig.effectiveProperties().containsKey("mimir.session.repositories")) {
+            String value = sessionConfig.effectiveProperties().get("mimir.session.repositories");
             repositories = Set.copyOf(Arrays.asList(value.split(",")));
         }
 
-        return new SessionConfig(keyMapper, localNode, repositories);
+        return new SessionImplConfig(keyMapper, localNode, repositories);
     }
 
     private final String keyMapper;
     private final String localNode;
     private final Set<String> repositories;
 
-    private SessionConfig(String keyMapper, String localNode, Set<String> repositories) {
+    private SessionImplConfig(String keyMapper, String localNode, Set<String> repositories) {
         this.keyMapper = requireNonNull(keyMapper);
         this.localNode = requireNonNull(localNode);
         this.repositories = requireNonNull(repositories);

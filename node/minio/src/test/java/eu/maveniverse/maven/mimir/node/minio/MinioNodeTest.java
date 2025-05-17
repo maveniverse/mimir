@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.naming.KeyMapper;
@@ -36,8 +36,8 @@ public class MinioNodeTest {
             .setSnapshotPolicy(new RepositoryPolicy(false, "", ""))
             .build();
     private final Artifact junit = new DefaultArtifact("junit:junit:3.13.2");
-    private final KeyMapper keyMapper =
-            new SimpleKeyMapperFactory().createKeyMapper(Config.defaults().build());
+    private final KeyMapper keyMapper = new SimpleKeyMapperFactory()
+            .createKeyMapper(SessionConfig.defaults().build());
 
     @Test
     void smoke() throws Exception {
@@ -49,7 +49,7 @@ public class MinioNodeTest {
                     .build()) {
                 minioClient.makeBucket(
                         MakeBucketArgs.builder().bucket(central.getId()).build());
-                Config config = Config.defaults()
+                SessionConfig sessionConfig = SessionConfig.defaults()
                         .setUserProperty("mimir.minio.endpoint", container.getS3URL())
                         .setUserProperty("mimir.minio.accessKey", container.getUserName())
                         .setUserProperty("mimir.minio.secretKey", container.getPassword())
@@ -61,7 +61,7 @@ public class MinioNodeTest {
                                         new Sha1ChecksumAlgorithmFactory(),
                                         Sha512ChecksumAlgorithmFactory.NAME,
                                         new Sha512ChecksumAlgorithmFactory()))
-                        .createNode(config)) {
+                        .createNode(sessionConfig)) {
                     Optional<MinioEntry> entry = minioNode.locate(keyMapper.apply(central, junit));
                     assertFalse(entry.isPresent());
 

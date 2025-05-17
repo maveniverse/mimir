@@ -26,8 +26,8 @@ public abstract class PublisherSupport extends CloseableSupport implements Publi
         private final SystemEntry systemEntry;
 
         public HandleImpl(final URI handle, final SystemEntry systemEntry) {
-            this.handle = requireNonNull(handle, "handle");
-            this.systemEntry = requireNonNull(systemEntry, "systemEntry");
+            this.handle = requireNonNull(handle);
+            this.systemEntry = requireNonNull(systemEntry);
         }
 
         @Override
@@ -46,8 +46,8 @@ public abstract class PublisherSupport extends CloseableSupport implements Publi
     protected final ConcurrentMap<String, SystemEntry> publishedEntries;
 
     protected PublisherSupport(SystemNode<?> systemNode, PublisherConfig publisherConfig) {
-        this.systemNode = requireNonNull(systemNode, "systemNode");
-        this.publisherConfig = requireNonNull(publisherConfig, "publisherConfig");
+        this.systemNode = requireNonNull(systemNode);
+        this.publisherConfig = requireNonNull(publisherConfig);
         this.publishedEntries = new ConcurrentHashMap<>();
     }
 

@@ -8,9 +8,12 @@
 package eu.maveniverse.maven.mimir.extension3;
 
 import eu.maveniverse.maven.mimir.node.daemon.DaemonConfig;
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.MimirUtils;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Objects;
@@ -54,20 +57,25 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
     public void afterProjectsRead(MavenSession session) throws MavenExecutionException {
         try {
             RepositorySystemSession repoSession = session.getRepositorySession();
-            Config config = Config.defaults()
+            SessionConfig sessionConfig = SessionConfig.defaults()
                     .userProperties(repoSession.getUserProperties())
                     .systemProperties(repoSession.getSystemProperties())
                     .build();
-            MimirUtils.setConfig(repoSession, config);
-            if (MimirUtils.isEnabled(repoSession)) {
+            if (sessionConfig.enabled()) {
                 List<RemoteRepository> remoteRepositories = RepositoryUtils.toRepos(
                         session.getProjectBuildingRequest().getRemoteRepositories());
-                mayCheckForUpdates(config, repoSession, remoteRepositories);
-                mayResolveDaemonArtifact(config, repoSession, remoteRepositories);
-                MimirUtils.setSession(session.getRepositorySession(), sessionFactory.createSession(config));
+                mayCheckForUpdates(sessionConfig, repoSession, remoteRepositories);
+                mayResolveDaemonArtifact(sessionConfig, repoSession, remoteRepositories);
             } else {
                 logger.info("Mimir is disabled");
             }
+            MimirUtils.lazyInit(session.getRepositorySession(), () -> {
+                try {
+                    return sessionFactory.createSession(sessionConfig);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
         } catch (Exception e) {
             throw new MavenExecutionException("Error creating Mimir session", e);
         }
@@ -76,17 +84,21 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
     @Override
     public void afterSessionEnd(MavenSession session) throws MavenExecutionException {
         try {
-            if (MimirUtils.isEnabled(session.getRepositorySession())) {
-                MimirUtils.requireSession(session.getRepositorySession()).close();
-            }
+            MimirUtils.mayGetSession(session.getRepositorySession()).ifPresent(s -> {
+                try {
+                    s.close();
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
         } catch (Exception e) {
             throw new MavenExecutionException("Error closing Mimir session", e);
         }
     }
 
     private void mayResolveDaemonArtifact(
-            Config config, RepositorySystemSession session, List<RemoteRepository> remoteRepositories) {
-        DaemonConfig daemonConfig = DaemonConfig.with(config);
+            SessionConfig sessionConfig, RepositorySystemSession session, List<RemoteRepository> remoteRepositories) {
+        DaemonConfig daemonConfig = DaemonConfig.with(sessionConfig);
         if (!daemonConfig.autostart()) {
             logger.debug("Not resolving Mimir daemon; autostart not enabled or version not detected");
             return;
@@ -95,7 +107,9 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
             try {
                 logger.info(
                         "Resolving Mimir daemon version {}",
-                        config.mimirVersion().orElseThrow(() -> new IllegalStateException("Value is not present")));
+                        sessionConfig
+                                .mimirVersion()
+                                .orElseThrow(() -> new IllegalStateException("Value is not present")));
                 ArtifactRequest artifactRequest =
                         new ArtifactRequest(new DefaultArtifact(daemonConfig.daemonGav()), remoteRepositories, "mimir");
                 ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, artifactRequest);
@@ -108,15 +122,15 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
     }
 
     private void mayCheckForUpdates(
-            Config config, RepositorySystemSession session, List<RemoteRepository> remoteRepositories) {
-        DaemonConfig daemonConfig = DaemonConfig.with(config);
+            SessionConfig sessionConfig, RepositorySystemSession session, List<RemoteRepository> remoteRepositories) {
+        DaemonConfig daemonConfig = DaemonConfig.with(sessionConfig);
         if (!daemonConfig.autoupdate()) {
             logger.debug("Not checking for Mimir updates; not enabled or version not detected");
             return;
         }
         try {
             String mimirVersion =
-                    config.mimirVersion().orElseThrow(() -> new IllegalStateException("Value is not present"));
+                    sessionConfig.mimirVersion().orElseThrow(() -> new IllegalStateException("Value is not present"));
             logger.debug("Checking for Mimir updates...");
             VersionRangeRequest versionRangeRequest = new VersionRangeRequest(
                     new DefaultArtifact(daemonConfig.daemonGav()).setVersion("[" + mimirVersion + ",)"),

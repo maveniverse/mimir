@@ -9,6 +9,7 @@ package eu.maveniverse.maven.mimir.extension3;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.MimirUtils;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
@@ -41,11 +42,10 @@ public class MimirArtifactResolverPostProcessor extends ComponentSupport impleme
     @Override
     public void postProcess(RepositorySystemSession session, List<ArtifactResult> artifactResults) {
         for (ArtifactResult artifactResult : artifactResults) {
-            if (artifactResult.getRepository() instanceof RemoteRepository) {
-                RemoteRepository remoteRepository = (RemoteRepository) artifactResult.getRepository();
+            if (artifactResult.getRepository() instanceof RemoteRepository remoteRepository) {
                 Optional<Session> sessionOptional = MimirUtils.mayGetSession(session);
                 if (sessionOptional.isPresent()) {
-                    Session ms = sessionOptional.orElseThrow(() -> new IllegalStateException("Value not present"));
+                    Session ms = sessionOptional.orElseThrow();
                     Artifact artifact = artifactResult.getArtifact();
                     boolean resolved = artifactResult.isResolved();
                     if (resolved && ms.repositorySupported(remoteRepository) && ms.artifactSupported(artifact)) {
@@ -53,7 +53,7 @@ public class MimirArtifactResolverPostProcessor extends ComponentSupport impleme
                             // store it; if needed
                             if (!ms.retrievedFromCache(remoteRepository, artifact)
                                     && !ms.storedToCache(remoteRepository, artifact)
-                                    && !ms.locate(remoteRepository, artifact).isPresent()) {
+                                    && ms.locate(remoteRepository, artifact).isEmpty()) {
                                 ms.store(
                                         remoteRepository,
                                         artifact,

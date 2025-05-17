@@ -7,7 +7,7 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import java.io.IOException;
 
 public interface SystemNodeFactory extends LocalNodeFactory {
@@ -15,5 +15,5 @@ public interface SystemNodeFactory extends LocalNodeFactory {
      * Creates a {@link SystemNode} instance.
      */
     @Override
-    SystemNode<?> createNode(Config config) throws IOException;
+    SystemNode<?> createNode(SessionConfig sessionConfig) throws IOException;
 }

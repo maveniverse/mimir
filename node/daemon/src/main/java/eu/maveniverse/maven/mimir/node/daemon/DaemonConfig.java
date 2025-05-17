@@ -10,65 +10,74 @@ package eu.maveniverse.maven.mimir.node.daemon;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import java.nio.file.Path;
 import java.time.Duration;
 
 public class DaemonConfig {
-    public static DaemonConfig with(Config config) {
-        requireNonNull(config, "config");
+    public static DaemonConfig with(SessionConfig sessionConfig) {
+        requireNonNull(sessionConfig, "config");
 
-        final boolean mimirVersionPresent = config.mimirVersion().isPresent();
-        final String mimirVersion = config.mimirVersion().orElse("UNKNOWN");
+        final boolean mimirVersionPresent = sessionConfig.mimirVersion().isPresent();
+        final String mimirVersion = sessionConfig.mimirVersion().orElse("UNKNOWN");
 
-        Path daemonBasedir = config.basedir().resolve("daemon");
-        Path socketPath = config.basedir().resolve(Handle.DEFAULT_SOCKET_PATH);
-        Path daemonJavaHome = Path.of(config.effectiveProperties()
+        Path daemonBasedir = sessionConfig.basedir().resolve("daemon");
+        Path socketPath = sessionConfig.basedir().resolve(Handle.DEFAULT_SOCKET_PATH);
+        Path daemonJavaHome = Path.of(sessionConfig
+                .effectiveProperties()
                 .getOrDefault(
-                        "mimir.daemon.java.home", config.effectiveProperties().get("java.home")));
+                        "mimir.daemon.java.home",
+                        sessionConfig.effectiveProperties().get("java.home")));
         boolean autoupdate = mimirVersionPresent; // without version GAV is wrong
         boolean autostart = mimirVersionPresent;
         Duration autostartDuration = Duration.ofMinutes(1);
         boolean autostop = false;
-        Path daemonJar = config.basedir().resolve("daemon-" + mimirVersion + ".jar");
-        Path daemonLog = config.basedir().resolve("daemon-" + mimirVersion + ".log");
+        Path daemonJar = sessionConfig.basedir().resolve("daemon-" + mimirVersion + ".jar");
+        Path daemonLog = sessionConfig.basedir().resolve("daemon-" + mimirVersion + ".log");
         String daemonGav = "eu.maveniverse.maven.mimir:daemon:jar:daemon:" + mimirVersion;
         boolean passOnBasedir = false;
         boolean debug = false;
 
-        if (config.effectiveProperties().containsKey("mimir.daemon.socketPath")) {
-            socketPath =
-                    Config.getCanonicalPath(Path.of(config.effectiveProperties().get("mimir.daemon.socketPath")));
+        if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.socketPath")) {
+            socketPath = SessionConfig.getCanonicalPath(
+                    Path.of(sessionConfig.effectiveProperties().get("mimir.daemon.socketPath")));
         }
-        if (config.effectiveProperties().containsKey("mimir.daemon.autoupdate")) {
-            autoupdate = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.autoupdate"));
+        if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.autoupdate")) {
+            autoupdate =
+                    Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.daemon.autoupdate"));
         }
-        if (config.effectiveProperties().containsKey("mimir.daemon.autostart")) {
-            autostart = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.autostart"));
+        if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.autostart")) {
+            autostart = Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.daemon.autostart"));
         }
-        if (config.effectiveProperties().containsKey("mimir.daemon.autostartDuration")) {
-            autostartDuration = Duration.parse(config.effectiveProperties().get("mimir.daemon.autostartDuration"));
+        if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.autostartDuration")) {
+            autostartDuration =
+                    Duration.parse(sessionConfig.effectiveProperties().get("mimir.daemon.autostartDuration"));
         }
-        if (config.effectiveProperties().containsKey("mimir.daemon.autostop")) {
-            autostop = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.autostop"));
+        if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.autostop")) {
+            autostop = Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.daemon.autostop"));
         }
-        if (config.effectiveProperties().containsKey("mimir.daemon.daemonJar")) {
-            daemonJar = config.basedir().resolve(config.effectiveProperties().get("mimir.daemon.daemonJar"));
+        if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.daemonJar")) {
+            daemonJar = sessionConfig
+                    .basedir()
+                    .resolve(sessionConfig.effectiveProperties().get("mimir.daemon.daemonJar"));
         }
-        if (config.effectiveProperties().containsKey("mimir.daemon.daemonLog")) {
-            daemonLog = config.basedir().resolve(config.effectiveProperties().get("mimir.daemon.daemonLog"));
+        if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.daemonLog")) {
+            daemonLog = sessionConfig
+                    .basedir()
+                    .resolve(sessionConfig.effectiveProperties().get("mimir.daemon.daemonLog"));
         }
-        if (config.effectiveProperties().containsKey("mimir.daemon.daemonGav")) {
-            daemonGav = config.effectiveProperties().get("mimir.daemon.daemonGav");
+        if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.daemonGav")) {
+            daemonGav = sessionConfig.effectiveProperties().get("mimir.daemon.daemonGav");
         }
-        if (config.effectiveProperties().containsKey("mimir.daemon.passOnBasedir")) {
-            passOnBasedir = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.passOnBasedir"));
+        if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.passOnBasedir")) {
+            passOnBasedir =
+                    Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.daemon.passOnBasedir"));
         }
-        if (config.effectiveProperties().containsKey("mimir.daemon.debug")) {
-            debug = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.debug"));
+        if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.debug")) {
+            debug = Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.daemon.debug"));
         }
         return new DaemonConfig(
-                config,
+                sessionConfig,
                 daemonBasedir,
                 socketPath,
                 daemonJavaHome,
@@ -85,7 +94,7 @@ public class DaemonConfig {
 
     public static final String NAME = "daemon";
 
-    private final Config config;
+    private final SessionConfig sessionConfig;
     private final Path daemonBasedir;
     private final Path socketPath;
     private final Path daemonJavaHome;
@@ -100,7 +109,7 @@ public class DaemonConfig {
     private final boolean debug;
 
     private DaemonConfig(
-            Config config,
+            SessionConfig sessionConfig,
             Path daemonBasedir,
             Path socketPath,
             Path daemonJavaHome,
@@ -113,7 +122,7 @@ public class DaemonConfig {
             String daemonGav,
             boolean passOnBasedir,
             boolean debug) {
-        this.config = requireNonNull(config);
+        this.sessionConfig = requireNonNull(sessionConfig);
         this.daemonBasedir = requireNonNull(daemonBasedir);
         this.socketPath = requireNonNull(socketPath);
         this.daemonJavaHome = requireNonNull(daemonJavaHome);
@@ -128,8 +137,8 @@ public class DaemonConfig {
         this.debug = debug;
     }
 
-    public Config config() {
-        return config;
+    public SessionConfig config() {
+        return sessionConfig;
     }
 
     public Path daemonBasedir() {

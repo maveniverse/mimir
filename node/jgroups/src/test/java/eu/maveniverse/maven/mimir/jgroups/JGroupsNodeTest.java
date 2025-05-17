@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import eu.maveniverse.maven.mimir.node.file.FileNode;
 import eu.maveniverse.maven.mimir.node.file.FileNodeConfig;
 import eu.maveniverse.maven.mimir.node.jgroups.JGroupsNode;
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.impl.publisher.ServerSocketPublisherFactory;
 import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
@@ -34,8 +34,8 @@ public class JGroupsNodeTest {
         Path two = Path.of("target/local/two");
         Files.createDirectories(two);
 
-        Config config = Config.defaults().build();
-        System.out.println(config.mimirVersion());
+        SessionConfig sessionConfig = SessionConfig.defaults().build();
+        System.out.println(sessionConfig.mimirVersion());
 
         Path contentPath = one.resolve("container").resolve("file.txt");
         String content = "Hello World!";
@@ -49,7 +49,7 @@ public class JGroupsNodeTest {
                 configOne.mayLink(),
                 configOne.exclusiveAccess(),
                 configOne.cachePurge(),
-                new SimpleKeyResolverFactory().createKeyResolver(config),
+                new SimpleKeyResolverFactory().createKeyResolver(sessionConfig),
                 List.of(Sha1ChecksumAlgorithmFactory.NAME),
                 Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()),
                 DirectoryLocker.INSTANCE);
@@ -60,7 +60,7 @@ public class JGroupsNodeTest {
                 configTwo.mayLink(),
                 configTwo.exclusiveAccess(),
                 configTwo.cachePurge(),
-                new SimpleKeyResolverFactory().createKeyResolver(config),
+                new SimpleKeyResolverFactory().createKeyResolver(sessionConfig),
                 List.of(Sha1ChecksumAlgorithmFactory.NAME),
                 Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()),
                 DirectoryLocker.INSTANCE);
@@ -75,7 +75,9 @@ public class JGroupsNodeTest {
         Thread.sleep(1000);
 
         try (JGroupsNode publisher = new JGroupsNode(
-                        testGroup, channelOne, new ServerSocketPublisherFactory().createPublisher(config, nodeOne));
+                        testGroup,
+                        channelOne,
+                        new ServerSocketPublisherFactory().createPublisher(sessionConfig, nodeOne));
                 JGroupsNode consumer = new JGroupsNode(testGroup, channelTwo)) {
             URI key = URI.create("mimir:file:container:file.txt");
             Optional<? extends RemoteEntry> entry = consumer.locate(key);

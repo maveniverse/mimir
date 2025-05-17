@@ -14,7 +14,7 @@ import com.google.inject.Guice;
 import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
 import eu.maveniverse.maven.mimir.daemon.protocol.Request;
 import eu.maveniverse.maven.mimir.daemon.protocol.Session;
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
@@ -58,9 +58,9 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
 
     public static void main(String[] args) {
         try {
-            Config config = Config.daemonDefaults().build();
+            SessionConfig sessionConfig = SessionConfig.daemonDefaults().build();
 
-            DaemonConfig daemonConfig = DaemonConfig.with(config);
+            DaemonConfig daemonConfig = DaemonConfig.with(sessionConfig);
             Daemon daemon = Guice.createInjector(new WireModule(
                             new AbstractModule() {
                                 @Override

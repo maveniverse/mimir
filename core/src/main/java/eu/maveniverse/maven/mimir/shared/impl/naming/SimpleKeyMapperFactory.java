@@ -9,7 +9,7 @@ package eu.maveniverse.maven.mimir.shared.impl.naming;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.naming.KeyMapper;
 import eu.maveniverse.maven.mimir.shared.naming.KeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.naming.RemoteRepositories;
@@ -28,8 +28,8 @@ public final class SimpleKeyMapperFactory implements KeyMapperFactory {
     public static final String NAME = "simple";
 
     @Override
-    public KeyMapper createKeyMapper(Config config) {
-        requireNonNull(config, "config");
+    public KeyMapper createKeyMapper(SessionConfig sessionConfig) {
+        requireNonNull(sessionConfig);
         return new SimpleKeyMapper();
     }
 

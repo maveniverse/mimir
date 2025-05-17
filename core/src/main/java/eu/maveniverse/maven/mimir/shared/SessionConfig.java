@@ -24,7 +24,7 @@ import java.util.Properties;
 /**
  * Simple Mimir configuration.
  */
-public interface Config {
+public interface SessionConfig {
     String NAME = "mimir";
 
     String CONF_PREFIX = NAME + ".";
@@ -84,7 +84,7 @@ public interface Config {
         return new Builder(
                 null,
                 MavenUtils.discoverArtifactVersion(
-                        Config.class.getClassLoader(), "eu.maveniverse.maven.mimir", "core", null),
+                        SessionConfig.class.getClassLoader(), "eu.maveniverse.maven.mimir", "core", null),
                 discoverBaseDirectory(),
                 Path.of("mimir.properties"),
                 new HashMap<>(),
@@ -157,11 +157,11 @@ public interface Config {
             return this;
         }
 
-        public Config build() {
+        public SessionConfig build() {
             return new Impl(enabled, mimirVersion, basedir, propertiesPath, userProperties, systemProperties);
         }
 
-        private static class Impl implements Config {
+        private static class Impl implements SessionConfig {
             private final Boolean enabled;
             private final String mimirVersion;
             private final Path basedir;

@@ -9,23 +9,23 @@ package eu.maveniverse.maven.mimir.shared.impl.publisher;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.impl.Utils;
 import java.io.IOException;
 
 public class PublisherConfig {
-    public static PublisherConfig with(Config config) throws IOException {
-        requireNonNull(config, "config");
+    public static PublisherConfig with(SessionConfig sessionConfig) throws IOException {
+        requireNonNull(sessionConfig);
 
         String hostAddress =
-                Utils.getLocalHost(config.localHostHint().orElse(null)).getHostAddress();
+                Utils.getLocalHost(sessionConfig.localHostHint().orElse(null)).getHostAddress();
         int hostPort = 0;
 
-        if (config.effectiveProperties().containsKey("mimir.publisher.hostAddress")) {
-            hostAddress = config.effectiveProperties().get("mimir.publisher.hostAddress");
+        if (sessionConfig.effectiveProperties().containsKey("mimir.publisher.hostAddress")) {
+            hostAddress = sessionConfig.effectiveProperties().get("mimir.publisher.hostAddress");
         }
-        if (config.effectiveProperties().containsKey("mimir.publisher.hostPort")) {
-            hostPort = Integer.parseInt(config.effectiveProperties().get("mimir.publisher.hostPort"));
+        if (sessionConfig.effectiveProperties().containsKey("mimir.publisher.hostPort")) {
+            hostPort = Integer.parseInt(sessionConfig.effectiveProperties().get("mimir.publisher.hostPort"));
         }
         return new PublisherConfig(hostAddress, hostPort);
     }
