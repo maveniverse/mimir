@@ -17,7 +17,7 @@ import java.util.Set;
 
 public final class SessionImplConfig {
     public static SessionImplConfig with(SessionConfig sessionConfig) {
-        requireNonNull(sessionConfig, "config");
+        requireNonNull(sessionConfig);
 
         String keyMapper = SimpleKeyMapperFactory.NAME;
         String localNode = "daemon";
