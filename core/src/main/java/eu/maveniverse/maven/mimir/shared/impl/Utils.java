@@ -8,16 +8,12 @@
 package eu.maveniverse.maven.mimir.shared.impl;
 
 import eu.maveniverse.maven.mimir.shared.node.Entry;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.UnknownHostException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Predicate;
 
 public final class Utils {
@@ -51,19 +47,6 @@ public final class Utils {
 
     public static Map<String, String> splitChecksums(Map<String, String> merged) {
         return split(merged, CHECKSUM_PREFIX);
-    }
-
-    /**
-     * Performs a hard-linking (if on same volume), otherwise plain copies file contents. Does not check for
-     * any precondition (source exists and is regular file, destination does not exist), it is caller job.
-     */
-    public static void copyOrLink(Path src, Path dest) throws IOException {
-        if (Objects.equals(Files.getFileStore(src), Files.getFileStore(dest.getParent()))) {
-            Files.createLink(dest, src);
-        } else {
-            Files.copy(src, dest);
-            Files.setLastModifiedTime(dest, Files.getLastModifiedTime(src));
-        }
     }
 
     /**

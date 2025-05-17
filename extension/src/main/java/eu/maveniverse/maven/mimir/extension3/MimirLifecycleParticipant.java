@@ -10,7 +10,7 @@ package eu.maveniverse.maven.mimir.extension3;
 import eu.maveniverse.maven.mimir.node.daemon.DaemonConfig;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
-import eu.maveniverse.maven.mimir.shared.impl.Utils;
+import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -102,7 +102,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                         new ArtifactRequest(new DefaultArtifact(daemonConfig.daemonGav()), remoteRepositories, "mimir");
                 ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, artifactRequest);
                 Files.createDirectories(daemonJarPath.getParent());
-                Utils.copyOrLink(artifactResult.getArtifact().getFile().toPath(), daemonJarPath);
+                FileUtils.copyOrLink(artifactResult.getArtifact().getFile().toPath(), daemonJarPath);
             } catch (Exception e) {
                 logger.warn("Failed to resolve daemon: {}", e.getMessage());
             }
