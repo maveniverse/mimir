@@ -7,12 +7,12 @@
  */
 package eu.maveniverse.maven.mimir.shared.naming;
 
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import java.io.IOException;
 
 public interface KeyMapperFactory {
     /**
      * Creates a {@link KeyMapper} instance.
      */
-    KeyMapper createKeyMapper(Config config) throws IOException;
+    KeyMapper createKeyMapper(SessionConfig sessionConfig) throws IOException;
 }

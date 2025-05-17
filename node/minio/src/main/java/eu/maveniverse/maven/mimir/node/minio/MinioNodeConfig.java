@@ -10,15 +10,15 @@ package eu.maveniverse.maven.mimir.node.minio;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
 public class MinioNodeConfig {
-    public static MinioNodeConfig with(Config config) throws IOException {
-        requireNonNull(config, "config");
+    public static MinioNodeConfig with(SessionConfig sessionConfig) throws IOException {
+        requireNonNull(sessionConfig, "config");
 
         String endpoint = "http://127.0.0.1:9000";
         String accessKey = "minioadmin";
@@ -28,30 +28,33 @@ public class MinioNodeConfig {
         boolean exclusiveAccess = false;
         boolean cachePurge = false;
 
-        if (config.effectiveProperties().containsKey("mimir.minio.endpoint")) {
-            endpoint = config.effectiveProperties().get("mimir.minio.endpoint");
+        if (sessionConfig.effectiveProperties().containsKey("mimir.minio.endpoint")) {
+            endpoint = sessionConfig.effectiveProperties().get("mimir.minio.endpoint");
         }
-        if (config.effectiveProperties().containsKey("mimir.minio.accessKey")) {
-            accessKey = config.effectiveProperties().get("mimir.minio.accessKey");
+        if (sessionConfig.effectiveProperties().containsKey("mimir.minio.accessKey")) {
+            accessKey = sessionConfig.effectiveProperties().get("mimir.minio.accessKey");
         }
-        if (config.effectiveProperties().containsKey("mimir.minio.secretKey")) {
-            secretKey = config.effectiveProperties().get("mimir.minio.secretKey");
+        if (sessionConfig.effectiveProperties().containsKey("mimir.minio.secretKey")) {
+            secretKey = sessionConfig.effectiveProperties().get("mimir.minio.secretKey");
         }
-        if (config.effectiveProperties().containsKey("mimir.minio.checksumAlgorithms")) {
-            checksumAlgorithms = Arrays.stream(config.effectiveProperties()
+        if (sessionConfig.effectiveProperties().containsKey("mimir.minio.checksumAlgorithms")) {
+            checksumAlgorithms = Arrays.stream(sessionConfig
+                            .effectiveProperties()
                             .get("mimir.minio.checksumAlgorithms")
                             .split(","))
                     .filter(s -> !s.trim().isEmpty())
                     .collect(toList());
         }
-        if (config.effectiveProperties().containsKey("mimir.minio.keyResolver")) {
-            keyResolver = config.effectiveProperties().get("mimir.minio.keyResolver");
+        if (sessionConfig.effectiveProperties().containsKey("mimir.minio.keyResolver")) {
+            keyResolver = sessionConfig.effectiveProperties().get("mimir.minio.keyResolver");
         }
-        if (config.effectiveProperties().containsKey("mimir.minio.exclusiveAccess")) {
-            exclusiveAccess = Boolean.parseBoolean(config.effectiveProperties().get("mimir.minio.exclusiveAccess"));
+        if (sessionConfig.effectiveProperties().containsKey("mimir.minio.exclusiveAccess")) {
+            exclusiveAccess =
+                    Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.minio.exclusiveAccess"));
         }
-        if (config.effectiveProperties().containsKey("mimir.minio.cachePurge")) {
-            cachePurge = Boolean.parseBoolean(config.effectiveProperties().get("mimir.minio.cachePurge"));
+        if (sessionConfig.effectiveProperties().containsKey("mimir.minio.cachePurge")) {
+            cachePurge =
+                    Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.minio.cachePurge"));
         }
         return new MinioNodeConfig(
                 endpoint, accessKey, secretKey, checksumAlgorithms, keyResolver, exclusiveAccess, cachePurge);

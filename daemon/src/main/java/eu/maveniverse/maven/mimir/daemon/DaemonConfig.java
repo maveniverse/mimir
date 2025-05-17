@@ -10,41 +10,42 @@ package eu.maveniverse.maven.mimir.daemon;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import java.nio.file.Path;
 
 public class DaemonConfig {
-    public static DaemonConfig with(Config config) {
-        requireNonNull(config, "config");
+    public static DaemonConfig with(SessionConfig sessionConfig) {
+        requireNonNull(sessionConfig, "config");
 
-        Path daemonBasedir = config.basedir().resolve("daemon");
-        Path socketPath = config.basedir().resolve(Handle.DEFAULT_SOCKET_PATH);
+        Path daemonBasedir = sessionConfig.basedir().resolve("daemon");
+        Path socketPath = sessionConfig.basedir().resolve(Handle.DEFAULT_SOCKET_PATH);
         String systemNode = "file";
 
-        if (config.effectiveProperties().containsKey("mimir.daemon.socketPath")) {
-            socketPath = Config.getCanonicalPath(
-                    config.basedir().resolve(config.effectiveProperties().get("mimir.daemon.socketPath")));
+        if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.socketPath")) {
+            socketPath = SessionConfig.getCanonicalPath(sessionConfig
+                    .basedir()
+                    .resolve(sessionConfig.effectiveProperties().get("mimir.daemon.socketPath")));
         }
-        if (config.effectiveProperties().containsKey("mimir.daemon.systemNode")) {
-            systemNode = config.effectiveProperties().get("mimir.daemon.systemNode");
+        if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.systemNode")) {
+            systemNode = sessionConfig.effectiveProperties().get("mimir.daemon.systemNode");
         }
-        return new DaemonConfig(config, daemonBasedir, socketPath, systemNode);
+        return new DaemonConfig(sessionConfig, daemonBasedir, socketPath, systemNode);
     }
 
-    private final Config config;
+    private final SessionConfig sessionConfig;
     private final Path daemonBasedir;
     private final Path socketPath;
     private final String systemNode;
 
-    private DaemonConfig(Config config, Path daemonBasedir, Path socketPath, String systemNode) {
-        this.config = requireNonNull(config);
+    private DaemonConfig(SessionConfig sessionConfig, Path daemonBasedir, Path socketPath, String systemNode) {
+        this.sessionConfig = requireNonNull(sessionConfig);
         this.daemonBasedir = requireNonNull(daemonBasedir);
         this.socketPath = requireNonNull(socketPath);
         this.systemNode = requireNonNull(systemNode);
     }
 
-    public Config config() {
-        return config;
+    public SessionConfig config() {
+        return sessionConfig;
     }
 
     public Path daemonBasedir() {

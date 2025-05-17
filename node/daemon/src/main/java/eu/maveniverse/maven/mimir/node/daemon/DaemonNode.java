@@ -15,7 +15,7 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
 import eu.maveniverse.maven.mimir.daemon.protocol.Request;
 import eu.maveniverse.maven.mimir.daemon.protocol.Response;
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.impl.node.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.impl.node.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
@@ -95,7 +95,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
     public DaemonEntry store(URI key, Path file, Map<String, String> metadata, Map<String, String> checksums)
             throws IOException {
         String keyString = key.toASCIIString();
-        String filePath = Config.getCanonicalPath(file).toString();
+        String filePath = SessionConfig.getCanonicalPath(file).toString();
         logger.debug("STORE PATH '{}' -> '{}'", keyString, filePath);
         try (Handle handle = clientHandle.getHandle()) {
             handle.writeRequest(Request.storePath(session, keyString, filePath, mergeEntry(metadata, checksums)));
@@ -144,7 +144,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
             logger.debug("TRANSFER '{}'->'{}'", keyString, file);
             try (Handle handle = clientHandle.getHandle()) {
                 handle.writeRequest(Request.transfer(
-                        session, keyString, Config.getCanonicalPath(file).toString()));
+                        session, keyString, SessionConfig.getCanonicalPath(file).toString()));
                 handle.readResponse();
             }
         }

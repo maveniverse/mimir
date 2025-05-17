@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.mimir.extension3;
 
 import eu.maveniverse.maven.mimir.shared.Entry;
+import eu.maveniverse.maven.mimir.shared.MimirUtils;
 import eu.maveniverse.maven.mimir.shared.Session;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -34,17 +35,15 @@ public class MimirTrustedChecksumsSource implements TrustedChecksumsSource {
             Artifact artifact,
             ArtifactRepository artifactRepository,
             List<ChecksumAlgorithmFactory> checksumAlgorithmFactories) {
-        if (artifactRepository instanceof RemoteRepository) {
-            RemoteRepository remoteRepository = (RemoteRepository) artifactRepository;
+        if (artifactRepository instanceof RemoteRepository remoteRepository) {
             Optional<Session> sessionOptional = MimirUtils.mayGetSession(session);
             if (sessionOptional.isPresent()) {
-                Session ms = sessionOptional.orElseThrow(() -> new IllegalStateException("Value is not present"));
+                Session ms = sessionOptional.orElseThrow();
                 if (ms.repositorySupported(remoteRepository) && ms.artifactSupported(artifact)) {
                     try {
                         Optional<Entry> entry = ms.locate(remoteRepository, artifact);
                         if (entry.isPresent()) {
-                            Entry cacheEntry =
-                                    entry.orElseThrow(() -> new IllegalStateException("Value is not present"));
+                            Entry cacheEntry = entry.orElseThrow();
                             HashMap<String, String> result = new HashMap<>();
                             for (ChecksumAlgorithmFactory checksumAlgorithmFactory : checksumAlgorithmFactories) {
                                 String checksum = cacheEntry.checksums().get(checksumAlgorithmFactory.getName());

@@ -13,5 +13,5 @@ public interface SessionFactory {
     /**
      * Creates a session. Session once unused should be closed.
      */
-    Session createSession(Config config) throws IOException;
+    Session createSession(SessionConfig sessionConfig) throws IOException;
 }

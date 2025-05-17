@@ -9,17 +9,17 @@ package eu.maveniverse.maven.mimir.node.jgroups;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import java.io.IOException;
 import java.net.InetAddress;
 
 public class JGroupsNodeConfig {
-    public static JGroupsNodeConfig with(Config config) throws IOException {
-        requireNonNull(config, "config");
+    public static JGroupsNodeConfig with(SessionConfig sessionConfig) throws IOException {
+        requireNonNull(sessionConfig, "config");
 
         String groupSuffix = "@n/a";
-        if (config.mimirVersion().isPresent()) {
-            String version = config.mimirVersion().orElseThrow();
+        if (sessionConfig.mimirVersion().isPresent()) {
+            String version = sessionConfig.mimirVersion().orElseThrow();
             if (version.endsWith("-SNAPSHOT")) {
                 groupSuffix = "@" + version;
             } else {
@@ -35,27 +35,27 @@ public class JGroupsNodeConfig {
         String jgroupsClusterName = "mimir-jgroups" + groupSuffix;
         String jgroupsInterface = null;
 
-        if (config.effectiveProperties().containsKey("mimir.jgroups.enabled")) {
-            enabled = Boolean.parseBoolean(config.effectiveProperties().get("mimir.jgroups.enabled"));
+        if (sessionConfig.effectiveProperties().containsKey("mimir.jgroups.enabled")) {
+            enabled = Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.jgroups.enabled"));
         }
-        if (config.effectiveProperties().containsKey("mimir.jgroups.publisher.enabled")) {
+        if (sessionConfig.effectiveProperties().containsKey("mimir.jgroups.publisher.enabled")) {
             publisherEnabled =
-                    Boolean.parseBoolean(config.effectiveProperties().get("mimir.jgroups.publisher.enabled"));
+                    Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.jgroups.publisher.enabled"));
         }
-        if (config.effectiveProperties().containsKey("mimir.jgroups.publisher.transport")) {
-            publisherTransport = config.effectiveProperties().get("mimir.jgroups.publisher.transport");
+        if (sessionConfig.effectiveProperties().containsKey("mimir.jgroups.publisher.transport")) {
+            publisherTransport = sessionConfig.effectiveProperties().get("mimir.jgroups.publisher.transport");
         }
-        if (config.effectiveProperties().containsKey("mimir.jgroups.props")) {
-            jgroupsProps = config.effectiveProperties().get("mimir.jgroups.props");
+        if (sessionConfig.effectiveProperties().containsKey("mimir.jgroups.props")) {
+            jgroupsProps = sessionConfig.effectiveProperties().get("mimir.jgroups.props");
         }
-        if (config.effectiveProperties().containsKey("mimir.jgroups.nodeName")) {
-            jgroupsNodeName = config.effectiveProperties().get("mimir.jgroups.nodeName");
+        if (sessionConfig.effectiveProperties().containsKey("mimir.jgroups.nodeName")) {
+            jgroupsNodeName = sessionConfig.effectiveProperties().get("mimir.jgroups.nodeName");
         }
-        if (config.effectiveProperties().containsKey("mimir.jgroups.clusterName")) {
-            jgroupsClusterName = config.effectiveProperties().get("mimir.jgroups.clusterName");
+        if (sessionConfig.effectiveProperties().containsKey("mimir.jgroups.clusterName")) {
+            jgroupsClusterName = sessionConfig.effectiveProperties().get("mimir.jgroups.clusterName");
         }
-        if (config.effectiveProperties().containsKey("mimir.jgroups.interface")) {
-            jgroupsInterface = config.effectiveProperties().get("mimir.jgroups.interface");
+        if (sessionConfig.effectiveProperties().containsKey("mimir.jgroups.interface")) {
+            jgroupsInterface = sessionConfig.effectiveProperties().get("mimir.jgroups.interface");
         }
         return new JGroupsNodeConfig(
                 enabled,

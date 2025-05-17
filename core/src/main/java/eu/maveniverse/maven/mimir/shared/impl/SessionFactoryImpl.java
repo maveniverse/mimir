@@ -9,8 +9,8 @@ package eu.maveniverse.maven.mimir.shared.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.Session;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
 import eu.maveniverse.maven.mimir.shared.naming.KeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.naming.RemoteRepositories;
@@ -43,10 +43,11 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
     }
 
     @Override
-    public Session createSession(Config config) throws IOException {
+    public Session createSession(SessionConfig config) throws IOException {
         requireNonNull(config, "config");
 
-        SessionConfig sessionConfig = SessionConfig.with(config);
+        eu.maveniverse.maven.mimir.shared.impl.SessionConfig sessionConfig =
+                eu.maveniverse.maven.mimir.shared.impl.SessionConfig.with(config);
 
         KeyMapperFactory keyMapperFactory = nameMapperFactories.get(sessionConfig.keyMapper());
         if (keyMapperFactory == null) {
@@ -83,6 +84,6 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
                     "  Supported checksums: {}", localNode.checksumFactories().keySet());
         }
 
-        return new SessionImpl(repositoryPredicate, a -> !a.isSnapshot(), keyMapper, localNode);
+        return new SessionImpl(config, repositoryPredicate, a -> !a.isSnapshot(), keyMapper, localNode);
     }
 }

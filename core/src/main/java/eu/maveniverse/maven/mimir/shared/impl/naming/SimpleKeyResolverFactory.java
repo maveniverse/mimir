@@ -9,7 +9,7 @@ package eu.maveniverse.maven.mimir.shared.impl.naming;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.naming.Key;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolverFactory;
@@ -25,8 +25,8 @@ public final class SimpleKeyResolverFactory implements KeyResolverFactory {
     public static final String NAME = "simple";
 
     @Override
-    public KeyResolver createKeyResolver(Config config) {
-        requireNonNull(config, "config");
+    public KeyResolver createKeyResolver(SessionConfig sessionConfig) {
+        requireNonNull(sessionConfig, "config");
         return new SimpleKeyResolver();
     }
 

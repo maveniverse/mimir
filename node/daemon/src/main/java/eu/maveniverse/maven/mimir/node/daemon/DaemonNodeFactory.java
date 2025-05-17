@@ -10,7 +10,7 @@ package eu.maveniverse.maven.mimir.node.daemon;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.daemon.protocol.Session;
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import eu.maveniverse.maven.shared.core.fs.DirectoryLocker;
@@ -37,8 +37,8 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
     }
 
     @Override
-    public DaemonNode createNode(Config config) throws IOException {
-        DaemonConfig cfg = DaemonConfig.with(config);
+    public DaemonNode createNode(SessionConfig sessionConfig) throws IOException {
+        DaemonConfig cfg = DaemonConfig.with(sessionConfig);
         if (tryLock(cfg)) {
             Files.deleteIfExists(cfg.socketPath());
             if (cfg.autostart()) {
@@ -60,11 +60,11 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
         }
         HashMap<String, String> clientData = new HashMap<>();
         clientData.put(Session.NODE_PID, Long.toString(ProcessHandle.current().pid()));
-        clientData.put(Session.NODE_VERSION, config.mimirVersion().orElse("UNKNOWN"));
+        clientData.put(Session.NODE_VERSION, sessionConfig.mimirVersion().orElse("UNKNOWN"));
         try {
             return new DaemonNode(clientData, cfg.socketPath(), checksumAlgorithmFactories, cfg.autostop());
         } catch (IOException e) {
-            mayDumpDaemonLog(config.basedir().resolve(cfg.daemonLog()));
+            mayDumpDaemonLog(sessionConfig.basedir().resolve(cfg.daemonLog()));
             throw e;
         }
     }

@@ -10,45 +10,48 @@ package eu.maveniverse.maven.mimir.node.file;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
 public final class FileNodeConfig {
-    public static FileNodeConfig with(Config config) {
-        requireNonNull(config, "config");
+    public static FileNodeConfig with(SessionConfig sessionConfig) {
+        requireNonNull(sessionConfig, "config");
 
-        Path basedir = config.basedir().resolve("local");
+        Path basedir = sessionConfig.basedir().resolve("local");
         boolean mayLink = true;
         List<String> checksumAlgorithms = Arrays.asList("SHA-1", "SHA-512");
         String keyResolver = SimpleKeyResolverFactory.NAME;
         boolean exclusiveAccess = false;
         boolean cachePurge = false;
 
-        if (config.effectiveProperties().containsKey("mimir.file.basedir")) {
-            basedir =
-                    Config.getCanonicalPath(Path.of(config.effectiveProperties().get("mimir.file.basedir")));
+        if (sessionConfig.effectiveProperties().containsKey("mimir.file.basedir")) {
+            basedir = SessionConfig.getCanonicalPath(
+                    Path.of(sessionConfig.effectiveProperties().get("mimir.file.basedir")));
         }
-        if (config.effectiveProperties().containsKey("mimir.file.mayLink")) {
-            mayLink = Boolean.parseBoolean(config.effectiveProperties().get("mimir.file.mayLink"));
+        if (sessionConfig.effectiveProperties().containsKey("mimir.file.mayLink")) {
+            mayLink = Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.file.mayLink"));
         }
-        if (config.effectiveProperties().containsKey("mimir.file.checksumAlgorithms")) {
-            checksumAlgorithms = Arrays.stream(config.effectiveProperties()
+        if (sessionConfig.effectiveProperties().containsKey("mimir.file.checksumAlgorithms")) {
+            checksumAlgorithms = Arrays.stream(sessionConfig
+                            .effectiveProperties()
                             .get("mimir.file.checksumAlgorithms")
                             .split(","))
                     .filter(s -> !s.trim().isEmpty())
                     .collect(toList());
         }
-        if (config.effectiveProperties().containsKey("mimir.file.keyResolver")) {
-            keyResolver = config.effectiveProperties().get("mimir.file.keyResolver");
+        if (sessionConfig.effectiveProperties().containsKey("mimir.file.keyResolver")) {
+            keyResolver = sessionConfig.effectiveProperties().get("mimir.file.keyResolver");
         }
-        if (config.effectiveProperties().containsKey("mimir.file.exclusiveAccess")) {
-            exclusiveAccess = Boolean.parseBoolean(config.effectiveProperties().get("mimir.file.exclusiveAccess"));
+        if (sessionConfig.effectiveProperties().containsKey("mimir.file.exclusiveAccess")) {
+            exclusiveAccess =
+                    Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.file.exclusiveAccess"));
         }
-        if (config.effectiveProperties().containsKey("mimir.file.cachePurge")) {
-            cachePurge = Boolean.parseBoolean(config.effectiveProperties().get("mimir.file.cachePurge"));
+        if (sessionConfig.effectiveProperties().containsKey("mimir.file.cachePurge")) {
+            cachePurge =
+                    Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.file.cachePurge"));
         }
 
         return new FileNodeConfig(basedir, mayLink, checksumAlgorithms, keyResolver, exclusiveAccess, cachePurge);
@@ -62,7 +65,7 @@ public final class FileNodeConfig {
             boolean exclusiveAccess,
             boolean cachePurge) {
         return new FileNodeConfig(
-                Config.getCanonicalPath(basedir),
+                SessionConfig.getCanonicalPath(basedir),
                 mayLink,
                 checksumAlgorithms,
                 keyResolver,

@@ -7,12 +7,12 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
-import eu.maveniverse.maven.mimir.shared.Config;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import java.io.IOException;
 
 public interface LocalNodeFactory {
     /**
      * Creates a {@link LocalNode} instance.
      */
-    LocalNode<?> createNode(Config config) throws IOException;
+    LocalNode<?> createNode(SessionConfig sessionConfig) throws IOException;
 }
