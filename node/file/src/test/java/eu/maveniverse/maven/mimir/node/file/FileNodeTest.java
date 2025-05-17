@@ -11,7 +11,6 @@ import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.naming.KeyMapper;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
-import eu.maveniverse.maven.shared.core.fs.DirectoryLocker;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -45,8 +44,7 @@ public class FileNodeTest {
                                 Sha1ChecksumAlgorithmFactory.NAME,
                                 new Sha1ChecksumAlgorithmFactory(),
                                 Sha512ChecksumAlgorithmFactory.NAME,
-                                new Sha512ChecksumAlgorithmFactory()),
-                        new DirectoryLocker())
+                                new Sha512ChecksumAlgorithmFactory()))
                 .createNode(config)) {
             Optional<FileEntry> entry = fileNode.locate(keyMapper.apply(central, junit));
             assertFalse(entry.isPresent());
@@ -88,8 +86,7 @@ public class FileNodeTest {
                                 Sha1ChecksumAlgorithmFactory.NAME,
                                 new Sha1ChecksumAlgorithmFactory(),
                                 Sha512ChecksumAlgorithmFactory.NAME,
-                                new Sha512ChecksumAlgorithmFactory()),
-                        new DirectoryLocker())
+                                new Sha512ChecksumAlgorithmFactory()))
                 .createNode(config)) {
             Optional<FileEntry> entry = fileNode.locate(keyMapper.apply(central, junit));
             assertFalse(entry.isPresent());
@@ -131,8 +128,7 @@ public class FileNodeTest {
                         Sha1ChecksumAlgorithmFactory.NAME,
                         new Sha1ChecksumAlgorithmFactory(),
                         Sha512ChecksumAlgorithmFactory.NAME,
-                        new Sha512ChecksumAlgorithmFactory()),
-                new DirectoryLocker());
+                        new Sha512ChecksumAlgorithmFactory()));
         try (FileNode fileNode1 = fileNodeFactory.createNode(config);
                 FileNode fileNode2 = fileNodeFactory.createNode(config)) {
             // should be ok
@@ -151,8 +147,7 @@ public class FileNodeTest {
                         Sha1ChecksumAlgorithmFactory.NAME,
                         new Sha1ChecksumAlgorithmFactory(),
                         Sha512ChecksumAlgorithmFactory.NAME,
-                        new Sha512ChecksumAlgorithmFactory()),
-                new DirectoryLocker());
+                        new Sha512ChecksumAlgorithmFactory()));
         try (FileNode fileNode = fileNodeFactory.createNode(config)) {
             assertThrows(IOException.class, () -> fileNodeFactory.createNode(config));
         }

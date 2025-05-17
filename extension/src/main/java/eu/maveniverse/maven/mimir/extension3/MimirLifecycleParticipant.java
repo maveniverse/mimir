@@ -12,7 +12,6 @@ import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -92,8 +91,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
             logger.debug("Not resolving Mimir daemon; autostart not enabled or version not detected");
             return;
         }
-        Path daemonJarPath = config.basedir().resolve(daemonConfig.daemonJarName());
-        if (!Files.exists(daemonJarPath)) {
+        if (!Files.exists(daemonConfig.daemonJar())) {
             try {
                 logger.info(
                         "Resolving Mimir daemon version {}",
@@ -101,8 +99,8 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                 ArtifactRequest artifactRequest =
                         new ArtifactRequest(new DefaultArtifact(daemonConfig.daemonGav()), remoteRepositories, "mimir");
                 ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, artifactRequest);
-                Files.createDirectories(daemonJarPath.getParent());
-                FileUtils.copyOrLink(artifactResult.getArtifact().getFile().toPath(), daemonJarPath);
+                Files.createDirectories(daemonConfig.daemonJar().getParent());
+                FileUtils.copyOrLink(artifactResult.getArtifact().getFile().toPath(), daemonConfig.daemonJar());
             } catch (Exception e) {
                 logger.warn("Failed to resolve daemon: {}", e.getMessage());
             }
