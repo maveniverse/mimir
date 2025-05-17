@@ -21,6 +21,7 @@ public class DaemonConfig {
         final boolean mimirVersionPresent = config.mimirVersion().isPresent();
         final String mimirVersion = config.mimirVersion().orElse("UNKNOWN");
 
+        Path daemonBasedir = config.basedir().resolve("daemon");
         Path socketPath = config.basedir().resolve(Handle.DEFAULT_SOCKET_PATH);
         Path daemonJavaHome = Path.of(config.effectiveProperties()
                 .getOrDefault(
@@ -29,8 +30,8 @@ public class DaemonConfig {
         boolean autostart = mimirVersionPresent;
         Duration autostartDuration = Duration.ofMinutes(1);
         boolean autostop = false;
-        String daemonJarName = "daemon-" + mimirVersion + ".jar";
-        String daemonLogName = "daemon-" + mimirVersion + ".log";
+        Path daemonJar = config.basedir().resolve("daemon-" + mimirVersion + ".jar");
+        Path daemonLog = config.basedir().resolve("daemon-" + mimirVersion + ".log");
         String daemonGav = "eu.maveniverse.maven.mimir:daemon:jar:daemon:" + mimirVersion;
         boolean passOnBasedir = false;
         boolean debug = false;
@@ -51,11 +52,11 @@ public class DaemonConfig {
         if (config.effectiveProperties().containsKey("mimir.daemon.autostop")) {
             autostop = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.autostop"));
         }
-        if (config.effectiveProperties().containsKey("mimir.daemon.daemonJarName")) {
-            daemonJarName = config.effectiveProperties().get("mimir.daemon.daemonJarName");
+        if (config.effectiveProperties().containsKey("mimir.daemon.daemonJar")) {
+            daemonJar = config.basedir().resolve(config.effectiveProperties().get("mimir.daemon.daemonJar"));
         }
-        if (config.effectiveProperties().containsKey("mimir.daemon.daemonLogName")) {
-            daemonLogName = config.effectiveProperties().get("mimir.daemon.daemonLogName");
+        if (config.effectiveProperties().containsKey("mimir.daemon.daemonLog")) {
+            daemonLog = config.basedir().resolve(config.effectiveProperties().get("mimir.daemon.daemonLog"));
         }
         if (config.effectiveProperties().containsKey("mimir.daemon.daemonGav")) {
             daemonGav = config.effectiveProperties().get("mimir.daemon.daemonGav");
@@ -67,14 +68,16 @@ public class DaemonConfig {
             debug = Boolean.parseBoolean(config.effectiveProperties().get("mimir.daemon.debug"));
         }
         return new DaemonConfig(
+                config,
+                daemonBasedir,
                 socketPath,
                 daemonJavaHome,
                 autoupdate,
                 autostart,
                 autostartDuration,
                 autostop,
-                daemonJarName,
-                daemonLogName,
+                daemonJar,
+                daemonLog,
                 daemonGav,
                 passOnBasedir,
                 debug);
@@ -82,41 +85,55 @@ public class DaemonConfig {
 
     public static final String NAME = "daemon";
 
+    private final Config config;
+    private final Path daemonBasedir;
     private final Path socketPath;
     private final Path daemonJavaHome;
     private final boolean autoupdate;
     private final boolean autostart;
     private final Duration autostartDuration;
     private final boolean autostop;
-    private final String daemonJarName;
-    private final String daemonLogName;
+    private final Path daemonJar;
+    private final Path daemonLog;
     private final String daemonGav;
     private final boolean passOnBasedir;
     private final boolean debug;
 
     private DaemonConfig(
+            Config config,
+            Path daemonBasedir,
             Path socketPath,
             Path daemonJavaHome,
             boolean autoupdate,
             boolean autostart,
             Duration autostartDuration,
             boolean autostop,
-            String daemonJarName,
-            String daemonLogName,
+            Path daemonJar,
+            Path daemonLog,
             String daemonGav,
             boolean passOnBasedir,
             boolean debug) {
+        this.config = requireNonNull(config);
+        this.daemonBasedir = requireNonNull(daemonBasedir);
         this.socketPath = requireNonNull(socketPath);
         this.daemonJavaHome = requireNonNull(daemonJavaHome);
         this.autoupdate = autoupdate;
         this.autostart = autostart;
         this.autostartDuration = requireNonNull(autostartDuration);
         this.autostop = autostop;
-        this.daemonJarName = requireNonNull(daemonJarName);
-        this.daemonLogName = requireNonNull(daemonLogName);
+        this.daemonJar = requireNonNull(daemonJar);
+        this.daemonLog = requireNonNull(daemonLog);
         this.daemonGav = requireNonNull(daemonGav);
         this.passOnBasedir = passOnBasedir;
         this.debug = debug;
+    }
+
+    public Config config() {
+        return config;
+    }
+
+    public Path daemonBasedir() {
+        return daemonBasedir;
     }
 
     public Path socketPath() {
@@ -143,12 +160,12 @@ public class DaemonConfig {
         return autostop;
     }
 
-    public String daemonJarName() {
-        return daemonJarName;
+    public Path daemonJar() {
+        return daemonJar;
     }
 
-    public String daemonLogName() {
-        return daemonLogName;
+    public Path daemonLog() {
+        return daemonLog;
     }
 
     public String daemonGav() {

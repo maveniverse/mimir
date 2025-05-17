@@ -20,6 +20,7 @@ import java.nio.channels.ByteChannel;
 import java.nio.channels.Channels;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -65,7 +66,11 @@ public class Handle implements Closeable {
             @Override
             public void close() throws IOException {
                 if (closed.compareAndSet(false, true)) {
-                    serverSocketChannel.close();
+                    try {
+                        serverSocketChannel.close();
+                    } finally {
+                        Files.deleteIfExists(domainSocketPath);
+                    }
                 }
             }
         };

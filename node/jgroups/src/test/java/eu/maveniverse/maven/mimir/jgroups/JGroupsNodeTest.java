@@ -52,7 +52,7 @@ public class JGroupsNodeTest {
                 new SimpleKeyResolverFactory().createKeyResolver(config),
                 List.of(Sha1ChecksumAlgorithmFactory.NAME),
                 Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()),
-                new DirectoryLocker());
+                DirectoryLocker.INSTANCE);
         FileNodeConfig configTwo = FileNodeConfig.of(
                 two, true, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME, false, false);
         FileNode nodeTwo = new FileNode(
@@ -63,7 +63,7 @@ public class JGroupsNodeTest {
                 new SimpleKeyResolverFactory().createKeyResolver(config),
                 List.of(Sha1ChecksumAlgorithmFactory.NAME),
                 Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()),
-                new DirectoryLocker());
+                DirectoryLocker.INSTANCE);
 
         String testGroup = UUID.randomUUID().toString();
         JChannel channelOne = new JChannel("udp-new.xml")

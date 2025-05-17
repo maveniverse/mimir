@@ -13,6 +13,7 @@ import eu.maveniverse.maven.mimir.daemon.protocol.Session;
 import eu.maveniverse.maven.mimir.shared.Config;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
+import eu.maveniverse.maven.shared.core.fs.DirectoryLocker;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,15 +39,24 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
     @Override
     public DaemonNode createNode(Config config) throws IOException {
         DaemonConfig cfg = DaemonConfig.with(config);
-        if (!Files.exists(cfg.socketPath())) {
+        if (tryLock(cfg)) {
+            Files.deleteIfExists(cfg.socketPath());
             if (cfg.autostart()) {
                 logger.debug("Mimir daemon is not running, starting it");
-                Process daemon = startDaemon(config.basedir(), config, cfg);
-                if (daemon == null) {
-                    throw new IOException("Mimir daemon could not be started");
-                }
+                Process daemon = startDaemon(cfg);
                 logger.info("Mimir daemon started (pid={})", daemon.pid());
+            } else {
+                throw new IOException("Mimir daemon does not run and autostart is disabled; start daemon manually");
             }
+        } else {
+            if (!Files.exists(cfg.socketPath())) {
+                waitForSocket(cfg);
+            }
+        }
+
+        // at this point socket must exist
+        if (!Files.exists(cfg.socketPath())) {
+            throw new IOException("Mimir daemon socket not found");
         }
         HashMap<String, String> clientData = new HashMap<>();
         clientData.put(Session.NODE_PID, Long.toString(ProcessHandle.current().pid()));
@@ -54,70 +64,122 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
         try {
             return new DaemonNode(clientData, cfg.socketPath(), checksumAlgorithmFactories, cfg.autostop());
         } catch (IOException e) {
-            mayDumpDaemonLog(config.basedir().resolve(cfg.daemonLogName()));
+            mayDumpDaemonLog(config.basedir().resolve(cfg.daemonLog()));
             throw e;
         }
     }
 
-    private Process startDaemon(Path basedir, Config config, DaemonConfig daemonConfig) throws IOException {
-        String daemonJarName = daemonConfig.daemonJarName();
-        String daemonLogName = daemonConfig.daemonLogName();
-        Path daemonJar = basedir.resolve(daemonJarName);
-        Path daemonLog = basedir.resolve(daemonLogName);
-        if (Files.isRegularFile(daemonJar)) {
-            String java = daemonConfig
-                    .daemonJavaHome()
+    /**
+     * Starts damon process. This method must be entered ONLY if caller owns exclusive lock "start procedure".
+     *
+     * @see #tryLock(DaemonConfig)
+     */
+    private Process startDaemon(DaemonConfig cfg) throws IOException {
+        Path basedir = cfg.config().basedir();
+        if (Files.isRegularFile(cfg.daemonJar())) {
+            String java = cfg.daemonJavaHome()
                     .resolve("bin")
                     .resolve(
-                            config.effectiveProperties()
+                            cfg.config()
+                                            .effectiveProperties()
                                             .getOrDefault("os.name", "unknown")
                                             .startsWith("Windows")
                                     ? "java.exe"
                                     : "java")
                     .toString();
-            ProcessBuilder pb = new ProcessBuilder().directory(basedir.toFile()).redirectOutput(daemonLog.toFile());
 
             ArrayList<String> command = new ArrayList<>();
             command.add(java);
-            if (daemonConfig.debug()) {
+            if (cfg.debug()) {
                 command.add("-Dorg.slf4j.simpleLogger.defaultLogLevel=debug");
             }
-            if (daemonConfig.passOnBasedir()) {
+            if (cfg.passOnBasedir()) {
                 command.add("-Dmimir.basedir=" + basedir);
             }
             command.add("-jar");
-            command.add(daemonJarName);
+            command.add(cfg.daemonJar().toString());
 
-            pb.command(command);
+            ProcessBuilder pb = new ProcessBuilder()
+                    .directory(basedir.toFile())
+                    .redirectOutput(cfg.daemonLog().toFile())
+                    .command(command);
+
+            unlock(cfg);
+
             Process p = pb.start();
-            Instant startingUntil = Instant.now().plus(daemonConfig.autostartDuration());
             try {
-                while (p.isAlive() && !Files.exists(daemonConfig.socketPath())) {
-                    if (Instant.now().isAfter(startingUntil)) {
-                        mayDumpDaemonLog(daemonLog);
-                        throw new IOException("Failed to start daemon in time " + daemonConfig.autostartDuration()
-                                + "; check daemon logs in " + daemonConfig.daemonLogName());
-                    }
-                    logger.debug("Waiting for socket to open");
-                    Thread.sleep(500);
-                }
-            } catch (InterruptedException e) {
-                throw new IOException("Interrupted", e);
+                waitForSocket(cfg);
+            } catch (IOException e) {
+                p.destroy();
+                throw e;
             }
             if (p.isAlive()) {
                 return p;
             } else {
-                mayDumpDaemonLog(daemonLog);
-                throw new IOException("Failed to start daemon; check daemon logs in " + daemonConfig.daemonLogName());
+                mayDumpDaemonLog(cfg.daemonLog());
+                throw new IOException("Failed to start daemon; check daemon logs in " + cfg.daemonLog());
             }
+        } else {
+            throw new IOException("Mimir daemon JAR not found");
         }
-        logger.warn("Mimir daemon is not present; cannot start it");
-        return null;
     }
 
+    /**
+     * Dumps the daemon log file for user.
+     */
     private void mayDumpDaemonLog(Path daemonLog) throws IOException {
         if (Files.isRegularFile(daemonLog)) {
             logger.error("Daemon log dump:\n{}", Files.readString(daemonLog));
+        }
+    }
+
+    /**
+     * Locks the {@link DaemonConfig#daemonBasedir()}. If this method returns {@code true} it means there is no
+     * daemon running nor is there any other process trying to start daemon.
+     * This process "owns" the start procedure alone.
+     */
+    private boolean tryLock(DaemonConfig cfg) {
+        try {
+            Files.createDirectories(cfg.daemonBasedir());
+            DirectoryLocker.INSTANCE.lockDirectory(cfg.daemonBasedir(), true);
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Unlocks the {@link DaemonConfig#daemonBasedir()}.
+     */
+    private void unlock(DaemonConfig cfg) throws IOException {
+        DirectoryLocker.INSTANCE.unlockDirectory(cfg.daemonBasedir());
+    }
+
+    /**
+     * The method will wait {@link DaemonConfig#autostartDuration()} time for socket to become available.
+     * Precondition: socket does not exist.
+     * Exit condition: socket exist.
+     * Fail condition: time passes and socket not exist.
+     */
+    private void waitForSocket(DaemonConfig cfg) throws IOException {
+        Instant startingUntil = Instant.now().plus(cfg.autostartDuration());
+        logger.debug("Waiting for socket to become available until {}", startingUntil);
+        try {
+            while (!Files.exists(cfg.socketPath())) {
+                if (Instant.now().isAfter(startingUntil)) {
+                    mayDumpDaemonLog(cfg.daemonLog());
+                    throw new IOException("Failed to start daemon in time " + cfg.autostartDuration()
+                            + "; check daemon logs in " + cfg.daemonLog());
+                }
+                logger.debug("... waiting");
+                Thread.sleep(500);
+            }
+        } catch (InterruptedException e) {
+            throw new IOException("Interrupted", e);
+        }
+        if (!Files.exists(cfg.socketPath())) {
+            mayDumpDaemonLog(cfg.daemonLog());
+            throw new IOException("Failed to start daemon; check daemon logs in " + cfg.daemonLog());
         }
     }
 }

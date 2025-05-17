@@ -19,7 +19,8 @@ import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
-import eu.maveniverse.maven.shared.core.component.ComponentSupport;
+import eu.maveniverse.maven.shared.core.component.CloseableConfigSupport;
+import eu.maveniverse.maven.shared.core.fs.DirectoryLocker;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
@@ -47,7 +48,7 @@ import org.eclipse.sisu.wire.WireModule;
 
 @Named
 @Singleton
-public class Daemon extends ComponentSupport implements Closeable {
+public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Closeable {
     static {
         // make Slf4j-simple go for stdout and not default stderr (unless re-configured by user)
         if (System.getProperty("org.slf4j.simpleLogger.logFile") == null) {
@@ -64,7 +65,6 @@ public class Daemon extends ComponentSupport implements Closeable {
                             new AbstractModule() {
                                 @Override
                                 protected void configure() {
-                                    bind(Config.class).toInstance(config);
                                     bind(DaemonConfig.class).toInstance(daemonConfig);
                                 }
                             },
@@ -72,7 +72,7 @@ public class Daemon extends ComponentSupport implements Closeable {
                                     new URLClassSpace(Daemon.class.getClassLoader()), BeanScanning.INDEX, true)))
                     .getInstance(Daemon.class);
 
-            Runtime.getRuntime().addShutdownHook(new Thread(daemon::close));
+            Runtime.getRuntime().addShutdownHook(new Thread(daemon::shutdown));
         } catch (Exception e) {
             e.printStackTrace(System.out);
         }
@@ -83,15 +83,14 @@ public class Daemon extends ComponentSupport implements Closeable {
         private final SystemNode<?> systemNode;
 
         @Inject
-        public SystemNodeProvider(
-                Config config, DaemonConfig daemonConfig, Map<String, SystemNodeFactory> systemNodeFactories)
+        public SystemNodeProvider(DaemonConfig daemonConfig, Map<String, SystemNodeFactory> systemNodeFactories)
                 throws IOException {
             requireNonNull(systemNodeFactories, "systemNodeFactories");
             SystemNodeFactory systemNodeFactory = systemNodeFactories.get(daemonConfig.systemNode());
             if (systemNodeFactory == null) {
                 throw new IllegalArgumentException("Unknown system node: " + daemonConfig.systemNode());
             }
-            this.systemNode = systemNodeFactory.createNode(config);
+            this.systemNode = systemNodeFactory.createNode(daemonConfig.config());
         }
 
         @Override
@@ -100,30 +99,25 @@ public class Daemon extends ComponentSupport implements Closeable {
         }
     }
 
-    private final Config config;
-    private final DaemonConfig daemonConfig;
-    private final Handle.ServerHandle serverHandle;
     private final ExecutorService executor;
     private final SystemNode<?> systemNode;
     private final List<RemoteNode<?>> remoteNodes;
+    private final Handle.ServerHandle serverHandle;
 
     @Inject
     public Daemon(
-            Config config,
             DaemonConfig daemonConfig,
             SystemNode<?> systemNode,
             Map<String, RemoteNodeFactory> remoteNodeFactories,
             Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories)
             throws IOException {
-        this.config = requireNonNull(config, "config");
-        this.daemonConfig = requireNonNull(daemonConfig, "daemonConfig");
-        requireNonNull(systemNode, "systemNode");
+        super(daemonConfig);
+        this.systemNode = requireNonNull(systemNode, "systemNode");
         requireNonNull(remoteNodeFactories, "remoteNodeFactories");
 
-        this.systemNode = systemNode;
         ArrayList<RemoteNode<?>> nds = new ArrayList<>();
         for (RemoteNodeFactory remoteNodeFactory : remoteNodeFactories.values()) {
-            Optional<? extends RemoteNode<?>> node = remoteNodeFactory.createNode(config);
+            Optional<? extends RemoteNode<?>> node = remoteNodeFactory.createNode(config.config());
             node.ifPresent(nds::add);
         }
         nds.sort(Comparator.comparing(RemoteNode::distance));
@@ -131,20 +125,17 @@ public class Daemon extends ComponentSupport implements Closeable {
         // Java 21: this.executor = Executors.newVirtualThreadPerTaskExecutor();
         this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1);
 
+        // lock exclusively the basedir; if other daemon tries to run here will fail
+        Files.createDirectories(config.daemonBasedir());
+        DirectoryLocker.INSTANCE.lockDirectory(config.daemonBasedir(), true);
+
         Path socketPath = daemonConfig.socketPath();
-        // make sure socket is deleted once daemon exits
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                Files.deleteIfExists(socketPath);
-            } catch (IOException e) {
-                logger.warn("Failed to delete socket path: {}", socketPath, e);
-            }
-        }));
+        Files.deleteIfExists(socketPath);
         this.serverHandle = Handle.serverDomainSocket(socketPath);
 
-        logger.info("Mimir Daemon {} started", config.mimirVersion().orElse("UNKNOWN"));
+        logger.info("Mimir Daemon {} started", config.config().mimirVersion().orElse("UNKNOWN"));
         logger.info("  PID: {}", ProcessHandle.current().pid());
-        logger.info("  Properties: {}", config.basedir().resolve(config.propertiesPath()));
+        logger.info("  Properties: {}", config.config().propertiesPath());
         logger.info("  Supported checksums: {}", checksumAlgorithmFactories.keySet());
         logger.info("  Socket: {}", socketPath);
         logger.info("  System Node: {}", systemNode);
@@ -156,7 +147,7 @@ public class Daemon extends ComponentSupport implements Closeable {
 
         HashMap<String, String> daemonData = new HashMap<>();
         daemonData.put(Session.DAEMON_PID, Long.toString(ProcessHandle.current().pid()));
-        daemonData.put(Session.DAEMON_VERSION, config.mimirVersion().orElse("UNKNOWN"));
+        daemonData.put(Session.DAEMON_VERSION, config.config().mimirVersion().orElse("UNKNOWN"));
 
         Predicate<Request> clientPredicate =
                 req -> Objects.equals(req.requireData(Session.NODE_VERSION), daemonData.get(Session.DAEMON_VERSION));
@@ -166,7 +157,7 @@ public class Daemon extends ComponentSupport implements Closeable {
                 while (serverHandle.isOpen()) {
                     Handle handle = serverHandle.accept();
                     executor.submit(new DaemonServer(
-                            handle, daemonData, systemNode, remoteNodes, clientPredicate, this::close));
+                            handle, daemonData, systemNode, remoteNodes, clientPredicate, this::shutdown));
                 }
             } catch (AsynchronousCloseException ignored) {
                 // we are done
@@ -176,8 +167,16 @@ public class Daemon extends ComponentSupport implements Closeable {
         });
     }
 
+    public void shutdown() {
+        try {
+            close();
+        } catch (IOException e) {
+            logger.warn("Failed to close daemon", e);
+        }
+    }
+
     @Override
-    public void close() {
+    protected void doClose() throws IOException {
         try {
             try {
                 serverHandle.close();
@@ -202,6 +201,7 @@ public class Daemon extends ComponentSupport implements Closeable {
                 logger.warn("Error closing local node", e);
             }
         } finally {
+            DirectoryLocker.INSTANCE.unlockDirectory(config.daemonBasedir());
             logger.info("Daemon stopped");
         }
     }

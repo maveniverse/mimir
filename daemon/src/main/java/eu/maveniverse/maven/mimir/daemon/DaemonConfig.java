@@ -17,6 +17,7 @@ public class DaemonConfig {
     public static DaemonConfig with(Config config) {
         requireNonNull(config, "config");
 
+        Path daemonBasedir = config.basedir().resolve("daemon");
         Path socketPath = config.basedir().resolve(Handle.DEFAULT_SOCKET_PATH);
         String systemNode = "file";
 
@@ -27,15 +28,27 @@ public class DaemonConfig {
         if (config.effectiveProperties().containsKey("mimir.daemon.systemNode")) {
             systemNode = config.effectiveProperties().get("mimir.daemon.systemNode");
         }
-        return new DaemonConfig(socketPath, systemNode);
+        return new DaemonConfig(config, daemonBasedir, socketPath, systemNode);
     }
 
+    private final Config config;
+    private final Path daemonBasedir;
     private final Path socketPath;
     private final String systemNode;
 
-    private DaemonConfig(Path socketPath, String systemNode) {
+    private DaemonConfig(Config config, Path daemonBasedir, Path socketPath, String systemNode) {
+        this.config = requireNonNull(config);
+        this.daemonBasedir = requireNonNull(daemonBasedir);
         this.socketPath = requireNonNull(socketPath);
         this.systemNode = requireNonNull(systemNode);
+    }
+
+    public Config config() {
+        return config;
+    }
+
+    public Path daemonBasedir() {
+        return daemonBasedir;
     }
 
     public Path socketPath() {

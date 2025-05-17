@@ -26,16 +26,13 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 public final class FileNodeFactory implements SystemNodeFactory {
     private final Map<String, KeyResolverFactory> keyResolverFactories;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
-    private final DirectoryLocker directoryLocker;
 
     @Inject
     public FileNodeFactory(
             Map<String, KeyResolverFactory> keyResolverFactories,
-            Map<String, ChecksumAlgorithmFactory> checksumFactories,
-            DirectoryLocker directoryLocker) {
+            Map<String, ChecksumAlgorithmFactory> checksumFactories) {
         this.keyResolverFactories = requireNonNull(keyResolverFactories, "keyResolverFactories");
         this.checksumFactories = requireNonNull(checksumFactories, "checksumFactories");
-        this.directoryLocker = requireNonNull(directoryLocker, "directoryLocker");
     }
 
     @Override
@@ -64,6 +61,6 @@ public final class FileNodeFactory implements SystemNodeFactory {
                 keyResolver,
                 fileNodeConfig.checksumAlgorithms(),
                 checksumFactories,
-                directoryLocker);
+                DirectoryLocker.INSTANCE);
     }
 }
