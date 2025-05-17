@@ -75,6 +75,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
             Runtime.getRuntime().addShutdownHook(new Thread(daemon::shutdown));
         } catch (Exception e) {
             e.printStackTrace(System.out);
+            System.exit(1);
         }
     }
 
