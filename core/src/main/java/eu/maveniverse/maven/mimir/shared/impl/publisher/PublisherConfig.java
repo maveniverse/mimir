@@ -15,7 +15,7 @@ import java.io.IOException;
 
 public class PublisherConfig {
     public static PublisherConfig with(SessionConfig sessionConfig) throws IOException {
-        requireNonNull(sessionConfig, "config");
+        requireNonNull(sessionConfig);
 
         String hostAddress =
                 Utils.getLocalHost(sessionConfig.localHostHint().orElse(null)).getHostAddress();

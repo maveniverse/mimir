@@ -24,7 +24,7 @@ public class PublisherRemoteEntry extends EntrySupport implements RemoteEntry {
 
     public PublisherRemoteEntry(Map<String, String> metadata, Map<String, String> checksums, URI handle) {
         super(metadata, checksums);
-        this.handle = requireNonNull(handle, "handle");
+        this.handle = requireNonNull(handle);
     }
 
     @Override

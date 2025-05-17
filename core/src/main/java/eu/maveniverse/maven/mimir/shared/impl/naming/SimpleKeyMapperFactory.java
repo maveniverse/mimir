@@ -29,7 +29,7 @@ public final class SimpleKeyMapperFactory implements KeyMapperFactory {
 
     @Override
     public KeyMapper createKeyMapper(SessionConfig sessionConfig) {
-        requireNonNull(sessionConfig, "config");
+        requireNonNull(sessionConfig);
         return new SimpleKeyMapper();
     }
 

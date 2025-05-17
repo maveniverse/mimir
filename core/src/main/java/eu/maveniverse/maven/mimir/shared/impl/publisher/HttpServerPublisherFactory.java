@@ -24,8 +24,8 @@ public class HttpServerPublisherFactory implements PublisherFactory {
 
     @Override
     public Publisher createPublisher(SessionConfig sessionConfig, SystemNode<?> systemNode) throws IOException {
-        requireNonNull(sessionConfig, "config");
-        requireNonNull(systemNode, "systemNode");
+        requireNonNull(sessionConfig);
+        requireNonNull(systemNode);
         return new HttpServerPublisher(systemNode, PublisherConfig.with(sessionConfig));
     }
 }

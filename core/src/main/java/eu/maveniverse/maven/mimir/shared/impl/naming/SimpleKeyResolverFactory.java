@@ -26,7 +26,7 @@ public final class SimpleKeyResolverFactory implements KeyResolverFactory {
 
     @Override
     public KeyResolver createKeyResolver(SessionConfig sessionConfig) {
-        requireNonNull(sessionConfig, "config");
+        requireNonNull(sessionConfig);
         return new SimpleKeyResolver();
     }
 

@@ -44,7 +44,7 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
 
     @Override
     public Session createSession(SessionConfig config) throws IOException {
-        requireNonNull(config, "config");
+        requireNonNull(config);
 
         SessionImplConfig cfg = SessionImplConfig.with(config);
 

@@ -24,8 +24,8 @@ public class ServerSocketPublisherFactory implements PublisherFactory {
 
     @Override
     public Publisher createPublisher(SessionConfig sessionConfig, SystemNode<?> systemNode) throws IOException {
-        requireNonNull(sessionConfig, "config");
-        requireNonNull(systemNode, "systemNode");
+        requireNonNull(sessionConfig);
+        requireNonNull(systemNode);
         return new ServerSocketPublisher(systemNode, PublisherConfig.with(sessionConfig));
     }
 }

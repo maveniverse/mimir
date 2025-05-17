@@ -47,10 +47,10 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
             BiFunction<RemoteRepository, Artifact, URI> keyMapper,
             LocalNode<?> localNode) {
         super(sessionConfig);
-        this.repositoryPredicate = requireNonNull(repositoryPredicate, "repositoryPredicate");
-        this.artifactPredicate = requireNonNull(artifactPredicate, "artifactPredicate");
-        this.keyMapper = requireNonNull(keyMapper, "nameMapper");
-        this.localNode = requireNonNull(localNode, "localNode");
+        this.repositoryPredicate = requireNonNull(repositoryPredicate);
+        this.artifactPredicate = requireNonNull(artifactPredicate);
+        this.keyMapper = requireNonNull(keyMapper);
+        this.localNode = requireNonNull(localNode);
         this.stats = new Stats();
 
         this.retrievedFromCache = new ConcurrentHashMap<>();
