@@ -37,7 +37,8 @@ public class MimirTrustedChecksumsSource implements TrustedChecksumsSource {
             List<ChecksumAlgorithmFactory> checksumAlgorithmFactories) {
         if (artifactRepository instanceof RemoteRepository remoteRepository) {
             Optional<Session> sessionOptional = MimirUtils.mayGetSession(session);
-            if (sessionOptional.isPresent()) {
+            if (sessionOptional.isPresent()
+                    && sessionOptional.orElseThrow().config().enabled()) {
                 Session ms = sessionOptional.orElseThrow();
                 if (ms.repositorySupported(remoteRepository) && ms.artifactSupported(artifact)) {
                     try {

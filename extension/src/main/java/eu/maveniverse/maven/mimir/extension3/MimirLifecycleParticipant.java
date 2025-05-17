@@ -56,21 +56,19 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
     @Override
     public void afterProjectsRead(MavenSession session) throws MavenExecutionException {
         try {
-            RepositorySystemSession repoSession = session.getRepositorySession();
-            SessionConfig sessionConfig = SessionConfig.defaults()
-                    .userProperties(repoSession.getUserProperties())
-                    .systemProperties(repoSession.getSystemProperties())
-                    .build();
-            if (sessionConfig.enabled()) {
-                List<RemoteRepository> remoteRepositories = RepositoryUtils.toRepos(
-                        session.getProjectBuildingRequest().getRemoteRepositories());
-                mayCheckForUpdates(sessionConfig, repoSession, remoteRepositories);
-                mayResolveDaemonArtifact(sessionConfig, repoSession, remoteRepositories);
-            } else {
-                logger.info("Mimir is disabled");
-            }
             MimirUtils.lazyInit(session.getRepositorySession(), () -> {
                 try {
+                    RepositorySystemSession repoSession = session.getRepositorySession();
+                    SessionConfig sessionConfig = SessionConfig.defaults()
+                            .userProperties(repoSession.getUserProperties())
+                            .systemProperties(repoSession.getSystemProperties())
+                            .build();
+                    if (sessionConfig.enabled()) {
+                        List<RemoteRepository> remoteRepositories = RepositoryUtils.toRepos(
+                                session.getProjectBuildingRequest().getRemoteRepositories());
+                        mayCheckForUpdates(sessionConfig, repoSession, remoteRepositories);
+                        mayResolveDaemonArtifact(sessionConfig, repoSession, remoteRepositories);
+                    }
                     return sessionFactory.createSession(sessionConfig);
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
@@ -116,7 +114,11 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                 Files.createDirectories(daemonConfig.daemonJar().getParent());
                 FileUtils.copyOrLink(artifactResult.getArtifact().getFile().toPath(), daemonConfig.daemonJar());
             } catch (Exception e) {
-                logger.warn("Failed to resolve daemon: {}", e.getMessage());
+                if (logger.isDebugEnabled()) {
+                    logger.warn("Failed to resolve daemon:", e);
+                } else {
+                    logger.warn("Failed to resolve daemon: {}", e.getMessage());
+                }
             }
         }
     }
@@ -148,7 +150,11 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                 logger.debug("Mimir {} is up to date", mimirVersion);
             }
         } catch (Exception e) {
-            logger.warn("Failed to check for updates; ignoring it", e);
+            if (logger.isDebugEnabled()) {
+                logger.warn("Failed to check for updates; ignoring it:", e);
+            } else {
+                logger.warn("Failed to check for updates; ignoring it: {}", e.getMessage());
+            }
         }
     }
 }
