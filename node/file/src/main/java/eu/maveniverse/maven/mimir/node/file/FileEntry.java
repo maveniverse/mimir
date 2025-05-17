@@ -9,7 +9,6 @@ package eu.maveniverse.maven.mimir.node.file;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.impl.Utils;
 import eu.maveniverse.maven.mimir.shared.impl.node.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
@@ -39,7 +38,7 @@ public final class FileEntry extends EntrySupport implements SystemEntry {
         Files.deleteIfExists(file);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(file)) {
             if (mayLink) {
-                Utils.copyOrLink(path, f.getPath());
+                FileUtils.copyOrLink(path, f.getPath());
             } else {
                 Files.copy(path, f.getPath());
                 Files.setLastModifiedTime(f.getPath(), Files.getLastModifiedTime(path));
