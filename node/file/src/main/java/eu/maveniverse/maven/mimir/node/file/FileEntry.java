@@ -37,12 +37,7 @@ public final class FileEntry extends EntrySupport implements SystemEntry {
     public void transferTo(Path file) throws IOException {
         Files.deleteIfExists(file);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(file)) {
-            if (mayLink) {
-                FileUtils.copyOrLink(path, f.getPath());
-            } else {
-                Files.copy(path, f.getPath());
-                Files.setLastModifiedTime(f.getPath(), Files.getLastModifiedTime(path));
-            }
+            FileUtils.copyOrLink(path, f.getPath(), mayLink);
             f.move();
         }
     }

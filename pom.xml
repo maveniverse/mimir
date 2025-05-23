@@ -71,7 +71,7 @@
     <requireRuntimeMavenVersion.range>[3.9,)</requireRuntimeMavenVersion.range>
 
     <!-- Dependency versions -->
-    <version.maveniverseShared>0.1.5</version.maveniverseShared>
+    <version.maveniverseShared>0.1.6</version.maveniverseShared>
     <version.maven>3.9.9</version.maven>
     <version.resolver>1.9.23</version.resolver>
     <version.slf4j>2.0.17</version.slf4j>
@@ -116,12 +116,12 @@
       <dependency>
         <groupId>org.eclipse.sisu</groupId>
         <artifactId>org.eclipse.sisu.inject</artifactId>
-        <version>0.9.0.M3</version>
+        <version>${version.sisu}</version>
       </dependency>
       <dependency>
         <groupId>com.google.inject</groupId>
         <artifactId>guice</artifactId>
-        <version>5.1.0</version>
+        <version>6.0.0</version>
         <classifier>classes</classifier>
       </dependency>
       <dependency>
