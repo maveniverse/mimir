@@ -75,7 +75,11 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                 }
             });
         } catch (Exception e) {
-            throw new MavenExecutionException("Error creating Mimir session", e);
+            if ("com.google.inject.ProvisionException".equals(e.getClass().getName())) {
+                logger.error("Minir session creation failed", e); // here runtime req will kick in
+            } else {
+                throw new MavenExecutionException("Error enabling Mimir", e);
+            }
         }
     }
 
