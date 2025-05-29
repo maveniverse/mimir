@@ -11,7 +11,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
+import eu.maveniverse.maven.mima.context.MavenSystemHome;
+import eu.maveniverse.maven.mima.context.MavenUserHome;
+import eu.maveniverse.maven.mima.context.Runtime;
+import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.mima.context.internal.MavenUserHomeImpl;
 import eu.maveniverse.maven.mima.runtime.shared.PreBoot;
 import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
@@ -43,6 +48,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 import org.eclipse.sisu.space.BeanScanning;
 import org.eclipse.sisu.space.SpaceModule;
@@ -84,7 +90,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                                     new URLClassSpace(Daemon.class.getClassLoader()), BeanScanning.INDEX, true)))
                     .getInstance(Daemon.class);
 
-            Runtime.getRuntime().addShutdownHook(new Thread(daemon::shutdown));
+            java.lang.Runtime.getRuntime().addShutdownHook(new Thread(daemon::shutdown));
         } catch (Exception e) {
             e.printStackTrace(System.out);
             System.exit(1);
@@ -136,7 +142,8 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         nds.sort(Comparator.comparing(RemoteNode::distance));
         this.remoteNodes = List.copyOf(nds);
         // Java 21: this.executor = Executors.newVirtualThreadPerTaskExecutor();
-        this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1);
+        this.executor =
+                Executors.newFixedThreadPool(java.lang.Runtime.getRuntime().availableProcessors() - 1);
 
         // lock exclusively the basedir; if other daemon tries to run here will fail
         Files.createDirectories(config.daemonBasedir());
@@ -157,6 +164,8 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         for (RemoteNode<?> node : this.remoteNodes) {
             logger.info("    {}", node);
         }
+
+        dumpMima();
 
         HashMap<String, String> daemonData = new HashMap<>();
         daemonData.put(Session.DAEMON_PID, Long.toString(ProcessHandle.current().pid()));
@@ -216,6 +225,61 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         } finally {
             DirectoryLocker.INSTANCE.unlockDirectory(config.daemonBasedir());
             logger.info("Daemon stopped");
+        }
+    }
+
+    protected void dumpMima() {
+        Runtime runtime = Runtimes.INSTANCE.getRuntime();
+        try (Context context =
+                runtime.create(ContextOverrides.create().withUserSettings(true).build())) {
+            logger.info("  Embeds MIMA Runtime '{}' version {}", runtime.name(), runtime.version());
+            if (logger.isDebugEnabled()) {
+                logger.info("MIMA dump:");
+                logger.info("");
+                logger.info("          Maven version {}", runtime.mavenVersion());
+                logger.info("                Managed {}", runtime.managedRepositorySystem());
+                logger.info("                Basedir {}", context.basedir());
+                logger.info(
+                        "                Offline {}",
+                        context.repositorySystemSession().isOffline());
+
+                MavenSystemHome mavenSystemHome = context.mavenSystemHome();
+                logger.info("");
+                logger.info(
+                        "             MAVEN_HOME {}",
+                        mavenSystemHome == null ? "undefined" : mavenSystemHome.basedir());
+                if (mavenSystemHome != null) {
+                    logger.info("           settings.xml {}", mavenSystemHome.settingsXml());
+                    logger.info("         toolchains.xml {}", mavenSystemHome.toolchainsXml());
+                }
+
+                MavenUserHome mavenUserHome = context.mavenUserHome();
+                logger.info("");
+                logger.info("              USER_HOME {}", mavenUserHome.basedir());
+                logger.info("           settings.xml {}", mavenUserHome.settingsXml());
+                logger.info("  settings-security.xml {}", mavenUserHome.settingsSecurityXml());
+                logger.info("       local repository {}", mavenUserHome.localRepository());
+
+                logger.info("");
+                logger.info("               PROFILES");
+                logger.info(
+                        "                 Active {}", context.contextOverrides().getActiveProfileIds());
+                logger.info(
+                        "               Inactive {}", context.contextOverrides().getInactiveProfileIds());
+
+                logger.info("");
+                logger.info("    REMOTE REPOSITORIES");
+                for (RemoteRepository repository : context.remoteRepositories()) {
+                    if (repository.getMirroredRepositories().isEmpty()) {
+                        logger.info("                        {}", repository);
+                    } else {
+                        logger.info("                        {}, mirror of", repository);
+                        for (RemoteRepository mirrored : repository.getMirroredRepositories()) {
+                            logger.info("                          {}", mirrored);
+                        }
+                    }
+                }
+            }
         }
     }
 }

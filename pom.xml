@@ -206,6 +206,11 @@
       </dependency>
       <dependency>
         <groupId>eu.maveniverse.maven.mima.runtime</groupId>
+        <artifactId>standalone-shared</artifactId>
+        <version>${version.mima}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.mima.runtime</groupId>
         <artifactId>standalone-sisu</artifactId>
         <version>${version.mima}</version>
         <exclusions>
