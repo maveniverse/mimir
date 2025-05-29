@@ -30,6 +30,11 @@ public interface SessionConfig {
     String CONF_PREFIX = NAME + ".";
 
     /**
+     * Enables/disables Mimir. Defaults to {@code true}.
+     */
+    String CONF_ENABLED = CONF_PREFIX + "enabled";
+
+    /**
      * Mimir "local host hint": on hosts where there is running Docker, Tailscale etc. it may be impossible to "figure out"
      * which interface and which address correspond to LAN address, if any. Hence, one can give Mimir a "hint" that is
      * globally applied at Mimir level (like publishers or LAN sharing is). Accepted hints are:
@@ -52,7 +57,15 @@ public interface SessionConfig {
      */
     String CONF_LOCAL_HOST_HINT = CONF_PREFIX + "localHostHint";
 
+    /**
+     * Makes Mimir ignore (not fail the build) if session close at Maven session end fails.
+     * Note: use of this configuration is <em>discouraged</em>. Defaults to {@code false}.
+     */
+    String CONF_IGNORE_ERROR_AT_SESSION_END = CONF_PREFIX + "ignoreErrorAtSessionEnd";
+
     boolean enabled();
+
+    boolean ignoreErrorAtSessionEnd();
 
     Optional<String> mimirVersion();
 
@@ -73,6 +86,7 @@ public interface SessionConfig {
     default Builder toBuilder() {
         return new Builder(
                 enabled(),
+                ignoreErrorAtSessionEnd(),
                 mimirVersion().orElse(null),
                 basedir(),
                 propertiesPath(),
@@ -82,6 +96,7 @@ public interface SessionConfig {
 
     static Builder defaults() {
         return new Builder(
+                null,
                 null,
                 MavenUtils.discoverArtifactVersion(
                         SessionConfig.class.getClassLoader(), "eu.maveniverse.maven.mimir", "core", null),
@@ -97,6 +112,7 @@ public interface SessionConfig {
 
     class Builder {
         private Boolean enabled;
+        private Boolean ignoreErrorAtSessionEnd;
         private final String mimirVersion;
         private Path basedir;
         private Path propertiesPath;
@@ -105,12 +121,14 @@ public interface SessionConfig {
 
         private Builder(
                 Boolean enabled,
+                Boolean ignoreErrorAtSessionEnd,
                 String mimirVersion,
                 Path basedir,
                 Path propertiesPath,
                 Map<String, String> userProperties,
                 Map<String, String> systemProperties) {
             this.enabled = enabled;
+            this.ignoreErrorAtSessionEnd = ignoreErrorAtSessionEnd;
             this.mimirVersion = mimirVersion;
             this.basedir = basedir;
             this.propertiesPath = propertiesPath;
@@ -120,6 +138,11 @@ public interface SessionConfig {
 
         public Builder enabled(Boolean enabled) {
             this.enabled = enabled;
+            return this;
+        }
+
+        public Builder ignoreErrorAtSessionEnd(Boolean ignoreErrorAtSessionEnd) {
+            this.ignoreErrorAtSessionEnd = ignoreErrorAtSessionEnd;
             return this;
         }
 
@@ -158,11 +181,19 @@ public interface SessionConfig {
         }
 
         public SessionConfig build() {
-            return new Impl(enabled, mimirVersion, basedir, propertiesPath, userProperties, systemProperties);
+            return new Impl(
+                    enabled,
+                    ignoreErrorAtSessionEnd,
+                    mimirVersion,
+                    basedir,
+                    propertiesPath,
+                    userProperties,
+                    systemProperties);
         }
 
         private static class Impl implements SessionConfig {
             private final Boolean enabled;
+            private final Boolean ignoreErrorAtSessionEnd;
             private final String mimirVersion;
             private final Path basedir;
             private final Path propertiesPath;
@@ -172,12 +203,14 @@ public interface SessionConfig {
 
             private Impl(
                     Boolean enabled,
+                    Boolean ignoreErrorAtSessionEnd,
                     String mimirVersion,
                     Path basedir,
                     Path propertiesPath,
                     Map<String, String> userProperties,
                     Map<String, String> systemProperties) {
                 this.enabled = enabled;
+                this.ignoreErrorAtSessionEnd = ignoreErrorAtSessionEnd;
                 this.mimirVersion = mimirVersion;
                 this.basedir = requireNonNull(basedir, "basedir");
                 requireNonNull(propertiesPath, "propertiesPath");
@@ -206,7 +239,14 @@ public interface SessionConfig {
                 return Objects.requireNonNullElseGet(
                         enabled,
                         () -> Boolean.parseBoolean(
-                                effectiveProperties.getOrDefault("mimir.enabled", Boolean.TRUE.toString())));
+                                effectiveProperties.getOrDefault(CONF_ENABLED, Boolean.TRUE.toString())));
+            }
+
+            public boolean ignoreErrorAtSessionEnd() {
+                return Objects.requireNonNullElseGet(
+                        ignoreErrorAtSessionEnd,
+                        () -> Boolean.parseBoolean(effectiveProperties.getOrDefault(
+                                CONF_IGNORE_ERROR_AT_SESSION_END, Boolean.FALSE.toString())));
             }
 
             @Override

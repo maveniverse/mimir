@@ -17,7 +17,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -91,23 +90,16 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                 try {
                     s.close();
                 } catch (IOException e) {
-                    throw new UncheckedIOException(e);
+                    if (s.config().ignoreErrorAtSessionEnd()) {
+                        logger.warn("Error closing Mimir session; ignoring", e);
+                    } else {
+                        throw new UncheckedIOException(e);
+                    }
                 }
             });
         } catch (Exception e) {
-            if (skipErrorAtEnd()) {
-                logger.warn("Error closing Mimir session", e);
-            } else {
-                throw new MavenExecutionException("Error closing Mimir session", e);
-            }
+            throw new MavenExecutionException("Error closing Mimir session", e);
         }
-    }
-
-    private boolean skipErrorAtEnd() {
-        return Optional.ofNullable(
-                        SessionConfig.defaults().build().effectiveProperties().get("mimir.error-at-end.skip"))
-                .map(Boolean::parseBoolean)
-                .orElse(false);
     }
 
     private void mayResolveDaemonArtifact(
