@@ -11,6 +11,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import eu.maveniverse.maven.mima.context.ContextOverrides;
+import eu.maveniverse.maven.mima.context.internal.MavenUserHomeImpl;
+import eu.maveniverse.maven.mima.runtime.shared.PreBoot;
 import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
 import eu.maveniverse.maven.mimir.daemon.protocol.Request;
 import eu.maveniverse.maven.mimir.daemon.protocol.Session;
@@ -66,6 +69,15 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                                 @Override
                                 protected void configure() {
                                     bind(DaemonConfig.class).toInstance(daemonConfig);
+                                    bind(PreBoot.class)
+                                            .toInstance(new PreBoot(
+                                                    ContextOverrides.create()
+                                                            .withUserSettings(true)
+                                                            .build(),
+                                                    new MavenUserHomeImpl(Path.of(System.getProperty("user.home"))
+                                                            .resolve(".m2")),
+                                                    null, // maven.home
+                                                    Path.of(System.getProperty("user.dir"))));
                                 }
                             },
                             new SpaceModule(
