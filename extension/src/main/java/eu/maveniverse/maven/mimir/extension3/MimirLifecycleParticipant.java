@@ -96,7 +96,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
             });
         } catch (Exception e) {
             if (skipErrorAtEnd()) {
-                logger.warn("Mimir session creation failed", e);
+                logger.warn("Error closing Mimir session", e);
             } else {
                 throw new MavenExecutionException("Error closing Mimir session", e);
             }
