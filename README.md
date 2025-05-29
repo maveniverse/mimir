@@ -37,7 +37,7 @@ With Maven 3 create project-wide, or with Maven 4-rc-3+ create user-wide `~/.m2/
     <extension>
         <groupId>eu.maveniverse.maven.mimir</groupId>
         <artifactId>extension</artifactId>
-        <version>%{version.mimir}</version>
+        <version>${version.mimir}</version>
     </extension>
 </extensions>
 ```
