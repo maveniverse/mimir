@@ -90,7 +90,11 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                 try {
                     s.close();
                 } catch (IOException e) {
-                    throw new UncheckedIOException(e);
+                    if (s.config().ignoreErrorAtSessionEnd()) {
+                        logger.warn("Error closing Mimir session; ignoring", e);
+                    } else {
+                        throw new UncheckedIOException(e);
+                    }
                 }
             });
         } catch (Exception e) {
