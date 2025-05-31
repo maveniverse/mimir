@@ -73,7 +73,7 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
         }
 
         if (logger.isDebugEnabled()) {
-            logger.debug("Mimir {} session created", config.mimirVersion().orElse("UNKNOWN"));
+            logger.debug("Mimir {} session created", config.mimirVersion());
             logger.debug("  Enabled: {}", config.enabled());
             logger.debug("  Properties: {}", config.basedir().resolve(config.propertiesPath()));
             logger.debug("  Key mapper: {}", keyMapper.getClass().getSimpleName());

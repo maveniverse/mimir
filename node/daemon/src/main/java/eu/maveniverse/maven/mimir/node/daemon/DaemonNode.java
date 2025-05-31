@@ -15,11 +15,11 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
 import eu.maveniverse.maven.mimir.daemon.protocol.Request;
 import eu.maveniverse.maven.mimir.daemon.protocol.Response;
-import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.impl.node.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.impl.node.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
+import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -34,7 +34,7 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
  * This node is delegating all the work to daemon via Unix Domain Sockets.
  */
 public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements LocalNode<DaemonNode.DaemonEntry> {
-    private final Path socketPath;
+    private final DaemonConfig daemonConfig;
     private final Handle.ClientHandle clientHandle;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
     private final boolean autostop;
@@ -43,13 +43,13 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
 
     public DaemonNode(
             Map<String, String> clientData,
-            Path socketPath,
+            DaemonConfig daemonConfig,
             Map<String, ChecksumAlgorithmFactory> checksumFactories,
             boolean autostop)
             throws IOException {
         super(DaemonConfig.NAME);
-        this.socketPath = requireNonNull(socketPath, "socketPath");
-        this.clientHandle = Handle.clientDomainSocket(socketPath);
+        this.daemonConfig = requireNonNull(daemonConfig, "daemonConfig");
+        this.clientHandle = Handle.clientDomainSocket(daemonConfig.socketPath());
         this.checksumFactories = Collections.unmodifiableMap(requireNonNull(checksumFactories, "checksumFactories"));
         this.autostop = autostop;
 
@@ -95,7 +95,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
     public DaemonEntry store(URI key, Path file, Map<String, String> metadata, Map<String, String> checksums)
             throws IOException {
         String keyString = key.toASCIIString();
-        String filePath = SessionConfig.getCanonicalPath(file).toString();
+        String filePath = FileUtils.canonicalPath(file).toString();
         logger.debug("STORE PATH '{}' -> '{}'", keyString, filePath);
         try (Handle handle = clientHandle.getHandle()) {
             handle.writeRequest(Request.storePath(session, keyString, filePath, mergeEntry(metadata, checksums)));
@@ -126,7 +126,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + " (socketPath=" + socketPath + "; daemonPID="
+        return getClass().getSimpleName() + " (basedir=" + daemonConfig.daemonBasedir() + "; daemonPID="
                 + daemonData.getOrDefault("daemon.pid", "n/a") + "; daemonVersion="
                 + daemonData.getOrDefault("daemon.version", "n/a") + ")";
     }
@@ -144,7 +144,7 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
             logger.debug("TRANSFER '{}'->'{}'", keyString, file);
             try (Handle handle = clientHandle.getHandle()) {
                 handle.writeRequest(Request.transfer(
-                        session, keyString, SessionConfig.getCanonicalPath(file).toString()));
+                        session, keyString, FileUtils.canonicalPath(file).toString()));
                 handle.readResponse();
             }
         }

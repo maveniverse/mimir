@@ -12,6 +12,7 @@ import static java.util.stream.Collectors.toList;
 
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
+import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -28,7 +29,7 @@ public final class FileNodeConfig {
         boolean cachePurge = false;
 
         if (sessionConfig.effectiveProperties().containsKey("mimir.file.basedir")) {
-            basedir = SessionConfig.getCanonicalPath(
+            basedir = FileUtils.canonicalPath(
                     Path.of(sessionConfig.effectiveProperties().get("mimir.file.basedir")));
         }
         if (sessionConfig.effectiveProperties().containsKey("mimir.file.mayLink")) {
@@ -65,7 +66,7 @@ public final class FileNodeConfig {
             boolean exclusiveAccess,
             boolean cachePurge) {
         return new FileNodeConfig(
-                SessionConfig.getCanonicalPath(basedir),
+                FileUtils.canonicalPath(basedir),
                 mayLink,
                 checksumAlgorithms,
                 keyResolver,
