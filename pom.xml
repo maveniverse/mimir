@@ -74,9 +74,9 @@
     <version.maveniverseShared>0.1.6</version.maveniverseShared>
     <version.maven>3.9.9</version.maven>
     <version.resolver>1.9.23</version.resolver>
-    <version.mima>2.4.25</version.mima>
+    <version.mima>2.4.26</version.mima>
     <version.slf4j>1.7.36</version.slf4j>
-    <version.testcontainers>1.21.0</version.testcontainers>
+    <version.testcontainers>1.21.1</version.testcontainers>
   </properties>
 
   <dependencyManagement>
@@ -253,7 +253,7 @@
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>
-        <version>5.12.2</version>
+        <version>5.13.0</version>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
