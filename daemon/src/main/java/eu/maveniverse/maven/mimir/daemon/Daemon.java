@@ -29,6 +29,7 @@ import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
 import eu.maveniverse.maven.shared.core.component.CloseableConfigSupport;
 import eu.maveniverse.maven.shared.core.fs.DirectoryLocker;
+import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
@@ -80,10 +81,10 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                                                     ContextOverrides.create()
                                                             .withUserSettings(true)
                                                             .build(),
-                                                    new MavenUserHomeImpl(Path.of(System.getProperty("user.home"))
+                                                    new MavenUserHomeImpl(FileUtils.discoverUserHomeDirectory()
                                                             .resolve(".m2")),
                                                     null, // maven.home
-                                                    Path.of(System.getProperty("user.dir"))));
+                                                    daemonConfig.config().basedir()));
                                 }
                             },
                             new SpaceModule(
