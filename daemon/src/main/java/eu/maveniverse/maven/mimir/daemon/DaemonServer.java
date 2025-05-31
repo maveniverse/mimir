@@ -46,6 +46,7 @@ final class DaemonServer extends ComponentSupport implements Runnable {
     private final List<RemoteNode<?>> remoteNodes;
     private final Predicate<Request> clientPredicate;
     private final Runnable shutdownHook;
+    private final Map<String, Map<String, String>> sessions;
 
     DaemonServer(
             Handle handle,
@@ -60,6 +61,7 @@ final class DaemonServer extends ComponentSupport implements Runnable {
         this.remoteNodes = remoteNodes;
         this.clientPredicate = clientPredicate;
         this.shutdownHook = shutdownHook;
+        this.sessions = new HashMap<>();
     }
 
     @Override
@@ -70,21 +72,28 @@ final class DaemonServer extends ComponentSupport implements Runnable {
             try {
                 switch (request.cmd()) {
                     case CMD_HELLO -> {
-                        logger.debug("{} {}", request.cmd(), request.data());
                         if (clientPredicate.test(request)) {
+                            String sessionId = UUID.randomUUID().toString();
                             Map<String, String> session = new HashMap<>();
-                            session.put(Session.SESSION_ID, UUID.randomUUID().toString());
+                            session.put(Session.SESSION_ID, sessionId);
                             handle.writeResponse(ImmutableResponse.builder()
                                     .status(Response.STATUS_OK)
                                     .session(session)
                                     .data(daemonData)
                                     .build());
+                            sessions.put(sessionId, request.data());
+                            logger.debug("{} {} > {}", request.cmd(), request.data(), sessionId);
                         } else {
                             handle.writeResponse(Response.koMessage(request, "Bad client; align both versions"));
+                            logger.debug("{} {} > REJECT", request.cmd(), request.data());
                         }
                     }
                     case CMD_BYE -> {
-                        logger.debug("{} {}", request.cmd(), request.data());
+                        String sessionId = request.session().get(Session.SESSION_ID);
+                        if (sessionId != null) {
+                            sessions.remove(sessionId);
+                        }
+                        logger.debug("{} {} < {}", request.cmd(), request.data(), sessionId);
                         handle.writeResponse(Response.okMessage(request, "So Long, and Thanks for All the Fish"));
                         if (Boolean.parseBoolean(request.data().getOrDefault(Request.DATA_SHUTDOWN, "false"))) {
                             shutdownHook.run();

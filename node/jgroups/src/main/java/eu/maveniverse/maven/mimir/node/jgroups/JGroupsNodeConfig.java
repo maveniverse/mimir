@@ -18,8 +18,8 @@ public class JGroupsNodeConfig {
         requireNonNull(sessionConfig, "config");
 
         String groupSuffix = "@n/a";
-        if (sessionConfig.mimirVersion().isPresent()) {
-            String version = sessionConfig.mimirVersion().orElseThrow();
+        if (!SessionConfig.UNKNOWN_VERSION.equals(sessionConfig.mimirVersion())) {
+            String version = sessionConfig.mimirVersion();
             if (version.endsWith("-SNAPSHOT")) {
                 groupSuffix = "@" + version;
             } else {

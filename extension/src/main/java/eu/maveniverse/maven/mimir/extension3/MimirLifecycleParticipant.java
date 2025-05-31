@@ -62,6 +62,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                     SessionConfig sessionConfig = SessionConfig.defaults()
                             .userProperties(repoSession.getUserProperties())
                             .systemProperties(repoSession.getSystemProperties())
+                            .repositorySystemSession(repoSession)
                             .build();
                     if (sessionConfig.enabled()) {
                         List<RemoteRepository> remoteRepositories = RepositoryUtils.toRepos(
@@ -111,11 +112,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
         }
         if (!Files.exists(daemonConfig.daemonJar())) {
             try {
-                logger.info(
-                        "Resolving Mimir daemon version {}",
-                        sessionConfig
-                                .mimirVersion()
-                                .orElseThrow(() -> new IllegalStateException("Value is not present")));
+                logger.info("Resolving Mimir daemon version {}", sessionConfig.mimirVersion());
                 ArtifactRequest artifactRequest =
                         new ArtifactRequest(new DefaultArtifact(daemonConfig.daemonGav()), remoteRepositories, "mimir");
                 ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, artifactRequest);
@@ -139,8 +136,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
             return;
         }
         try {
-            String mimirVersion =
-                    sessionConfig.mimirVersion().orElseThrow(() -> new IllegalStateException("Value is not present"));
+            String mimirVersion = sessionConfig.mimirVersion();
             logger.debug("Checking for Mimir updates...");
             VersionRangeRequest versionRangeRequest = new VersionRangeRequest(
                     new DefaultArtifact(daemonConfig.daemonGav()).setVersion("[" + mimirVersion + ",)"),

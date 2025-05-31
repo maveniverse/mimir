@@ -127,15 +127,16 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1);
 
         // lock exclusively the basedir; if other daemon tries to run here will fail
-        Files.createDirectories(config.daemonBasedir());
-        DirectoryLocker.INSTANCE.lockDirectory(config.daemonBasedir(), true);
+        Files.createDirectories(config.daemonLockDir());
+        DirectoryLocker.INSTANCE.lockDirectory(config.daemonLockDir(), true);
 
         Path socketPath = daemonConfig.socketPath();
         Files.deleteIfExists(socketPath);
         this.serverHandle = Handle.serverDomainSocket(socketPath);
 
-        logger.info("Mimir Daemon {} started", config.config().mimirVersion().orElse("UNKNOWN"));
+        logger.info("Mimir Daemon {} started", config.config().mimirVersion());
         logger.info("  PID: {}", ProcessHandle.current().pid());
+        logger.info("  Basedir: {}", config.config().basedir());
         logger.info("  Properties: {}", config.config().propertiesPath());
         logger.info("  Supported checksums: {}", checksumAlgorithmFactories.keySet());
         logger.info("  Socket: {}", socketPath);
@@ -148,7 +149,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
 
         HashMap<String, String> daemonData = new HashMap<>();
         daemonData.put(Session.DAEMON_PID, Long.toString(ProcessHandle.current().pid()));
-        daemonData.put(Session.DAEMON_VERSION, config.config().mimirVersion().orElse("UNKNOWN"));
+        daemonData.put(Session.DAEMON_VERSION, config.config().mimirVersion());
 
         Predicate<Request> clientPredicate =
                 req -> Objects.equals(req.requireData(Session.NODE_VERSION), daemonData.get(Session.DAEMON_VERSION));
@@ -202,7 +203,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                 logger.warn("Error closing local node", e);
             }
         } finally {
-            DirectoryLocker.INSTANCE.unlockDirectory(config.daemonBasedir());
+            DirectoryLocker.INSTANCE.unlockDirectory(config.daemonLockDir());
             logger.info("Daemon stopped");
         }
     }

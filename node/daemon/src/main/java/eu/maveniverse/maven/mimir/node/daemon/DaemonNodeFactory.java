@@ -14,6 +14,7 @@ import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import eu.maveniverse.maven.shared.core.fs.DirectoryLocker;
+import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,6 +25,7 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 @Singleton
@@ -60,11 +62,20 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
         }
         HashMap<String, String> clientData = new HashMap<>();
         clientData.put(Session.NODE_PID, Long.toString(ProcessHandle.current().pid()));
-        clientData.put(Session.NODE_VERSION, sessionConfig.mimirVersion().orElse("UNKNOWN"));
+        clientData.put(Session.NODE_VERSION, sessionConfig.mimirVersion());
+        if (cfg.config().repositorySystemSession().isPresent()) {
+            RepositorySystemSession session =
+                    cfg.config().repositorySystemSession().orElseThrow();
+            clientData.put(
+                    Session.LRM_PATH,
+                    FileUtils.canonicalPath(
+                                    session.getLocalRepository().getBasedir().toPath())
+                            .toString());
+        }
         try {
-            return new DaemonNode(clientData, cfg.socketPath(), checksumAlgorithmFactories, cfg.autostop());
+            return new DaemonNode(clientData, cfg, checksumAlgorithmFactories, cfg.autostop());
         } catch (IOException e) {
-            mayDumpDaemonLog(sessionConfig.basedir().resolve(cfg.daemonLog()));
+            mayDumpDaemonLog(cfg.daemonLog());
             throw e;
         }
     }
@@ -75,7 +86,7 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
      * @see #tryLock(DaemonConfig)
      */
     private Process startDaemon(DaemonConfig cfg) throws IOException {
-        Path basedir = cfg.config().basedir();
+        Path basedir = cfg.daemonBasedir();
         if (Files.isRegularFile(cfg.daemonJar())) {
             String java = cfg.daemonJavaHome()
                     .resolve("bin")
@@ -134,14 +145,14 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
     }
 
     /**
-     * Locks the {@link DaemonConfig#daemonBasedir()}. If this method returns {@code true} it means there is no
+     * Locks the {@link DaemonConfig#daemonLockDir()}. If this method returns {@code true} it means there is no
      * daemon running nor is there any other process trying to start daemon.
      * This process "owns" the start procedure alone.
      */
     private boolean tryLock(DaemonConfig cfg) {
         try {
-            Files.createDirectories(cfg.daemonBasedir());
-            DirectoryLocker.INSTANCE.lockDirectory(cfg.daemonBasedir(), true);
+            Files.createDirectories(cfg.daemonLockDir());
+            DirectoryLocker.INSTANCE.lockDirectory(cfg.daemonLockDir(), true);
             return true;
         } catch (IOException e) {
             return false;
@@ -149,10 +160,10 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
     }
 
     /**
-     * Unlocks the {@link DaemonConfig#daemonBasedir()}.
+     * Unlocks the {@link DaemonConfig#daemonLockDir()}.
      */
     private void unlock(DaemonConfig cfg) throws IOException {
-        DirectoryLocker.INSTANCE.unlockDirectory(cfg.daemonBasedir());
+        DirectoryLocker.INSTANCE.unlockDirectory(cfg.daemonLockDir());
     }
 
     /**

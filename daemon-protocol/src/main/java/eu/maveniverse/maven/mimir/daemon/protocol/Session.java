@@ -20,4 +20,8 @@ public final class Session {
 
     // session
     public static final String SESSION_ID = "sessionId";
+
+    // lrm
+    public static final String LRM_PREFIX = "lrm.";
+    public static final String LRM_PATH = LRM_PREFIX + "path";
 }

@@ -9,23 +9,30 @@ package eu.maveniverse.maven.mimir.shared;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import eu.maveniverse.maven.shared.core.maven.MavenUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import org.eclipse.aether.RepositorySystemSession;
 
 /**
  * Simple Mimir configuration.
+ * <p>
+ * Note: to "relocate" Mimir basedir, use {@code mimir.basedir} Java System Property with value containing a path of
+ * alternate basedir.
  */
 public interface SessionConfig {
     String NAME = "mimir";
+
+    String UNKNOWN_VERSION = "unknown";
 
     String CONF_PREFIX = NAME + ".";
 
@@ -67,7 +74,7 @@ public interface SessionConfig {
 
     boolean ignoreErrorAtSessionEnd();
 
-    Optional<String> mimirVersion();
+    String mimirVersion();
 
     Path basedir();
 
@@ -79,19 +86,20 @@ public interface SessionConfig {
 
     Map<String, String> effectiveProperties();
 
-    default Optional<String> localHostHint() {
-        return Optional.ofNullable(effectiveProperties().get(CONF_LOCAL_HOST_HINT));
-    }
+    Optional<String> localHostHint();
+
+    Optional<RepositorySystemSession> repositorySystemSession();
 
     default Builder toBuilder() {
         return new Builder(
                 enabled(),
                 ignoreErrorAtSessionEnd(),
-                mimirVersion().orElse(null),
+                mimirVersion(),
                 basedir(),
                 propertiesPath(),
                 userProperties(),
-                systemProperties());
+                systemProperties(),
+                repositorySystemSession().orElse(null));
     }
 
     static Builder defaults() {
@@ -99,11 +107,12 @@ public interface SessionConfig {
                 null,
                 null,
                 MavenUtils.discoverArtifactVersion(
-                        SessionConfig.class.getClassLoader(), "eu.maveniverse.maven.mimir", "core", null),
-                discoverBaseDirectory(),
-                Path.of("mimir.properties"),
-                new HashMap<>(),
-                MavenUtils.toMap(System.getProperties()));
+                        SessionConfig.class.getClassLoader(), "eu.maveniverse.maven.mimir", "core", UNKNOWN_VERSION),
+                null,
+                null,
+                Collections.emptyMap(),
+                MavenUtils.toMap(System.getProperties()),
+                null);
     }
 
     static Builder daemonDefaults() {
@@ -118,6 +127,7 @@ public interface SessionConfig {
         private Path propertiesPath;
         private Map<String, String> userProperties;
         private Map<String, String> systemProperties;
+        private RepositorySystemSession repositorySystemSession;
 
         private Builder(
                 Boolean enabled,
@@ -126,28 +136,30 @@ public interface SessionConfig {
                 Path basedir,
                 Path propertiesPath,
                 Map<String, String> userProperties,
-                Map<String, String> systemProperties) {
+                Map<String, String> systemProperties,
+                RepositorySystemSession repositorySystemSession) {
             this.enabled = enabled;
             this.ignoreErrorAtSessionEnd = ignoreErrorAtSessionEnd;
-            this.mimirVersion = mimirVersion;
+            this.mimirVersion = requireNonNull(mimirVersion);
             this.basedir = basedir;
             this.propertiesPath = propertiesPath;
             this.userProperties = new HashMap<>(userProperties);
             this.systemProperties = new HashMap<>(systemProperties);
+            this.repositorySystemSession = repositorySystemSession;
         }
 
-        public Builder enabled(Boolean enabled) {
+        public Builder enabled(boolean enabled) {
             this.enabled = enabled;
             return this;
         }
 
-        public Builder ignoreErrorAtSessionEnd(Boolean ignoreErrorAtSessionEnd) {
+        public Builder ignoreErrorAtSessionEnd(boolean ignoreErrorAtSessionEnd) {
             this.ignoreErrorAtSessionEnd = ignoreErrorAtSessionEnd;
             return this;
         }
 
         public Builder basedir(Path basedir) {
-            this.basedir = getCanonicalPath(basedir);
+            this.basedir = FileUtils.canonicalPath(basedir);
             return this;
         }
 
@@ -157,6 +169,7 @@ public interface SessionConfig {
         }
 
         public Builder userProperties(Map<String, String> userProperties) {
+            requireNonNull(userProperties, "userProperties");
             this.userProperties = new HashMap<>(userProperties);
             return this;
         }
@@ -169,6 +182,7 @@ public interface SessionConfig {
         }
 
         public Builder systemProperties(Map<String, String> systemProperties) {
+            requireNonNull(systemProperties, "systemProperties");
             this.systemProperties = new HashMap<>(systemProperties);
             return this;
         }
@@ -180,6 +194,11 @@ public interface SessionConfig {
             return this;
         }
 
+        public Builder repositorySystemSession(RepositorySystemSession repositorySystemSession) {
+            this.repositorySystemSession = repositorySystemSession;
+            return this;
+        }
+
         public SessionConfig build() {
             return new Impl(
                     enabled,
@@ -188,18 +207,21 @@ public interface SessionConfig {
                     basedir,
                     propertiesPath,
                     userProperties,
-                    systemProperties);
+                    systemProperties,
+                    repositorySystemSession);
         }
 
         private static class Impl implements SessionConfig {
-            private final Boolean enabled;
-            private final Boolean ignoreErrorAtSessionEnd;
+            private final boolean enabled;
+            private final boolean ignoreErrorAtSessionEnd;
             private final String mimirVersion;
             private final Path basedir;
             private final Path propertiesPath;
             private final Map<String, String> userProperties;
             private final Map<String, String> systemProperties;
             private final Map<String, String> effectiveProperties;
+            private final String localHostHint;
+            private final RepositorySystemSession repositorySystemSession;
 
             private Impl(
                     Boolean enabled,
@@ -208,13 +230,16 @@ public interface SessionConfig {
                     Path basedir,
                     Path propertiesPath,
                     Map<String, String> userProperties,
-                    Map<String, String> systemProperties) {
-                this.enabled = enabled;
-                this.ignoreErrorAtSessionEnd = ignoreErrorAtSessionEnd;
-                this.mimirVersion = mimirVersion;
-                this.basedir = requireNonNull(basedir, "basedir");
-                requireNonNull(propertiesPath, "propertiesPath");
-                this.propertiesPath = getCanonicalPath(basedir.resolve(propertiesPath));
+                    Map<String, String> systemProperties,
+                    RepositorySystemSession repositorySystemSession) {
+                this.mimirVersion = requireNonNull(mimirVersion, "mimirVersion");
+
+                this.basedir = basedir == null
+                        ? FileUtils.discoverBaseDirectory("mimir.basedir", ".mimir")
+                        : FileUtils.canonicalPath(basedir);
+                this.propertiesPath = propertiesPath == null
+                        ? this.basedir.resolve("mimir.properties")
+                        : FileUtils.canonicalPath(this.basedir.resolve(propertiesPath));
 
                 Properties mimirProperties = new Properties();
                 if (Files.isRegularFile(this.propertiesPath)) {
@@ -232,26 +257,28 @@ public interface SessionConfig {
                 eff.putAll(MavenUtils.toMap(mimirProperties));
                 eff.putAll(userProperties);
                 this.effectiveProperties = Map.copyOf(eff);
+
+                this.enabled =
+                        Boolean.parseBoolean(effectiveProperties.getOrDefault(CONF_ENABLED, Boolean.TRUE.toString()));
+                this.ignoreErrorAtSessionEnd = Boolean.parseBoolean(
+                        effectiveProperties.getOrDefault(CONF_IGNORE_ERROR_AT_SESSION_END, Boolean.FALSE.toString()));
+
+                this.localHostHint = effectiveProperties.get(CONF_LOCAL_HOST_HINT);
+                this.repositorySystemSession = repositorySystemSession;
             }
 
             @Override
             public boolean enabled() {
-                return Objects.requireNonNullElseGet(
-                        enabled,
-                        () -> Boolean.parseBoolean(
-                                effectiveProperties.getOrDefault(CONF_ENABLED, Boolean.TRUE.toString())));
+                return enabled;
             }
 
             public boolean ignoreErrorAtSessionEnd() {
-                return Objects.requireNonNullElseGet(
-                        ignoreErrorAtSessionEnd,
-                        () -> Boolean.parseBoolean(effectiveProperties.getOrDefault(
-                                CONF_IGNORE_ERROR_AT_SESSION_END, Boolean.FALSE.toString())));
+                return ignoreErrorAtSessionEnd;
             }
 
             @Override
-            public Optional<String> mimirVersion() {
-                return Optional.ofNullable(mimirVersion);
+            public String mimirVersion() {
+                return mimirVersion;
             }
 
             @Override
@@ -278,31 +305,16 @@ public interface SessionConfig {
             public Map<String, String> effectiveProperties() {
                 return effectiveProperties;
             }
-        }
-    }
 
-    static Path discoverBaseDirectory() {
-        String basedir = System.getProperty("mimir.basedir");
-        if (basedir == null) {
-            return getCanonicalPath(discoverUserHomeDirectory().resolve(".mimir"));
-        }
-        return getCanonicalPath(Path.of(System.getProperty("user.dir")).resolve(basedir));
-    }
+            @Override
+            public Optional<String> localHostHint() {
+                return Optional.ofNullable(localHostHint);
+            }
 
-    static Path discoverUserHomeDirectory() {
-        String userHome = System.getProperty("user.home");
-        if (userHome == null) {
-            throw new IllegalStateException("requires user.home Java System Property set");
-        }
-        return getCanonicalPath(Path.of(userHome));
-    }
-
-    static Path getCanonicalPath(Path path) {
-        requireNonNull(path, "path");
-        try {
-            return path.toRealPath();
-        } catch (IOException e) {
-            return getCanonicalPath(path.getParent()).resolve(path.getFileName());
+            @Override
+            public Optional<RepositorySystemSession> repositorySystemSession() {
+                return Optional.ofNullable(repositorySystemSession);
+            }
         }
     }
 }
