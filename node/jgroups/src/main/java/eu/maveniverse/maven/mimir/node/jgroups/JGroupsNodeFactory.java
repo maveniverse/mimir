@@ -13,6 +13,7 @@ import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.mimir.shared.publisher.PublisherFactory;
+import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
@@ -23,7 +24,7 @@ import org.jgroups.JChannel;
 
 @Singleton
 @Named(JGroupsNodeConfig.NAME)
-public class JGroupsNodeFactory implements RemoteNodeFactory {
+public class JGroupsNodeFactory extends ComponentSupport implements RemoteNodeFactory {
     private final SystemNode<?> systemNode;
     private final Map<String, PublisherFactory> publisherFactories;
 
@@ -40,6 +41,7 @@ public class JGroupsNodeFactory implements RemoteNodeFactory {
         try {
             JGroupsNodeConfig cfg = JGroupsNodeConfig.with(sessionConfig);
             if (!cfg.enabled()) {
+                logger.info("JGroups node is disabled");
                 return Optional.empty();
             }
             if (cfg.publisherEnabled()) {
