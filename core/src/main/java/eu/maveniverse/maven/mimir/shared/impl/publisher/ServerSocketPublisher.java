@@ -32,7 +32,8 @@ public class ServerSocketPublisher extends PublisherSupport {
         InetSocketAddress inetSocketAddress = new InetSocketAddress(publisherConfig.hostPort());
         this.serverSocket = new ServerSocket(inetSocketAddress.getPort(), 50, inetSocketAddress.getAddress());
         // Java 21: this.executor = Executors.newVirtualThreadPerTaskExecutor();
-        this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1);
+        this.executor =
+                Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1));
 
         Thread serverThread = new Thread(() -> {
             try {
