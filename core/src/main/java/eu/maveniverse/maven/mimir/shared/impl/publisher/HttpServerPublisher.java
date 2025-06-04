@@ -13,6 +13,7 @@ import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import eu.maveniverse.maven.mimir.shared.impl.Utils;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
@@ -25,7 +26,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 
 public class HttpServerPublisher extends PublisherSupport {
@@ -34,8 +34,8 @@ public class HttpServerPublisher extends PublisherSupport {
     public HttpServerPublisher(SystemNode<?> systemNode, PublisherConfig publisherConfig) throws IOException {
         super(systemNode, publisherConfig);
         httpServer = HttpServer.create(new InetSocketAddress(publisherConfig.hostPort()), 0);
-        // Java 21: httpServer.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
-        httpServer.setExecutor(Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1));
+
+        httpServer.setExecutor(Utils.executorService());
         httpServer.createContext("/txid", new TxHandler(this::publishedEntry));
         logger.info(
                 "HTTP publisher starting at {} -> {}:{}",
