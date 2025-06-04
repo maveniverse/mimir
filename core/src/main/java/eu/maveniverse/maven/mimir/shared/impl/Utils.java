@@ -14,6 +14,8 @@ import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 
 public final class Utils {
@@ -186,5 +188,10 @@ public final class Utils {
         } else {
             return addr -> addr.getHostAddress().equals(name);
         }
+    }
+
+    public static ExecutorService executorService() {
+        // Java 21: return Executors.newVirtualThreadPerTaskExecutor();
+        return Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1));
     }
 }

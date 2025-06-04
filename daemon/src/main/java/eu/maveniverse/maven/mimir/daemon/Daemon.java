@@ -15,6 +15,7 @@ import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
 import eu.maveniverse.maven.mimir.daemon.protocol.Request;
 import eu.maveniverse.maven.mimir.daemon.protocol.Session;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
+import eu.maveniverse.maven.mimir.shared.impl.Utils;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
@@ -34,7 +35,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -123,8 +123,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         }
         nds.sort(Comparator.comparing(RemoteNode::distance));
         this.remoteNodes = List.copyOf(nds);
-        // Java 21: this.executor = Executors.newVirtualThreadPerTaskExecutor();
-        this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1);
+        this.executor = Utils.executorService();
 
         // lock exclusively the basedir; if other daemon tries to run here will fail
         Files.createDirectories(config.daemonLockDir());
