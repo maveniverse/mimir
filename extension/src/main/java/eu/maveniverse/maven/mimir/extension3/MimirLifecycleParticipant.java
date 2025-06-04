@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.MavenExecutionException;
@@ -45,12 +46,12 @@ import org.slf4j.LoggerFactory;
 public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final RepositorySystem repositorySystem;
-    private final SessionFactory sessionFactory;
+    private final Provider<SessionFactory> sessionFactoryProvider;
 
     @Inject
-    public MimirLifecycleParticipant(RepositorySystem repositorySystem, SessionFactory sessionFactory) {
+    public MimirLifecycleParticipant(RepositorySystem repositorySystem, Provider<SessionFactory> sessionFactoryProvider) {
         this.repositorySystem = repositorySystem;
-        this.sessionFactory = sessionFactory;
+        this.sessionFactoryProvider = sessionFactoryProvider;
     }
 
     @Override
@@ -69,8 +70,10 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                                 session.getProjectBuildingRequest().getRemoteRepositories());
                         mayCheckForUpdates(sessionConfig, repoSession, remoteRepositories);
                         mayResolveDaemonArtifact(sessionConfig, repoSession, remoteRepositories);
+                        return sessionFactoryProvider.get().createSession(sessionConfig);
+                    } else {
+                        return null;
                     }
-                    return sessionFactory.createSession(sessionConfig);
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
