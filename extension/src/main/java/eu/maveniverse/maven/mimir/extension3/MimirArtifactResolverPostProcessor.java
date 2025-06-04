@@ -44,8 +44,7 @@ public class MimirArtifactResolverPostProcessor extends ComponentSupport impleme
         for (ArtifactResult artifactResult : artifactResults) {
             if (artifactResult.getRepository() instanceof RemoteRepository remoteRepository) {
                 Optional<Session> sessionOptional = MimirUtils.mayGetSession(session);
-                if (sessionOptional.isPresent()
-                        && sessionOptional.orElseThrow().config().enabled()) {
+                if (sessionOptional.isPresent()) {
                     Session ms = sessionOptional.orElseThrow();
                     Artifact artifact = artifactResult.getArtifact();
                     boolean resolved = artifactResult.isResolved();

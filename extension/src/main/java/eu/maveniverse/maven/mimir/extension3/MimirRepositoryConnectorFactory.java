@@ -52,8 +52,7 @@ public class MimirRepositoryConnectorFactory implements RepositoryConnectorFacto
             throws NoRepositoryConnectorException {
         String message = "Mimir is disabled";
         Optional<Session> sessionOptional = MimirUtils.mayGetSession(session);
-        if (sessionOptional.isPresent()
-                && sessionOptional.orElseThrow().config().enabled()) {
+        if (sessionOptional.isPresent()) {
             Session mimirSession = sessionOptional.orElseThrow();
             message = "Unsupported repository: " + repository;
             if (mimirSession.repositorySupported(repository)) {
