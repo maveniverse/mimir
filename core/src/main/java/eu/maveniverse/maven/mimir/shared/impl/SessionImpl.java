@@ -56,11 +56,7 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
         this.retrievedFromCache = new ConcurrentHashMap<>();
         this.storedToCache = new ConcurrentHashMap<>();
 
-        if (sessionConfig.enabled()) {
-            logger.info("Mimir {} session created with {}", config().mimirVersion(), localNode);
-        } else {
-            logger.info("Mimir {} is disabled", config().mimirVersion());
-        }
+        logger.info("Mimir {} session created with {}", config().mimirVersion(), localNode);
     }
 
     @Override

@@ -49,7 +49,8 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
     private final Provider<SessionFactory> sessionFactoryProvider;
 
     @Inject
-    public MimirLifecycleParticipant(RepositorySystem repositorySystem, Provider<SessionFactory> sessionFactoryProvider) {
+    public MimirLifecycleParticipant(
+            RepositorySystem repositorySystem, Provider<SessionFactory> sessionFactoryProvider) {
         this.repositorySystem = repositorySystem;
         this.sessionFactoryProvider = sessionFactoryProvider;
     }
@@ -57,27 +58,28 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
     @Override
     public void afterProjectsRead(MavenSession session) throws MavenExecutionException {
         try {
-            MimirUtils.lazyInit(session.getRepositorySession(), () -> {
-                try {
-                    RepositorySystemSession repoSession = session.getRepositorySession();
-                    SessionConfig sessionConfig = SessionConfig.defaults()
-                            .userProperties(repoSession.getUserProperties())
-                            .systemProperties(repoSession.getSystemProperties())
-                            .repositorySystemSession(repoSession)
-                            .build();
-                    if (sessionConfig.enabled()) {
-                        List<RemoteRepository> remoteRepositories = RepositoryUtils.toRepos(
-                                session.getProjectBuildingRequest().getRemoteRepositories());
-                        mayCheckForUpdates(sessionConfig, repoSession, remoteRepositories);
-                        mayResolveDaemonArtifact(sessionConfig, repoSession, remoteRepositories);
+            RepositorySystemSession repoSession = session.getRepositorySession();
+            SessionConfig sessionConfig = SessionConfig.defaults()
+                    .userProperties(repoSession.getUserProperties())
+                    .systemProperties(repoSession.getSystemProperties())
+                    .repositorySystemSession(repoSession)
+                    .build();
+            if (sessionConfig.enabled()) {
+                List<RemoteRepository> remoteRepositories = RepositoryUtils.toRepos(
+                        session.getProjectBuildingRequest().getRemoteRepositories());
+                mayCheckForUpdates(sessionConfig, repoSession, remoteRepositories);
+                mayResolveDaemonArtifact(sessionConfig, repoSession, remoteRepositories);
+
+                MimirUtils.lazyInit(session.getRepositorySession(), () -> {
+                    try {
                         return sessionFactoryProvider.get().createSession(sessionConfig);
-                    } else {
-                        return null;
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
                     }
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            });
+                });
+            } else {
+                logger.info("Mimir {} is disabled", sessionConfig.mimirVersion());
+            }
         } catch (Exception e) {
             if ("com.google.inject.ProvisionException".equals(e.getClass().getName())) {
                 logger.error("Minir session creation failed", e); // here runtime req will kick in
