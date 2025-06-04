@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.mimir.shared.impl.publisher;
 
+import eu.maveniverse.maven.mimir.shared.impl.Utils;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import java.io.IOException;
@@ -20,7 +21,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class ServerSocketPublisher extends PublisherSupport {
     private final ServerSocket serverSocket;
@@ -31,9 +31,7 @@ public class ServerSocketPublisher extends PublisherSupport {
 
         InetSocketAddress inetSocketAddress = new InetSocketAddress(publisherConfig.hostPort());
         this.serverSocket = new ServerSocket(inetSocketAddress.getPort(), 50, inetSocketAddress.getAddress());
-        // Java 21: this.executor = Executors.newVirtualThreadPerTaskExecutor();
-        this.executor =
-                Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1));
+        this.executor = Utils.executorService();
 
         Thread serverThread = new Thread(() -> {
             try {

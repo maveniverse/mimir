@@ -12,6 +12,7 @@ import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.impl.Utils;
 import eu.maveniverse.maven.mimir.shared.impl.node.RemoteNodeSupport;
 import eu.maveniverse.maven.mimir.shared.impl.publisher.PublisherRemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
@@ -24,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
@@ -60,8 +60,7 @@ public class JGroupsNode extends RemoteNodeSupport<PublisherRemoteEntry> impleme
         this.messageDispatcher.setReceiver(this);
         this.publisher = null;
         this.lastView = new AtomicReference<>(null);
-        // Java 21: this.executor = Executors.newVirtualThreadPerTaskExecutor();
-        this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1);
+        this.executor = Utils.executorService();
 
         channel.connect(clusterName, null, 1500);
     }
@@ -77,8 +76,7 @@ public class JGroupsNode extends RemoteNodeSupport<PublisherRemoteEntry> impleme
         this.messageDispatcher.setReceiver(this);
         this.publisher = publisher;
         this.lastView = new AtomicReference<>(null);
-        // Java 21: this.executor = Executors.newVirtualThreadPerTaskExecutor();
-        this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1);
+        this.executor = Utils.executorService();
 
         channel.connect(clusterName, null, 1500);
     }
