@@ -22,9 +22,7 @@ public final class MimirUtils {
         Session session = (Session) repositorySystemSession.getData().get(Session.class);
         if (session == null) {
             session = sessionFactory.get();
-            if (session != null) {
-                repositorySystemSession.getData().set(Session.class, session);
-            }
+            repositorySystemSession.getData().set(Session.class, session);
         }
         return session;
     }
