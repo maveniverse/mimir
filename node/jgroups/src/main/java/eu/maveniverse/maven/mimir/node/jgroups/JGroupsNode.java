@@ -12,7 +12,7 @@ import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
 import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.impl.Utils;
+import eu.maveniverse.maven.mimir.shared.impl.Executors;
 import eu.maveniverse.maven.mimir.shared.impl.node.RemoteNodeSupport;
 import eu.maveniverse.maven.mimir.shared.impl.publisher.PublisherRemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
@@ -60,7 +60,7 @@ public class JGroupsNode extends RemoteNodeSupport<PublisherRemoteEntry> impleme
         this.messageDispatcher.setReceiver(this);
         this.publisher = null;
         this.lastView = new AtomicReference<>(null);
-        this.executor = Utils.executorService();
+        this.executor = Executors.executorService();
 
         channel.connect(clusterName, null, 1500);
     }
@@ -76,7 +76,7 @@ public class JGroupsNode extends RemoteNodeSupport<PublisherRemoteEntry> impleme
         this.messageDispatcher.setReceiver(this);
         this.publisher = publisher;
         this.lastView = new AtomicReference<>(null);
-        this.executor = Utils.executorService();
+        this.executor = Executors.executorService();
 
         channel.connect(clusterName, null, 1500);
     }

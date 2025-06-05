@@ -7,7 +7,7 @@
  */
 package eu.maveniverse.maven.mimir.shared.impl.publisher;
 
-import eu.maveniverse.maven.mimir.shared.impl.Utils;
+import eu.maveniverse.maven.mimir.shared.impl.Executors;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import java.io.IOException;
@@ -31,7 +31,7 @@ public class ServerSocketPublisher extends PublisherSupport {
 
         InetSocketAddress inetSocketAddress = new InetSocketAddress(publisherConfig.hostPort());
         this.serverSocket = new ServerSocket(inetSocketAddress.getPort(), 50, inetSocketAddress.getAddress());
-        this.executor = Utils.executorService();
+        this.executor = Executors.executorService();
 
         Thread serverThread = new Thread(() -> {
             try {

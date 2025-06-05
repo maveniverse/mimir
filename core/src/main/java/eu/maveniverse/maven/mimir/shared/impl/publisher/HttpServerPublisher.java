@@ -13,7 +13,7 @@ import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import eu.maveniverse.maven.mimir.shared.impl.Utils;
+import eu.maveniverse.maven.mimir.shared.impl.Executors;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
@@ -35,7 +35,7 @@ public class HttpServerPublisher extends PublisherSupport {
         super(systemNode, publisherConfig);
         httpServer = HttpServer.create(new InetSocketAddress(publisherConfig.hostPort()), 0);
 
-        httpServer.setExecutor(Utils.executorService());
+        httpServer.setExecutor(Executors.executorService());
         httpServer.createContext("/txid", new TxHandler(this::publishedEntry));
         logger.info(
                 "HTTP publisher starting at {} -> {}:{}",

@@ -15,7 +15,7 @@ import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
 import eu.maveniverse.maven.mimir.daemon.protocol.Request;
 import eu.maveniverse.maven.mimir.daemon.protocol.Session;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
-import eu.maveniverse.maven.mimir.shared.impl.Utils;
+import eu.maveniverse.maven.mimir.shared.impl.Executors;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
@@ -123,7 +123,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         }
         nds.sort(Comparator.comparing(RemoteNode::distance));
         this.remoteNodes = List.copyOf(nds);
-        this.executor = Utils.executorService();
+        this.executor = Executors.executorService();
 
         // lock exclusively the basedir; if other daemon tries to run here will fail
         Files.createDirectories(config.daemonLockDir());
@@ -153,19 +153,17 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         Predicate<Request> clientPredicate =
                 req -> Objects.equals(req.requireData(Session.NODE_VERSION), daemonData.get(Session.DAEMON_VERSION));
 
-        executor.submit(() -> {
-            try {
-                while (serverHandle.isOpen()) {
-                    Handle handle = serverHandle.accept();
-                    executor.submit(new DaemonServer(
-                            handle, daemonData, systemNode, remoteNodes, clientPredicate, this::shutdown));
-                }
-            } catch (AsynchronousCloseException ignored) {
-                // we are done
-            } catch (Exception e) {
-                logger.error("Error while accepting client connection", e);
+        try {
+            while (serverHandle.isOpen()) {
+                Handle handle = serverHandle.accept();
+                executor.submit(
+                        new DaemonServer(handle, daemonData, systemNode, remoteNodes, clientPredicate, this::shutdown));
             }
-        });
+        } catch (AsynchronousCloseException ignored) {
+            // we are done
+        } catch (Exception e) {
+            logger.error("Error while accepting client connection", e);
+        }
     }
 
     public void shutdown() {
