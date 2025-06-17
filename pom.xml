@@ -39,7 +39,7 @@
     <module>daemon-protocol</module>
     <module>node</module>
     <module>daemon</module>
-    <module>extension</module>
+    <module>extension3</module>
     <module>it</module>
   </modules>
 

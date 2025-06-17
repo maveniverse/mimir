@@ -41,7 +41,7 @@
         <extensions>
             <extension>
                 <groupId>eu.maveniverse.maven.mimir</groupId>
-                <artifactId>extension</artifactId>
+                <artifactId>extension3</artifactId>
                 <version>@project.version@</version>
             </extension>
         </extensions>
