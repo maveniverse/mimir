@@ -19,16 +19,16 @@ public final class MimirUtils {
     public static Session lazyInit(RepositorySystemSession repositorySystemSession, Supplier<Session> sessionFactory) {
         requireNonNull(repositorySystemSession, "repositorySystemSession");
         requireNonNull(sessionFactory, "sessionFactory");
-        Session session = (Session) repositorySystemSession.getData().get(Session.class);
+        Session session = (Session) repositorySystemSession.getData().get(Session.class.getName());
         if (session == null) {
             session = sessionFactory.get();
-            repositorySystemSession.getData().set(Session.class, session);
+            repositorySystemSession.getData().set(Session.class.getName(), session);
         }
         return session;
     }
 
     public static Optional<Session> mayGetSession(RepositorySystemSession repositorySystemSession) {
         requireNonNull(repositorySystemSession, "repositorySystemSession");
-        return Optional.ofNullable((Session) repositorySystemSession.getData().get(Session.class));
+        return Optional.ofNullable((Session) repositorySystemSession.getData().get(Session.class.getName()));
     }
 }
