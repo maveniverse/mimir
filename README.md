@@ -1,6 +1,6 @@
 # Mímir
 
-[![Maven Central](https://img.shields.io/maven-central/v/eu.maveniverse.maven.mimir/extension.svg?label=Maven%20Central)](https://search.maven.org/artifact/eu.maveniverse.maven.mimir/extension)
+[![Maven Central](https://img.shields.io/maven-central/v/eu.maveniverse.maven.mimir/extension3.svg?label=Maven%20Central)](https://search.maven.org/artifact/eu.maveniverse.maven.mimir/extension3)
 
 Requirements:
 * Java 17+
