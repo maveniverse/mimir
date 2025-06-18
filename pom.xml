@@ -23,7 +23,7 @@
   <packaging>pom</packaging>
 
   <name>${project.groupId}:${project.artifactId}</name>
-  <description>Maveniverse Mimir.</description>
+  <description>Maveniverse Mimir</description>
 
   <url>https://www.maveniverse.eu/mimir</url>
 
