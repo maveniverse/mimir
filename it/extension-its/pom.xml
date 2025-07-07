@@ -24,7 +24,7 @@
 
   <properties>
     <maven3Version>3.9.10</maven3Version>
-    <maven4Version>3.9.10</maven4Version>
+    <maven4Version>4.0.0-rc-4</maven4Version>
   </properties>
 
   <dependencies>
