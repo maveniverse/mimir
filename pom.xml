@@ -14,7 +14,7 @@
   <parent>
     <groupId>eu.maveniverse.maven.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>40</version>
+    <version>41</version>
   </parent>
 
   <groupId>eu.maveniverse.maven.mimir</groupId>
@@ -72,7 +72,7 @@
 
     <!-- Dependency versions -->
     <version.maveniverseShared>0.1.8</version.maveniverseShared>
-    <version.maven>3.9.10</version.maven>
+    <version.maven>3.9.11</version.maven>
     <version.resolver>1.9.24</version.resolver>
     <version.slf4j>1.7.36</version.slf4j>
     <version.testcontainers>1.21.3</version.testcontainers>
@@ -80,6 +80,38 @@
 
   <dependencyManagement>
     <dependencies>
+      <!-- reactor -->
+      <dependency>
+        <groupId>eu.maveniverse.maven.mimir</groupId>
+        <artifactId>core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.mimir</groupId>
+        <artifactId>daemon-protocol</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.mimir.node</groupId>
+        <artifactId>daemon</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.mimir.node</groupId>
+        <artifactId>file</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.mimir.node</groupId>
+        <artifactId>jgroups</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.mimir.node</groupId>
+        <artifactId>minio</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <dependency>
         <groupId>eu.maveniverse.maven.shared</groupId>
         <artifactId>core</artifactId>
@@ -219,6 +251,33 @@
         <groupId>io.minio</groupId>
         <artifactId>minio</artifactId>
         <version>8.5.17</version>
+      </dependency>
+
+      <!-- Overrides/Updates for Minio Java -->
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>1.19.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>1.28.0</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>2.20.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>3.18.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcprov-jdk18on</artifactId>
+        <version>1.81</version>
       </dependency>
 
       <dependency>
