@@ -25,7 +25,6 @@
     <dependency>
       <groupId>eu.maveniverse.maven.mimir</groupId>
       <artifactId>core</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>

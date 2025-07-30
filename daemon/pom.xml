@@ -25,28 +25,22 @@
     <dependency>
       <groupId>eu.maveniverse.maven.mimir</groupId>
       <artifactId>core</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>eu.maveniverse.maven.mimir</groupId>
       <artifactId>daemon-protocol</artifactId>
-      <version>${project.version}</version>
     </dependency>
-
     <dependency>
       <groupId>eu.maveniverse.maven.mimir.node</groupId>
       <artifactId>file</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>eu.maveniverse.maven.mimir.node</groupId>
       <artifactId>jgroups</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>eu.maveniverse.maven.mimir.node</groupId>
       <artifactId>minio</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>
