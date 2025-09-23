@@ -238,7 +238,7 @@ public interface SessionConfig {
                         ? FileUtils.discoverBaseDirectory("mimir.basedir", ".mimir")
                         : FileUtils.canonicalPath(basedir);
                 this.propertiesPath = propertiesPath == null
-                        ? this.basedir.resolve("mimir.properties")
+                        ? this.basedir.resolve("session.properties")
                         : FileUtils.canonicalPath(this.basedir.resolve(propertiesPath));
 
                 Properties mimirProperties = new Properties();
