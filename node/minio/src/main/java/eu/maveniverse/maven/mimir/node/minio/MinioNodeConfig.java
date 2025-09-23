@@ -12,12 +12,11 @@ import static java.util.stream.Collectors.toList;
 
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
 public class MinioNodeConfig {
-    public static MinioNodeConfig with(SessionConfig sessionConfig) throws IOException {
+    public static MinioNodeConfig with(SessionConfig sessionConfig) {
         requireNonNull(sessionConfig, "config");
 
         String endpoint = "http://127.0.0.1:9000";
