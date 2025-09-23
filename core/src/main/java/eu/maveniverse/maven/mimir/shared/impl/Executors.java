@@ -24,7 +24,7 @@ public final class Executors {
         if (Runtime.getRuntime().availableProcessors() < 3) {
             if (executorWarned.compareAndSet(false, true)) {
                 LoggerFactory.getLogger(Executors.class)
-                        .warn("Low-end hardware/VM; use `mimir.session.localNode=file` in mimir.properties instead");
+                        .warn("Low-end hardware/VM; use `mimir.session.localNode=file` in session.properties instead");
             }
         }
         // no need for more than 12; but recommended is to use Mimir in Java 21+

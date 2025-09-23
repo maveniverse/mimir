@@ -47,7 +47,7 @@ mimir.jgroups.interface=match-address\:192.168.1.*
 ```
 (use yor LAN IP address).
 
-To make Mimir stop you nagging to auto-update, set `mimir.checkupdates` in `~/.mimir/mimir.properties`.
+To make Mimir stop you nagging to auto-update, set `mimir.checkupdates` in `~/.mimir/session.properties`.
 
 And just build with Maven...
 
