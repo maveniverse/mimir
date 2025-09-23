@@ -139,7 +139,9 @@ public interface SessionConfig {
 
     private static Path pathOf(String path) {
         requireNonNull(path, "path");
-        if (path.startsWith("~/")) {
+        if ("~".equals(path)) {
+            return Path.of(System.getProperty("user.home")).normalize();
+        } else if (path.startsWith("~/")) {
             return Path.of(System.getProperty("user.home") + path.substring(1)).normalize();
         } else {
             return Path.of(path).normalize();
