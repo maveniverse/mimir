@@ -103,20 +103,47 @@ public interface SessionConfig {
     }
 
     static Builder defaults() {
+        // check env values
+        Path mimirBasedir = null;
+        String envMimirBasedir = System.getenv("MIMIR_BASEDIR");
+        if (envMimirBasedir != null) {
+            mimirBasedir = pathOf(envMimirBasedir);
+        }
+        Path mimirSessionConfigPath = null;
+        String envMimirSessionConfigPath = System.getenv("MIMIR_SESSION_CONFIG_PATH");
+        if (envMimirSessionConfigPath != null) {
+            mimirSessionConfigPath = pathOf(envMimirSessionConfigPath);
+        }
+
         return new Builder(
                 null,
                 null,
                 MavenUtils.discoverArtifactVersion(
                         SessionConfig.class.getClassLoader(), "eu.maveniverse.maven.mimir", "core", UNKNOWN_VERSION),
-                null,
-                null,
+                mimirBasedir,
+                mimirSessionConfigPath,
                 Collections.emptyMap(),
                 MavenUtils.toMap(System.getProperties()),
                 null);
     }
 
     static Builder daemonDefaults() {
-        return defaults().propertiesPath(Path.of("daemon.properties"));
+        Path mimirDaemonConfigPath = Path.of("daemon.properties");
+        String envMimirDaemonConfigPath = System.getenv("MIMIR_DAEMON_CONFIG_PATH");
+        if (envMimirDaemonConfigPath != null) {
+            mimirDaemonConfigPath = pathOf(envMimirDaemonConfigPath);
+        }
+
+        return defaults().propertiesPath(mimirDaemonConfigPath);
+    }
+
+    private static Path pathOf(String path) {
+        requireNonNull(path, "path");
+        if (path.startsWith("~/")) {
+            return Path.of(System.getProperty("user.home") + path.substring(1)).normalize();
+        } else {
+            return Path.of(path).normalize();
+        }
     }
 
     class Builder {
