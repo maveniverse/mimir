@@ -103,7 +103,6 @@ public interface SessionConfig {
     }
 
     static Builder defaults() {
-        // check env values
         Path mimirBasedir = null;
         String envMimirBasedir = System.getenv("MIMIR_BASEDIR");
         if (envMimirBasedir != null) {
