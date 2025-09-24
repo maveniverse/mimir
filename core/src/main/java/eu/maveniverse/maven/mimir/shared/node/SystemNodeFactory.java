@@ -11,5 +11,5 @@ import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import java.io.IOException;
 
 public interface SystemNodeFactory<N extends SystemNode> {
-    N createNode(SessionConfig config) throws IOException;
+    N createSystemNode(SessionConfig config) throws IOException;
 }

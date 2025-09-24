@@ -20,11 +20,18 @@ public final class SessionImplConfig {
         requireNonNull(sessionConfig);
 
         String keyMapper = SimpleKeyMapperFactory.NAME;
+        Set<String> overlayNodes = Set.of();
         String localNode = "daemon";
         Set<String> repositories = Set.of(RemoteRepositories.CENTRAL_REPOSITORY_ID);
 
         if (sessionConfig.effectiveProperties().containsKey("mimir.session.keyMapper")) {
             keyMapper = sessionConfig.effectiveProperties().get("mimir.session.keyMapper");
+        }
+        if (sessionConfig.effectiveProperties().containsKey("mimir.session.overlayNodes")) {
+            overlayNodes = Set.copyOf(Arrays.asList(sessionConfig
+                    .effectiveProperties()
+                    .get("mimir.session.overlayNodes")
+                    .split(",")));
         }
         if (sessionConfig.effectiveProperties().containsKey("mimir.session.localNode")) {
             localNode = sessionConfig.effectiveProperties().get("mimir.session.localNode");
@@ -34,21 +41,27 @@ public final class SessionImplConfig {
             repositories = Set.copyOf(Arrays.asList(value.split(",")));
         }
 
-        return new SessionImplConfig(keyMapper, localNode, repositories);
+        return new SessionImplConfig(keyMapper, overlayNodes, localNode, repositories);
     }
 
     private final String keyMapper;
+    private final Set<String> overlayNodes;
     private final String localNode;
     private final Set<String> repositories;
 
-    private SessionImplConfig(String keyMapper, String localNode, Set<String> repositories) {
+    private SessionImplConfig(String keyMapper, Set<String> overlayNodes, String localNode, Set<String> repositories) {
         this.keyMapper = requireNonNull(keyMapper);
+        this.overlayNodes = requireNonNull(overlayNodes);
         this.localNode = requireNonNull(localNode);
         this.repositories = requireNonNull(repositories);
     }
 
     public String keyMapper() {
         return keyMapper;
+    }
+
+    public Set<String> overlayNodes() {
+        return overlayNodes;
     }
 
     public String localNode() {

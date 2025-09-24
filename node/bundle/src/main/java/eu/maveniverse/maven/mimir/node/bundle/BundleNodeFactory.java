@@ -48,7 +48,7 @@ public class BundleNodeFactory extends ComponentSupport implements LocalNodeFact
     }
 
     @Override
-    public Optional<BundleNode> createNode(SessionConfig sessionConfig) throws IOException {
+    public Optional<BundleNode> createLocalNode(SessionConfig sessionConfig) throws IOException {
         requireNonNull(sessionConfig, "config");
         BundleNodeConfig bundleNodeConfig = BundleNodeConfig.with(sessionConfig);
         if (repositorySystem != null

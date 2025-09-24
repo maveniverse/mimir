@@ -12,5 +12,5 @@ import java.io.IOException;
 import java.util.Optional;
 
 public interface RemoteNodeFactory<N extends RemoteNode> {
-    Optional<N> createNode(SessionConfig config) throws IOException;
+    Optional<N> createRemoteNode(SessionConfig config) throws IOException;
 }

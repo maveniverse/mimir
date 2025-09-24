@@ -12,10 +12,12 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolverFactory;
+import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
 import io.minio.MinioClient;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -23,7 +25,7 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 @Singleton
 @Named(MinioNodeConfig.NAME)
-public class MinioNodeFactory implements SystemNodeFactory<MinioNode> {
+public class MinioNodeFactory implements LocalNodeFactory<MinioNode>, SystemNodeFactory<MinioNode> {
     private final Map<String, KeyResolverFactory> keyResolverFactories;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
@@ -36,7 +38,12 @@ public class MinioNodeFactory implements SystemNodeFactory<MinioNode> {
     }
 
     @Override
-    public MinioNode createNode(SessionConfig sessionConfig) throws IOException {
+    public Optional<MinioNode> createLocalNode(SessionConfig sessionConfig) throws IOException {
+        return Optional.of(createSystemNode(sessionConfig));
+    }
+
+    @Override
+    public MinioNode createSystemNode(SessionConfig sessionConfig) throws IOException {
         MinioNodeConfig minioNodeConfig = MinioNodeConfig.with(sessionConfig);
         KeyResolverFactory keyResolverFactory = keyResolverFactories.get(minioNodeConfig.keyResolver());
         if (keyResolverFactory == null) {

@@ -12,5 +12,5 @@ import java.io.IOException;
 import java.util.Optional;
 
 public interface LocalNodeFactory<N extends LocalNode> {
-    Optional<N> createNode(SessionConfig config) throws IOException;
+    Optional<N> createLocalNode(SessionConfig config) throws IOException;
 }

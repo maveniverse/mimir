@@ -16,7 +16,7 @@ public class BundleNodeTest {
         SessionConfig sessionConfig = SessionConfig.defaults().basedir(basedir).build();
         Optional<BundleNode> node = new BundleNodeFactory(
                         null, Map.of(SimpleKeyResolverFactory.NAME, new SimpleKeyResolverFactory()))
-                .createNode(sessionConfig);
+                .createLocalNode(sessionConfig);
         assertFalse(node.isPresent());
     }
 }

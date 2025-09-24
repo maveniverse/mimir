@@ -12,10 +12,12 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolverFactory;
+import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
 import eu.maveniverse.maven.shared.core.fs.DirectoryLocker;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -23,7 +25,7 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 @Singleton
 @Named(FileNodeConfig.NAME)
-public final class FileNodeFactory implements SystemNodeFactory<FileNode> {
+public final class FileNodeFactory implements LocalNodeFactory<FileNode>, SystemNodeFactory<FileNode> {
     private final Map<String, KeyResolverFactory> keyResolverFactories;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
@@ -36,7 +38,12 @@ public final class FileNodeFactory implements SystemNodeFactory<FileNode> {
     }
 
     @Override
-    public FileNode createNode(SessionConfig sessionConfig) throws IOException {
+    public Optional<FileNode> createLocalNode(SessionConfig sessionConfig) throws IOException {
+        return Optional.of(createSystemNode(sessionConfig));
+    }
+
+    @Override
+    public FileNode createSystemNode(SessionConfig sessionConfig) throws IOException {
         requireNonNull(sessionConfig, "config");
         FileNodeConfig fileNodeConfig = FileNodeConfig.with(sessionConfig);
         KeyResolverFactory keyResolverFactory = keyResolverFactories.get(fileNodeConfig.keyResolver());

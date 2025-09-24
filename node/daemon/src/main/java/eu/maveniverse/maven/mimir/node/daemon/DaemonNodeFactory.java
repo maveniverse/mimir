@@ -28,7 +28,7 @@ import org.eclipse.aether.RepositorySystemSession;
 @Named(DaemonConfig.NAME)
 public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFactory<DaemonNode> {
     @Override
-    public Optional<DaemonNode> createNode(SessionConfig sessionConfig) throws IOException {
+    public Optional<DaemonNode> createLocalNode(SessionConfig sessionConfig) throws IOException {
         DaemonConfig cfg = DaemonConfig.with(sessionConfig);
         if (tryLock(cfg)) {
             Files.deleteIfExists(cfg.socketPath());

@@ -35,7 +35,7 @@ public class JGroupsNodeFactory extends ComponentSupport implements RemoteNodeFa
     }
 
     @Override
-    public Optional<JGroupsNode> createNode(SessionConfig sessionConfig) throws IOException {
+    public Optional<JGroupsNode> createRemoteNode(SessionConfig sessionConfig) throws IOException {
         requireNonNull(sessionConfig, "config");
 
         try {

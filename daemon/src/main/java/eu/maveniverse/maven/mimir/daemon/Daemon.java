@@ -111,7 +111,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
             if (systemNodeFactory == null) {
                 throw new IllegalArgumentException("Unknown system node: " + daemonConfig.systemNode());
             }
-            this.systemNode = systemNodeFactory.createNode(daemonConfig.config());
+            this.systemNode = systemNodeFactory.createSystemNode(daemonConfig.config());
         }
 
         @Override
@@ -138,7 +138,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
 
         ArrayList<RemoteNode> nds = new ArrayList<>();
         for (RemoteNodeFactory<?> remoteNodeFactory : remoteNodeFactories.values()) {
-            Optional<? extends RemoteNode> node = remoteNodeFactory.createNode(config.config());
+            Optional<? extends RemoteNode> node = remoteNodeFactory.createRemoteNode(config.config());
             node.ifPresent(nds::add);
         }
         nds.sort(Comparator.comparing(RemoteNode::distance));
