@@ -12,7 +12,6 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 /**
  * Local node uses some "local" (local to the system) backing storage and hence, has access to filesystem.
@@ -23,11 +22,6 @@ public interface LocalNode<E extends LocalEntry> extends Node<E> {
      * Provides list of checksum algorithm names configured to be used by this node.
      */
     List<String> checksumAlgorithms() throws IOException;
-
-    /**
-     * Provides all supported checksum factories keyed by algorithm name.
-     */
-    Map<String, ChecksumAlgorithmFactory> checksumFactories() throws IOException;
 
     /**
      * Stores file as new entry. If entry exists, method will fail if checksums are not same (not "same file").

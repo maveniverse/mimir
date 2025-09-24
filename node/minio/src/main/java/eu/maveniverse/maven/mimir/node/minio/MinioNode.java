@@ -80,11 +80,6 @@ public final class MinioNode extends NodeSupport<MinioEntry> implements SystemNo
     }
 
     @Override
-    public Map<String, ChecksumAlgorithmFactory> checksumFactories() {
-        return checksumFactories;
-    }
-
-    @Override
     public Optional<MinioEntry> locate(URI key) throws IOException {
         checkClosed();
         Key localKey = keyResolver.apply(key);

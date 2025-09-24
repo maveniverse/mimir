@@ -85,11 +85,6 @@ public final class FileNode extends NodeSupport<FileEntry> implements SystemNode
     }
 
     @Override
-    public Map<String, ChecksumAlgorithmFactory> checksumFactories() {
-        return checksumFactories;
-    }
-
-    @Override
     public Optional<FileEntry> locate(URI key) throws IOException {
         checkClosed();
         Path path = resolveKey(key);

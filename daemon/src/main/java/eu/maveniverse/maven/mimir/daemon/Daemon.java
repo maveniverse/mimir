@@ -84,14 +84,15 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         private final SystemNode<?> systemNode;
 
         @Inject
-        public SystemNodeProvider(DaemonConfig daemonConfig, Map<String, SystemNodeFactory> systemNodeFactories)
+        public SystemNodeProvider(DaemonConfig daemonConfig, Map<String, SystemNodeFactory<?>> systemNodeFactories)
                 throws IOException {
             requireNonNull(systemNodeFactories, "systemNodeFactories");
-            SystemNodeFactory systemNodeFactory = systemNodeFactories.get(daemonConfig.systemNode());
+            SystemNodeFactory<?> systemNodeFactory = systemNodeFactories.get(daemonConfig.systemNode());
             if (systemNodeFactory == null) {
                 throw new IllegalArgumentException("Unknown system node: " + daemonConfig.systemNode());
             }
-            this.systemNode = systemNodeFactory.createNode(daemonConfig.config());
+            this.systemNode =
+                    systemNodeFactory.createNode(daemonConfig.config()).orElseThrow();
         }
 
         @Override
@@ -109,7 +110,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
     public Daemon(
             DaemonConfig daemonConfig,
             SystemNode<?> systemNode,
-            Map<String, RemoteNodeFactory> remoteNodeFactories,
+            Map<String, RemoteNodeFactory<?>> remoteNodeFactories,
             Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories)
             throws IOException {
         super(daemonConfig);
@@ -117,7 +118,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         requireNonNull(remoteNodeFactories, "remoteNodeFactories");
 
         ArrayList<RemoteNode<?>> nds = new ArrayList<>();
-        for (RemoteNodeFactory remoteNodeFactory : remoteNodeFactories.values()) {
+        for (RemoteNodeFactory<?> remoteNodeFactory : remoteNodeFactories.values()) {
             Optional<? extends RemoteNode<?>> node = remoteNodeFactory.createNode(config.config());
             node.ifPresent(nds::add);
         }

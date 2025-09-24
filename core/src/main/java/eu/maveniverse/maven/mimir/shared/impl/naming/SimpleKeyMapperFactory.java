@@ -45,7 +45,7 @@ public final class SimpleKeyMapperFactory implements KeyMapperFactory {
         /**
          * Provides default and simplistic "container" implementation.
          */
-        public String container(RemoteRepository repository) {
+        public static String container(RemoteRepository repository) {
             if (CENTRAL_PREDICATE.test(repository)) {
                 return repository.getId();
             } else {
@@ -56,7 +56,7 @@ public final class SimpleKeyMapperFactory implements KeyMapperFactory {
         /**
          * Provides default and simplistic "name" implementation.
          */
-        public String name(Artifact artifact) {
+        public static String name(Artifact artifact) {
             return ArtifactIdUtils.toId(artifact);
         }
 

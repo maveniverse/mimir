@@ -7,8 +7,6 @@
  */
 package eu.maveniverse.maven.mimir.node.daemon;
 
-import static java.util.Objects.requireNonNull;
-
 import eu.maveniverse.maven.mimir.daemon.protocol.Session;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
@@ -21,25 +19,16 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
-import javax.inject.Inject;
+import java.util.Optional;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 @Singleton
 @Named(DaemonConfig.NAME)
-public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFactory {
-    private final Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories;
-
-    @Inject
-    public DaemonNodeFactory(Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories) {
-        this.checksumAlgorithmFactories = requireNonNull(checksumAlgorithmFactories, "checksumAlgorithmFactories");
-    }
-
+public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFactory<DaemonNode> {
     @Override
-    public DaemonNode createNode(SessionConfig sessionConfig) throws IOException {
+    public Optional<DaemonNode> createNode(SessionConfig sessionConfig) throws IOException {
         DaemonConfig cfg = DaemonConfig.with(sessionConfig);
         if (tryLock(cfg)) {
             Files.deleteIfExists(cfg.socketPath());
@@ -73,7 +62,7 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
                             .toString());
         }
         try {
-            return new DaemonNode(clientData, cfg, checksumAlgorithmFactories, cfg.autostop());
+            return Optional.of(new DaemonNode(clientData, cfg, cfg.autostop()));
         } catch (IOException e) {
             mayDumpDaemonLog(cfg.daemonLog());
             throw e;

@@ -24,6 +24,7 @@
   <name>${project.groupId}:${project.artifactId}</name>
 
   <modules>
+    <module>bundle</module>
     <module>daemon</module>
     <module>file</module>
     <module>jgroups</module>

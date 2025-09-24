@@ -61,7 +61,8 @@ public class MinioNodeTest {
                                         new Sha1ChecksumAlgorithmFactory(),
                                         Sha512ChecksumAlgorithmFactory.NAME,
                                         new Sha512ChecksumAlgorithmFactory()))
-                        .createNode(sessionConfig)) {
+                        .createNode(sessionConfig)
+                        .orElseThrow()) {
                     Optional<MinioEntry> entry = minioNode.locate(keyMapper.apply(central, junit));
                     assertFalse(entry.isPresent());
 

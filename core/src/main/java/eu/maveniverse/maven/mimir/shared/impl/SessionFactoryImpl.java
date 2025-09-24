@@ -28,18 +28,23 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 @Singleton
 @Named
 public final class SessionFactoryImpl extends ComponentSupport implements SessionFactory {
-    private final Map<String, LocalNodeFactory> localNodeFactories;
+    private final Map<String, LocalNodeFactory<?>> localNodeFactories;
     private final Map<String, KeyMapperFactory> nameMapperFactories;
+    private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
     @Inject
     public SessionFactoryImpl(
-            Map<String, LocalNodeFactory> localNodeFactories, Map<String, KeyMapperFactory> nameMapperFactories) {
+            Map<String, LocalNodeFactory<?>> localNodeFactories,
+            Map<String, KeyMapperFactory> nameMapperFactories,
+            Map<String, ChecksumAlgorithmFactory> checksumFactories) {
         this.localNodeFactories = requireNonNull(localNodeFactories, "localNodeFactories");
         this.nameMapperFactories = requireNonNull(nameMapperFactories, "nameMapperFactories");
+        this.checksumFactories = requireNonNull(checksumFactories, "checksumFactories");
     }
 
     @Override
@@ -55,11 +60,11 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
         BiFunction<RemoteRepository, Artifact, URI> keyMapper =
                 requireNonNull(keyMapperFactory.createKeyMapper(config), "keyMapper");
 
-        LocalNodeFactory localNodeFactory = localNodeFactories.get(cfg.localNode());
+        LocalNodeFactory<?> localNodeFactory = localNodeFactories.get(cfg.localNode());
         if (localNodeFactory == null) {
             throw new IllegalArgumentException("Unknown local node: " + cfg.localNode());
         }
-        LocalNode<?> localNode = localNodeFactory.createNode(config);
+        LocalNode<?> localNode = localNodeFactory.createNode(config).orElseThrow();
 
         Set<String> repositories = cfg.repositories();
         Predicate<RemoteRepository> repositoryPredicate;
@@ -81,8 +86,7 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
             logger.debug("  Local Node: {}", localNode);
             logger.debug("  Repositories: {}", repositories);
             logger.debug("  Used checksums: {}", localNode.checksumAlgorithms());
-            logger.debug(
-                    "  Supported checksums: {}", localNode.checksumFactories().keySet());
+            logger.debug("  Supported checksums: {}", checksumFactories.keySet());
         }
 
         return new SessionImpl(config, repositoryPredicate, a -> !a.isSnapshot(), keyMapper, localNode);

@@ -45,7 +45,8 @@ public class FileNodeTest {
                                 new Sha1ChecksumAlgorithmFactory(),
                                 Sha512ChecksumAlgorithmFactory.NAME,
                                 new Sha512ChecksumAlgorithmFactory()))
-                .createNode(sessionConfig)) {
+                .createNode(sessionConfig)
+                .orElseThrow()) {
             Optional<FileEntry> entry = fileNode.locate(keyMapper.apply(central, junit));
             assertFalse(entry.isPresent());
 
@@ -87,7 +88,8 @@ public class FileNodeTest {
                                 new Sha1ChecksumAlgorithmFactory(),
                                 Sha512ChecksumAlgorithmFactory.NAME,
                                 new Sha512ChecksumAlgorithmFactory()))
-                .createNode(sessionConfig)) {
+                .createNode(sessionConfig)
+                .orElseThrow()) {
             Optional<FileEntry> entry = fileNode.locate(keyMapper.apply(central, junit));
             assertFalse(entry.isPresent());
 
@@ -129,8 +131,8 @@ public class FileNodeTest {
                         new Sha1ChecksumAlgorithmFactory(),
                         Sha512ChecksumAlgorithmFactory.NAME,
                         new Sha512ChecksumAlgorithmFactory()));
-        try (FileNode fileNode1 = fileNodeFactory.createNode(sessionConfig);
-                FileNode fileNode2 = fileNodeFactory.createNode(sessionConfig)) {
+        try (FileNode fileNode1 = fileNodeFactory.createNode(sessionConfig).orElseThrow();
+                FileNode fileNode2 = fileNodeFactory.createNode(sessionConfig).orElseThrow()) {
             // should be ok
         }
     }
@@ -148,7 +150,7 @@ public class FileNodeTest {
                         new Sha1ChecksumAlgorithmFactory(),
                         Sha512ChecksumAlgorithmFactory.NAME,
                         new Sha512ChecksumAlgorithmFactory()));
-        try (FileNode fileNode = fileNodeFactory.createNode(sessionConfig)) {
+        try (FileNode fileNode = fileNodeFactory.createNode(sessionConfig).orElseThrow()) {
             assertThrows(IOException.class, () -> fileNodeFactory.createNode(sessionConfig));
         }
     }

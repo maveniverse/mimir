@@ -16,6 +16,7 @@ import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
 import eu.maveniverse.maven.shared.core.fs.DirectoryLocker;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -23,7 +24,7 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 @Singleton
 @Named(FileNodeConfig.NAME)
-public final class FileNodeFactory implements SystemNodeFactory {
+public final class FileNodeFactory implements SystemNodeFactory<FileNode> {
     private final Map<String, KeyResolverFactory> keyResolverFactories;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
@@ -36,7 +37,7 @@ public final class FileNodeFactory implements SystemNodeFactory {
     }
 
     @Override
-    public FileNode createNode(SessionConfig sessionConfig) throws IOException {
+    public Optional<FileNode> createNode(SessionConfig sessionConfig) throws IOException {
         requireNonNull(sessionConfig, "config");
         FileNodeConfig fileNodeConfig = FileNodeConfig.with(sessionConfig);
         KeyResolverFactory keyResolverFactory = keyResolverFactories.get(fileNodeConfig.keyResolver());
@@ -53,7 +54,7 @@ public final class FileNodeFactory implements SystemNodeFactory {
             }
         }
 
-        return new FileNode(
+        return Optional.of(new FileNode(
                 fileNodeConfig.basedir(),
                 fileNodeConfig.mayLink(),
                 fileNodeConfig.exclusiveAccess(),
@@ -61,6 +62,6 @@ public final class FileNodeFactory implements SystemNodeFactory {
                 keyResolver,
                 fileNodeConfig.checksumAlgorithms(),
                 checksumFactories,
-                DirectoryLocker.INSTANCE);
+                DirectoryLocker.INSTANCE));
     }
 }

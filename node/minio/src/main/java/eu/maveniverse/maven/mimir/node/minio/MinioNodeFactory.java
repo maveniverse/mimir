@@ -16,6 +16,7 @@ import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
 import io.minio.MinioClient;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -23,7 +24,7 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 @Singleton
 @Named(MinioNodeConfig.NAME)
-public class MinioNodeFactory implements SystemNodeFactory {
+public class MinioNodeFactory implements SystemNodeFactory<MinioNode> {
     private final Map<String, KeyResolverFactory> keyResolverFactories;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
@@ -36,7 +37,7 @@ public class MinioNodeFactory implements SystemNodeFactory {
     }
 
     @Override
-    public MinioNode createNode(SessionConfig sessionConfig) throws IOException {
+    public Optional<MinioNode> createNode(SessionConfig sessionConfig) throws IOException {
         MinioNodeConfig minioNodeConfig = MinioNodeConfig.with(sessionConfig);
         KeyResolverFactory keyResolverFactory = keyResolverFactories.get(minioNodeConfig.keyResolver());
         if (keyResolverFactory == null) {
@@ -52,14 +53,14 @@ public class MinioNodeFactory implements SystemNodeFactory {
             }
         }
         MinioClient minioClient = createMinioClient(minioNodeConfig);
-        return new MinioNode(
+        return Optional.of(new MinioNode(
                 minioNodeConfig,
                 minioClient,
                 minioNodeConfig.exclusiveAccess(),
                 minioNodeConfig.cachePurge(),
                 keyResolver,
                 minioNodeConfig.checksumAlgorithms(),
-                checksumFactories);
+                checksumFactories));
     }
 
     private MinioClient createMinioClient(MinioNodeConfig minioNodeConfig) {
