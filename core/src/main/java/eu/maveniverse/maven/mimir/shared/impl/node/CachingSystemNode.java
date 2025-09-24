@@ -10,27 +10,26 @@ package eu.maveniverse.maven.mimir.shared.impl.node;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
-import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * A wrapper system node that performs caching from remote nodes into given system node, if system node
+ * does not have content for asked key.
+ */
 public class CachingSystemNode extends NodeSupport implements SystemNode {
-    private final List<LocalNode> localNodes;
     private final SystemNode systemNode;
     private final List<RemoteNode> remoteNodes;
 
-    public CachingSystemNode(List<LocalNode> localNodes, SystemNode systemNode, List<RemoteNode> remoteNodes) {
+    public CachingSystemNode(SystemNode systemNode, List<RemoteNode> remoteNodes) {
         super("caching");
-        this.localNodes = requireNonNull(localNodes);
         this.systemNode = requireNonNull(systemNode);
         this.remoteNodes = requireNonNull(remoteNodes);
     }
@@ -42,23 +41,18 @@ public class CachingSystemNode extends NodeSupport implements SystemNode {
 
     @Override
     public Optional<? extends Entry> locate(URI key) throws IOException {
-        for (LocalNode node : localNodes) {
-            Optional<? extends Entry> localEntry = node.locate(key);
-            if (localEntry.isPresent()) {
-                return localEntry;
-            }
-        }
-        Entry entry = systemNode.locate(key).orElse(null);
-        if (entry == null) {
+        Optional<? extends Entry> entry = systemNode.locate(key);
+        if (entry.isPresent()) {
+            return entry;
+        } else {
             for (RemoteNode node : remoteNodes) {
-                Optional<? extends Entry> remoteEntry = node.locate(key);
-                if (remoteEntry.isPresent()) {
-                    entry = systemNode.store(key, remoteEntry.orElseThrow());
-                    break;
+                entry = node.locate(key);
+                if (entry.isPresent()) {
+                    return Optional.of(systemNode.store(key, entry.orElseThrow()));
                 }
             }
         }
-        return Optional.ofNullable(entry);
+        return Optional.empty();
     }
 
     @Override
@@ -74,37 +68,6 @@ public class CachingSystemNode extends NodeSupport implements SystemNode {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "(" + localNodes + ", " + systemNode + ", " + remoteNodes + ")";
-    }
-
-    private static class SE implements SystemEntry {
-        private final LocalEntry localEntry;
-
-        private SE(LocalEntry localEntry) {
-            this.localEntry = localEntry;
-        }
-
-        @Override
-        public InputStream inputStream() throws IOException {
-            if (localEntry instanceof SystemEntry se) {
-                return se.inputStream();
-            }
-            throw new IOException("this is local entry in disguise");
-        }
-
-        @Override
-        public void transferTo(Path file) throws IOException {
-            localEntry.transferTo(file);
-        }
-
-        @Override
-        public Map<String, String> metadata() {
-            return localEntry.metadata();
-        }
-
-        @Override
-        public Map<String, String> checksums() {
-            return localEntry.checksums();
-        }
+        return getClass().getSimpleName() + "(" + systemNode + ", " + remoteNodes + ")";
     }
 }

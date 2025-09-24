@@ -38,7 +38,6 @@ import java.nio.channels.AsynchronousCloseException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -182,7 +181,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                 executor.submit(new DaemonServer(
                         handle,
                         daemonData,
-                        new CachingSystemNode(Collections.emptyList(), systemNode, remoteNodes),
+                        new CachingSystemNode(systemNode, remoteNodes),
                         clientPredicate,
                         this::shutdown));
             }
