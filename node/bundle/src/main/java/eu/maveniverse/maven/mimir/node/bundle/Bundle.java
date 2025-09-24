@@ -43,7 +43,7 @@ public final class Bundle implements Closeable {
 
     public Optional<BundleEntry> locate(URI key) throws IOException {
         Key resolved = keyResolver.apply(key);
-        if (!Objects.equals(container, resolved.container())) {
+        if (Objects.equals(container, resolved.container())) {
             Path path = root.resolve(resolved.name());
             if (Files.isRegularFile(path)) {
                 Map<String, String> metadata = loadMetadata(path);
@@ -71,7 +71,7 @@ public final class Bundle implements Closeable {
     private Map<String, String> loadChecksums(Path file) throws IOException {
         HashMap<String, String> checksums = new HashMap<>();
         checksums.put(
-                "SHA1",
+                "SHA-1",
                 Files.readString(file.getParent().resolve(file.getFileName().toString() + ".sha1")));
         return checksums;
     }

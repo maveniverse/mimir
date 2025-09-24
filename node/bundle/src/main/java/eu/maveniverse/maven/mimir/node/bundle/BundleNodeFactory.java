@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
+import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
@@ -54,39 +55,34 @@ public class BundleNodeFactory extends ComponentSupport implements LocalNodeFact
         if (repositorySystem != null
                 && sessionConfig.repositorySystemSession().isPresent()
                 && !bundleNodeConfig.bundleSources().isEmpty()) {
+            // TODO: for now fixed
+            KeyResolver keyResolver =
+                    new SimpleKeyResolverFactory.SimpleKeyResolver(SimpleKeyResolverFactory::artifactRepositoryPath);
             ArrayList<Bundle> bundles = new ArrayList<>();
             for (BundleNodeConfig.BundleSource bundleSource : bundleNodeConfig.bundleSources()) {
-                KeyResolverFactory keyResolverFactory = keyResolverFactories.get(bundleSource.keyResolver());
-                if (keyResolverFactory == null) {
-                    throw new IllegalArgumentException("Unknown keyResolver: " + bundleSource.keyResolver());
-                }
-                KeyResolver keyResolver =
-                        requireNonNull(keyResolverFactory.createKeyResolver(sessionConfig), "keyResolver");
-
                 RemoteRepository remoteRepository = bundleSource.remoteRepository();
-
-                try {
-                    ArtifactResult artifactResult = repositorySystem.resolveArtifact(
-                            sessionConfig.repositorySystemSession().orElseThrow(),
-                            new ArtifactRequest(
-                                    bundleSource.artifact(),
-                                    Collections.singletonList(bundleSource.remoteRepository()),
-                                    "mimir-bundle-node"));
-                    Artifact artifact = artifactResult.getArtifact();
-                    if (artifactResult.isResolved()) {
-                        bundles.add(new Bundle(
-                                SimpleKeyMapperFactory.container(remoteRepository),
-                                ArtifactIdUtils.toId(artifact),
-                                FileSystems.newFileSystem(
-                                        URI.create("jar:"
-                                                + artifact.getFile().toPath().toUri()),
-                                        Map.of("create", "false"),
-                                        null),
-                                keyResolver));
+                Artifact artifact = bundleSource.artifact();
+                if (artifact.getFile() == null) {
+                    try {
+                        ArtifactResult artifactResult = repositorySystem.resolveArtifact(
+                                sessionConfig.repositorySystemSession().orElseThrow(),
+                                new ArtifactRequest(
+                                        bundleSource.artifact(),
+                                        Collections.singletonList(bundleSource.remoteRepository()),
+                                        "mimir-bundle-node"));
+                        artifact = artifactResult.getArtifact();
+                    } catch (ArtifactResolutionException e) {
+                        throw new IOException("Unable to resolve artifact " + bundleSource.artifact(), e);
                     }
-                } catch (ArtifactResolutionException e) {
-                    throw new IOException("Unable to resolve artifact " + bundleSource.artifact(), e);
                 }
+                bundles.add(new Bundle(
+                        SimpleKeyMapperFactory.container(remoteRepository),
+                        ArtifactIdUtils.toId(artifact),
+                        FileSystems.newFileSystem(
+                                URI.create("jar:" + artifact.getFile().toPath().toUri()),
+                                Map.of("create", "false"),
+                                null),
+                        keyResolver));
             }
             if (!bundles.isEmpty()) {
                 return Optional.of(new BundleNode(bundles));

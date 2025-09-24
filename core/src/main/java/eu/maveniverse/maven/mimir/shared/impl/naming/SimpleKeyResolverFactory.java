@@ -14,6 +14,7 @@ import eu.maveniverse.maven.mimir.shared.naming.Key;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolverFactory;
 import java.net.URI;
+import java.util.function.Function;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.aether.artifact.Artifact;
@@ -27,7 +28,33 @@ public final class SimpleKeyResolverFactory implements KeyResolverFactory {
     @Override
     public KeyResolver createKeyResolver(SessionConfig sessionConfig) {
         requireNonNull(sessionConfig);
-        return new SimpleKeyResolver();
+        return new SimpleKeyResolver(SimpleKeyResolverFactory::artifactPath);
+    }
+
+    /**
+     * Provides "path" for artifact.
+     */
+    public static String artifactPath(Artifact artifact) {
+        String name = artifact.getGroupId() + "/" + artifact.getArtifactId() + "/" + artifact.getBaseVersion() + "/"
+                + artifact.getArtifactId() + "-" + artifact.getVersion();
+        if (artifact.getClassifier() != null && !artifact.getClassifier().trim().isEmpty()) {
+            name += "-" + artifact.getClassifier();
+        }
+        name += "." + artifact.getExtension();
+        return name;
+    }
+
+    /**
+     * Provides "path" for artifact.
+     */
+    public static String artifactRepositoryPath(Artifact artifact) {
+        String name = artifact.getGroupId().replaceAll("\\.", "/") + "/" + artifact.getArtifactId() + "/"
+                + artifact.getBaseVersion() + "/" + artifact.getArtifactId() + "-" + artifact.getVersion();
+        if (artifact.getClassifier() != null && !artifact.getClassifier().trim().isEmpty()) {
+            name += "-" + artifact.getClassifier();
+        }
+        name += "." + artifact.getExtension();
+        return name;
     }
 
     /**
@@ -38,18 +65,10 @@ public final class SimpleKeyResolverFactory implements KeyResolverFactory {
      * no direct tampering. The layout should be considered "internal" and may change without any compatibility obligation.
      */
     public static class SimpleKeyResolver implements KeyResolver {
-        /**
-         * Provides "path" for artifact.
-         */
-        public String artifactPath(Artifact artifact) {
-            String name = artifact.getGroupId() + "/" + artifact.getArtifactId() + "/" + artifact.getBaseVersion() + "/"
-                    + artifact.getArtifactId() + "-" + artifact.getVersion();
-            if (artifact.getClassifier() != null
-                    && !artifact.getClassifier().trim().isEmpty()) {
-                name += "-" + artifact.getClassifier();
-            }
-            name += "." + artifact.getExtension();
-            return name;
+        private final Function<Artifact, String> artifactPathMapper;
+
+        public SimpleKeyResolver(Function<Artifact, String> artifactPathMapper) {
+            this.artifactPathMapper = artifactPathMapper;
         }
 
         /**
@@ -65,7 +84,7 @@ public final class SimpleKeyResolverFactory implements KeyResolverFactory {
                         if (bits.length == 2) {
                             String container = bits[0];
                             Artifact artifact = new DefaultArtifact(bits[1]);
-                            return Key.of(container, artifactPath(artifact));
+                            return Key.of(container, artifactPathMapper.apply(artifact));
                         }
                     } else if (ssp.startsWith("file:")) {
                         String[] bits = ssp.substring(5).split(":", 2);
