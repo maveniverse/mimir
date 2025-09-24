@@ -47,7 +47,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
-public final class MinioNode extends NodeSupport<MinioEntry> implements SystemNode<MinioEntry> {
+public final class MinioNode extends NodeSupport implements SystemNode {
     private final MinioNodeConfig config;
     private final MinioClient minioClient;
     private final boolean exclusiveAccess;
@@ -77,11 +77,6 @@ public final class MinioNode extends NodeSupport<MinioEntry> implements SystemNo
     @Override
     public List<String> checksumAlgorithms() {
         return checksumAlgorithms;
-    }
-
-    @Override
-    public Map<String, ChecksumAlgorithmFactory> checksumFactories() {
-        return checksumFactories;
     }
 
     @Override

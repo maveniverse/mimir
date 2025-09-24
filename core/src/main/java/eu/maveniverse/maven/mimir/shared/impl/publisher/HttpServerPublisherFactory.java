@@ -23,7 +23,7 @@ public class HttpServerPublisherFactory implements PublisherFactory {
     public static final String NAME = "http";
 
     @Override
-    public Publisher createPublisher(SessionConfig sessionConfig, SystemNode<?> systemNode) throws IOException {
+    public Publisher createPublisher(SessionConfig sessionConfig, SystemNode systemNode) throws IOException {
         requireNonNull(sessionConfig);
         requireNonNull(systemNode);
         return new HttpServerPublisher(systemNode, PublisherConfig.with(sessionConfig));

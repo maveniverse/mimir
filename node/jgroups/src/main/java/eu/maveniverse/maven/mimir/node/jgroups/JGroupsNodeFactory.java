@@ -13,6 +13,7 @@ import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.mimir.shared.publisher.PublisherFactory;
+import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
@@ -23,23 +24,24 @@ import org.jgroups.JChannel;
 
 @Singleton
 @Named(JGroupsNodeConfig.NAME)
-public class JGroupsNodeFactory implements RemoteNodeFactory {
-    private final SystemNode<?> systemNode;
+public class JGroupsNodeFactory extends ComponentSupport implements RemoteNodeFactory<JGroupsNode> {
+    private final SystemNode systemNode;
     private final Map<String, PublisherFactory> publisherFactories;
 
     @Inject
-    public JGroupsNodeFactory(SystemNode<?> systemNode, Map<String, PublisherFactory> publisherFactories) {
+    public JGroupsNodeFactory(SystemNode systemNode, Map<String, PublisherFactory> publisherFactories) {
         this.systemNode = requireNonNull(systemNode, "systemNode");
         this.publisherFactories = requireNonNull(publisherFactories, "publisherFactories");
     }
 
     @Override
-    public Optional<JGroupsNode> createNode(SessionConfig sessionConfig) throws IOException {
+    public Optional<JGroupsNode> createRemoteNode(SessionConfig sessionConfig) throws IOException {
         requireNonNull(sessionConfig, "config");
 
         try {
             JGroupsNodeConfig cfg = JGroupsNodeConfig.with(sessionConfig);
             if (!cfg.enabled()) {
+                logger.info("JGroupsNode is disabled");
                 return Optional.empty();
             }
             if (cfg.publisherEnabled()) {

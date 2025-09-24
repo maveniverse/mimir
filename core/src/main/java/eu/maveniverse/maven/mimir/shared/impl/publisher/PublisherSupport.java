@@ -9,6 +9,7 @@ package eu.maveniverse.maven.mimir.shared.impl.publisher;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.mimir.shared.publisher.Publisher;
@@ -41,11 +42,11 @@ public abstract class PublisherSupport extends CloseableSupport implements Publi
         }
     }
 
-    protected final SystemNode<?> systemNode;
+    protected final SystemNode systemNode;
     protected final PublisherConfig publisherConfig;
     protected final ConcurrentMap<String, SystemEntry> publishedEntries;
 
-    protected PublisherSupport(SystemNode<?> systemNode, PublisherConfig publisherConfig) {
+    protected PublisherSupport(SystemNode systemNode, PublisherConfig publisherConfig) {
         this.systemNode = requireNonNull(systemNode);
         this.publisherConfig = requireNonNull(publisherConfig);
         this.publishedEntries = new ConcurrentHashMap<>();
@@ -53,11 +54,11 @@ public abstract class PublisherSupport extends CloseableSupport implements Publi
 
     @Override
     public Optional<Handle> createHandle(URI key) throws IOException {
-        Optional<? extends SystemEntry> entry = systemNode.locate(key);
+        Optional<? extends Entry> entry = systemNode.locate(key);
         if (entry.isPresent()) {
             String token = UUID.randomUUID().toString();
             URI publishHandle = createHandle(token);
-            SystemEntry systemEntry = entry.orElseThrow();
+            SystemEntry systemEntry = (SystemEntry) entry.orElseThrow();
             publishedEntries.put(token, systemEntry);
             return Optional.of(new HandleImpl(publishHandle, systemEntry));
         }

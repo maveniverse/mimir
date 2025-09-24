@@ -28,6 +28,10 @@
     </dependency>
     <dependency>
       <groupId>eu.maveniverse.maven.mimir.node</groupId>
+      <artifactId>bundle</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mimir.node</groupId>
       <artifactId>daemon</artifactId>
     </dependency>
     <dependency>

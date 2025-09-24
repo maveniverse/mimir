@@ -68,7 +68,9 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                 List<RemoteRepository> remoteRepositories = RepositoryUtils.toRepos(
                         session.getProjectBuildingRequest().getRemoteRepositories());
                 mayCheckForUpdates(sessionConfig, repoSession, remoteRepositories);
-                mayResolveDaemonArtifact(sessionConfig, repoSession, remoteRepositories);
+                if ("daemon".equals(sessionConfig.localNode())) {
+                    mayResolveDaemonArtifact(sessionConfig, repoSession, remoteRepositories);
+                }
 
                 MimirUtils.lazyInit(session.getRepositorySession(), () -> {
                     try {

@@ -24,33 +24,24 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 /**
  * This node is delegating all the work to daemon via Unix Domain Sockets.
  */
-public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements LocalNode<DaemonNode.DaemonEntry> {
+public class DaemonNode extends NodeSupport implements LocalNode {
     private final DaemonConfig daemonConfig;
     private final Handle.ClientHandle clientHandle;
-    private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
     private final boolean autostop;
     private final Map<String, String> session;
     private final Map<String, String> daemonData;
 
-    public DaemonNode(
-            Map<String, String> clientData,
-            DaemonConfig daemonConfig,
-            Map<String, ChecksumAlgorithmFactory> checksumFactories,
-            boolean autostop)
-            throws IOException {
+    public DaemonNode(Map<String, String> clientData, DaemonConfig daemonConfig, boolean autostop) throws IOException {
         super(DaemonConfig.NAME);
         this.daemonConfig = requireNonNull(daemonConfig, "daemonConfig");
         this.clientHandle = Handle.clientDomainSocket(daemonConfig.socketPath());
-        this.checksumFactories = Collections.unmodifiableMap(requireNonNull(checksumFactories, "checksumFactories"));
         this.autostop = autostop;
 
         try (Handle handle = clientHandle.getHandle()) {
@@ -68,11 +59,6 @@ public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements L
             handle.writeRequest(Request.lsChecksums(session));
             return new ArrayList<>(handle.readResponse().data().keySet());
         }
-    }
-
-    @Override
-    public Map<String, ChecksumAlgorithmFactory> checksumFactories() {
-        return checksumFactories;
     }
 
     @Override

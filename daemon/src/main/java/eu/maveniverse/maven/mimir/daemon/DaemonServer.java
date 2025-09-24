@@ -22,18 +22,15 @@ import eu.maveniverse.maven.mimir.daemon.protocol.ImmutableResponse;
 import eu.maveniverse.maven.mimir.daemon.protocol.Request;
 import eu.maveniverse.maven.mimir.daemon.protocol.Response;
 import eu.maveniverse.maven.mimir.daemon.protocol.Session;
+import eu.maveniverse.maven.mimir.shared.impl.node.CachingSystemNode;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
-import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
-import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -42,8 +39,7 @@ import java.util.function.Predicate;
 final class DaemonServer extends ComponentSupport implements Runnable {
     private final Handle handle;
     private final Map<String, String> daemonData;
-    private final SystemNode<?> systemNode;
-    private final List<RemoteNode<?>> remoteNodes;
+    private final CachingSystemNode cachingSystemNode;
     private final Predicate<Request> clientPredicate;
     private final Runnable shutdownHook;
     private final Map<String, Map<String, String>> sessions;
@@ -51,14 +47,12 @@ final class DaemonServer extends ComponentSupport implements Runnable {
     DaemonServer(
             Handle handle,
             Map<String, String> daemonData,
-            SystemNode<?> systemNode,
-            List<RemoteNode<?>> remoteNodes,
+            CachingSystemNode cachingSystemNode,
             Predicate<Request> clientPredicate,
             Runnable shutdownHook) {
         this.handle = handle;
         this.daemonData = daemonData;
-        this.systemNode = systemNode;
-        this.remoteNodes = remoteNodes;
+        this.cachingSystemNode = cachingSystemNode;
         this.clientPredicate = clientPredicate;
         this.shutdownHook = shutdownHook;
         this.sessions = new HashMap<>();
@@ -102,16 +96,7 @@ final class DaemonServer extends ComponentSupport implements Runnable {
                     case CMD_LOCATE -> {
                         String keyString = request.requireData(Request.DATA_KEYSTRING);
                         URI key = URI.create(keyString);
-                        Optional<? extends Entry> entry = systemNode.locate(key);
-                        if (entry.isEmpty()) {
-                            for (RemoteNode<?> node : remoteNodes) {
-                                Optional<? extends RemoteEntry> remoteEntry = node.locate(key);
-                                if (remoteEntry.isPresent()) {
-                                    entry = Optional.of(systemNode.store(key, remoteEntry.orElseThrow()));
-                                    break;
-                                }
-                            }
-                        }
+                        Optional<? extends Entry> entry = cachingSystemNode.locate(key);
                         logger.debug("{} {} {}", request.cmd(), entry.isPresent() ? "HIT" : "MISS", keyString);
                         if (entry.isPresent()) {
                             Entry entryValue = entry.orElseThrow();
@@ -125,7 +110,7 @@ final class DaemonServer extends ComponentSupport implements Runnable {
                         String pathString = request.requireData(Request.DATA_PATHSTRING);
                         URI key = URI.create(keyString);
                         Path path = Path.of(pathString);
-                        Optional<? extends SystemEntry> entry = systemNode.locate(key);
+                        Optional<? extends Entry> entry = cachingSystemNode.locate(key);
                         logger.debug(
                                 "{} {} {} -> {}",
                                 request.cmd(),
@@ -133,16 +118,16 @@ final class DaemonServer extends ComponentSupport implements Runnable {
                                 keyString,
                                 pathString);
                         if (entry.isPresent()) {
-                            entry.orElseThrow().transferTo(path);
+                            ((SystemEntry) entry.orElseThrow()).transferTo(path);
                             handle.writeResponse(Response.okData(request, Map.of()));
                         } else {
                             handle.writeResponse(Response.koMessage(request, "Not found"));
                         }
                     }
                     case CMD_LS_CHECKSUMS -> {
-                        logger.debug("{} -> {}", request.cmd(), systemNode.checksumAlgorithms());
+                        logger.debug("{} -> {}", request.cmd(), cachingSystemNode.checksumAlgorithms());
                         LinkedHashMap<String, String> data = new LinkedHashMap<>();
-                        systemNode.checksumAlgorithms().forEach(c -> data.put(c, c));
+                        cachingSystemNode.checksumAlgorithms().forEach(c -> data.put(c, c));
                         handle.writeResponse(Response.okData(request, data));
                     }
                     case CMD_STORE_PATH -> {
@@ -153,7 +138,7 @@ final class DaemonServer extends ComponentSupport implements Runnable {
                         URI key = URI.create(keyString);
                         handle.writeResponse(Response.okData(
                                 request,
-                                mergeEntry(systemNode.store(
+                                mergeEntry(cachingSystemNode.store(
                                         key, Path.of(pathString), splitMetadata(data), splitChecksums(data)))));
                     }
                     default -> handle.writeResponse(Response.koMessage(request, "Bad command"));

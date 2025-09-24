@@ -31,7 +31,7 @@ import java.util.function.Function;
 public class HttpServerPublisher extends PublisherSupport {
     private final HttpServer httpServer;
 
-    public HttpServerPublisher(SystemNode<?> systemNode, PublisherConfig publisherConfig) throws IOException {
+    public HttpServerPublisher(SystemNode systemNode, PublisherConfig publisherConfig) throws IOException {
         super(systemNode, publisherConfig);
         httpServer = HttpServer.create(new InetSocketAddress(publisherConfig.hostPort()), 0);
 

@@ -32,6 +32,10 @@
     </dependency>
     <dependency>
       <groupId>eu.maveniverse.maven.mimir.node</groupId>
+      <artifactId>bundle</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mimir.node</groupId>
       <artifactId>file</artifactId>
     </dependency>
     <dependency>
@@ -114,6 +118,25 @@
       <artifactId>maven-resolver-transport-http</artifactId>
     </dependency>
 
+    <!-- MIMA to boot Resolver -->
+    <dependency>
+      <groupId>eu.maveniverse.maven.mima</groupId>
+      <artifactId>context</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mima.extensions</groupId>
+      <artifactId>mmr</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mima.runtime</groupId>
+      <artifactId>standalone-shared</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mima.runtime</groupId>
+      <artifactId>standalone-sisu</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
@@ -145,6 +168,7 @@
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                 <transformer implementation="org.apache.maven.plugins.shade.resource.SisuIndexResourceTransformer" />
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer" />
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <manifestEntries>
                     <Main-Class>eu.maveniverse.maven.mimir.daemon.Daemon</Main-Class>
