@@ -74,6 +74,7 @@
     <version.maveniverseShared>0.1.8</version.maveniverseShared>
     <version.maven>3.9.11</version.maven>
     <version.resolver>1.9.24</version.resolver>
+    <version.mima>2.4.34</version.mima>
     <version.slf4j>1.7.36</version.slf4j>
     <version.testcontainers>1.21.3</version.testcontainers>
   </properties>
@@ -232,6 +233,28 @@
         <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-utils</artifactId>
         <version>3.6.0</version>
+      </dependency>
+
+      <!-- MIMA -->
+      <dependency>
+        <groupId>eu.maveniverse.maven.mima</groupId>
+        <artifactId>context</artifactId>
+        <version>${version.mima}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.mima.runtime</groupId>
+        <artifactId>standalone-shared</artifactId>
+        <version>${version.mima}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.mima.runtime</groupId>
+        <artifactId>standalone-sisu</artifactId>
+        <version>${version.mima}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.mima.extensions</groupId>
+        <artifactId>mmr</artifactId>
+        <version>${version.mima}</version>
       </dependency>
 
       <dependency>
