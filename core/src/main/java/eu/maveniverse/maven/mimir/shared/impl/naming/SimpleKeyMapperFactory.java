@@ -33,6 +33,26 @@ public final class SimpleKeyMapperFactory implements KeyMapperFactory {
         return new SimpleKeyMapper();
     }
 
+    private static final Predicate<RemoteRepository> CENTRAL_PREDICATE = RemoteRepositories.centralDirectOnly();
+
+    /**
+     * Provides default and simplistic "container" implementation.
+     */
+    public static String container(RemoteRepository repository) {
+        if (CENTRAL_PREDICATE.test(repository)) {
+            return repository.getId();
+        } else {
+            return repository.getId() + "-" + StringDigestUtil.sha1(repository.getUrl());
+        }
+    }
+
+    /**
+     * Provides default and simplistic "name" implementation.
+     */
+    public static String name(Artifact artifact) {
+        return ArtifactIdUtils.toId(artifact);
+    }
+
     /**
      * This is SIMPLE name mapper; fully usable for any standard scenario.
      * <p>
@@ -40,26 +60,6 @@ public final class SimpleKeyMapperFactory implements KeyMapperFactory {
      * support repo aliases, mirrors, etc.
      */
     public static class SimpleKeyMapper implements KeyMapper {
-        private static final Predicate<RemoteRepository> CENTRAL_PREDICATE = RemoteRepositories.centralDirectOnly();
-
-        /**
-         * Provides default and simplistic "container" implementation.
-         */
-        public static String container(RemoteRepository repository) {
-            if (CENTRAL_PREDICATE.test(repository)) {
-                return repository.getId();
-            } else {
-                return repository.getId() + "-" + StringDigestUtil.sha1(repository.getUrl());
-            }
-        }
-
-        /**
-         * Provides default and simplistic "name" implementation.
-         */
-        public static String name(Artifact artifact) {
-            return ArtifactIdUtils.toId(artifact);
-        }
-
         /**
          * Creates a cache key according to naming strategy.
          */

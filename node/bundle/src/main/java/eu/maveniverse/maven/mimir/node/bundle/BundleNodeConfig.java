@@ -35,7 +35,7 @@ public class BundleNodeConfig {
             String[] sources = sessionConfig
                     .effectiveProperties()
                     .get("mimir.bundle.sources")
-                    .split("[;,]]");
+                    .split("[;,]");
             for (String source : sources) {
                 RemoteRepository remoteRepository;
                 Artifact artifact;

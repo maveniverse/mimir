@@ -77,7 +77,7 @@ public class BundleNodeFactory extends ComponentSupport
                     Artifact artifact = artifactResult.getArtifact();
                     if (artifactResult.isResolved()) {
                         bundles.add(new Bundle(
-                                SimpleKeyMapperFactory.SimpleKeyMapper.container(remoteRepository),
+                                SimpleKeyMapperFactory.container(remoteRepository),
                                 ArtifactIdUtils.toId(artifact),
                                 FileSystems.newFileSystem(
                                         URI.create("jar:"
