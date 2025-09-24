@@ -26,7 +26,7 @@ public class ServerSocketPublisher extends PublisherSupport {
     private final ServerSocket serverSocket;
     private final ExecutorService executor;
 
-    public ServerSocketPublisher(SystemNode<?> systemNode, PublisherConfig publisherConfig) throws IOException {
+    public ServerSocketPublisher(SystemNode systemNode, PublisherConfig publisherConfig) throws IOException {
         super(systemNode, publisherConfig);
 
         InetSocketAddress inetSocketAddress = new InetSocketAddress(publisherConfig.hostPort());

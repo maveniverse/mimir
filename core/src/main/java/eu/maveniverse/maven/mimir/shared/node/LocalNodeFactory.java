@@ -7,4 +7,10 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
-public interface LocalNodeFactory<N extends LocalNode<?>> extends NodeFactory<N> {}
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
+import java.io.IOException;
+import java.util.Optional;
+
+public interface LocalNodeFactory<N extends LocalNode> {
+    Optional<N> createNode(SessionConfig config) throws IOException;
+}

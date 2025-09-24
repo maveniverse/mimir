@@ -25,11 +25,11 @@ import org.jgroups.JChannel;
 @Singleton
 @Named(JGroupsNodeConfig.NAME)
 public class JGroupsNodeFactory extends ComponentSupport implements RemoteNodeFactory<JGroupsNode> {
-    private final SystemNode<?> systemNode;
+    private final SystemNode systemNode;
     private final Map<String, PublisherFactory> publisherFactories;
 
     @Inject
-    public JGroupsNodeFactory(SystemNode<?> systemNode, Map<String, PublisherFactory> publisherFactories) {
+    public JGroupsNodeFactory(SystemNode systemNode, Map<String, PublisherFactory> publisherFactories) {
         this.systemNode = requireNonNull(systemNode, "systemNode");
         this.publisherFactories = requireNonNull(publisherFactories, "publisherFactories");
     }

@@ -31,7 +31,7 @@ import java.util.Optional;
 /**
  * This node is delegating all the work to daemon via Unix Domain Sockets.
  */
-public class DaemonNode extends NodeSupport<DaemonNode.DaemonEntry> implements LocalNode<DaemonNode.DaemonEntry> {
+public class DaemonNode extends NodeSupport implements LocalNode {
     private final DaemonConfig daemonConfig;
     private final Handle.ClientHandle clientHandle;
     private final boolean autostop;

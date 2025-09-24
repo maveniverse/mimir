@@ -64,7 +64,10 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
         if (localNodeFactory == null) {
             throw new IllegalArgumentException("Unknown local node: " + cfg.localNode());
         }
-        LocalNode<?> localNode = localNodeFactory.createNode(config).orElseThrow();
+        LocalNode localNode = localNodeFactory
+                .createNode(config)
+                .orElseThrow(
+                        () -> new IllegalStateException("Chosen local node " + cfg.localNode() + " not configured"));
 
         Set<String> repositories = cfg.repositories();
         Predicate<RemoteRepository> repositoryPredicate;

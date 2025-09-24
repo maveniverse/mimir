@@ -17,7 +17,7 @@ import java.util.Map;
  * Local node uses some "local" (local to the system) backing storage and hence, has access to filesystem.
  * This type of node is able to back a session.
  */
-public interface LocalNode<E extends LocalEntry> extends Node<E> {
+public interface LocalNode extends Node {
     /**
      * Provides list of checksum algorithm names configured to be used by this node.
      */
@@ -26,5 +26,6 @@ public interface LocalNode<E extends LocalEntry> extends Node<E> {
     /**
      * Stores file as new entry. If entry exists, method will fail if checksums are not same (not "same file").
      */
-    E store(URI key, Path file, Map<String, String> metadata, Map<String, String> checksums) throws IOException;
+    LocalEntry store(URI key, Path file, Map<String, String> metadata, Map<String, String> checksums)
+            throws IOException;
 }

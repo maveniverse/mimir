@@ -24,6 +24,7 @@ import eu.maveniverse.maven.mimir.daemon.protocol.Request;
 import eu.maveniverse.maven.mimir.daemon.protocol.Session;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.impl.Executors;
+import eu.maveniverse.maven.mimir.shared.impl.node.CachingSystemNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
@@ -37,6 +38,7 @@ import java.nio.channels.AsynchronousCloseException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -99,8 +101,8 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
     }
 
     @Named
-    public static final class SystemNodeProvider implements Provider<SystemNode<?>> {
-        private final SystemNode<?> systemNode;
+    public static final class SystemNodeProvider implements Provider<SystemNode> {
+        private final SystemNode systemNode;
 
         @Inject
         public SystemNodeProvider(DaemonConfig daemonConfig, Map<String, SystemNodeFactory<?>> systemNodeFactories)
@@ -110,25 +112,24 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
             if (systemNodeFactory == null) {
                 throw new IllegalArgumentException("Unknown system node: " + daemonConfig.systemNode());
             }
-            this.systemNode =
-                    systemNodeFactory.createNode(daemonConfig.config()).orElseThrow();
+            this.systemNode = systemNodeFactory.createNode(daemonConfig.config());
         }
 
         @Override
-        public SystemNode<?> get() {
+        public SystemNode get() {
             return systemNode;
         }
     }
 
     private final ExecutorService executor;
-    private final SystemNode<?> systemNode;
-    private final List<RemoteNode<?>> remoteNodes;
+    private final SystemNode systemNode;
+    private final List<RemoteNode> remoteNodes;
     private final Handle.ServerHandle serverHandle;
 
     @Inject
     public Daemon(
             DaemonConfig daemonConfig,
-            SystemNode<?> systemNode,
+            SystemNode systemNode,
             Map<String, RemoteNodeFactory<?>> remoteNodeFactories,
             Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories)
             throws IOException {
@@ -136,9 +137,9 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         this.systemNode = requireNonNull(systemNode, "systemNode");
         requireNonNull(remoteNodeFactories, "remoteNodeFactories");
 
-        ArrayList<RemoteNode<?>> nds = new ArrayList<>();
+        ArrayList<RemoteNode> nds = new ArrayList<>();
         for (RemoteNodeFactory<?> remoteNodeFactory : remoteNodeFactories.values()) {
-            Optional<? extends RemoteNode<?>> node = remoteNodeFactory.createNode(config.config());
+            Optional<? extends RemoteNode> node = remoteNodeFactory.createNode(config.config());
             node.ifPresent(nds::add);
         }
         nds.sort(Comparator.comparing(RemoteNode::distance));
@@ -162,7 +163,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         logger.info("  System Node: {}", systemNode);
         logger.info("  Using checksums: {}", systemNode.checksumAlgorithms());
         logger.info("  {} remote node(s):", remoteNodes.size());
-        for (RemoteNode<?> node : this.remoteNodes) {
+        for (RemoteNode node : this.remoteNodes) {
             logger.info("    {}", node);
         }
 
@@ -178,8 +179,12 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         try {
             while (serverHandle.isOpen()) {
                 Handle handle = serverHandle.accept();
-                executor.submit(
-                        new DaemonServer(handle, daemonData, systemNode, remoteNodes, clientPredicate, this::shutdown));
+                executor.submit(new DaemonServer(
+                        handle,
+                        daemonData,
+                        new CachingSystemNode(Collections.emptyList(), systemNode, remoteNodes),
+                        clientPredicate,
+                        this::shutdown));
             }
         } catch (AsynchronousCloseException ignored) {
             // we are done
@@ -209,7 +214,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
             } catch (Exception e) {
                 logger.warn("Error closing executor", e);
             }
-            for (RemoteNode<?> node : remoteNodes) {
+            for (RemoteNode node : remoteNodes) {
                 try {
                     node.close();
                 } catch (IOException e) {

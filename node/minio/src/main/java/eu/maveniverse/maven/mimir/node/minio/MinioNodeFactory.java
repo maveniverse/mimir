@@ -16,7 +16,6 @@ import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
 import io.minio.MinioClient;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -37,7 +36,7 @@ public class MinioNodeFactory implements SystemNodeFactory<MinioNode> {
     }
 
     @Override
-    public Optional<MinioNode> createNode(SessionConfig sessionConfig) throws IOException {
+    public MinioNode createNode(SessionConfig sessionConfig) throws IOException {
         MinioNodeConfig minioNodeConfig = MinioNodeConfig.with(sessionConfig);
         KeyResolverFactory keyResolverFactory = keyResolverFactories.get(minioNodeConfig.keyResolver());
         if (keyResolverFactory == null) {
@@ -53,14 +52,14 @@ public class MinioNodeFactory implements SystemNodeFactory<MinioNode> {
             }
         }
         MinioClient minioClient = createMinioClient(minioNodeConfig);
-        return Optional.of(new MinioNode(
+        return new MinioNode(
                 minioNodeConfig,
                 minioClient,
                 minioNodeConfig.exclusiveAccess(),
                 minioNodeConfig.cachePurge(),
                 keyResolver,
                 minioNodeConfig.checksumAlgorithms(),
-                checksumFactories));
+                checksumFactories);
     }
 
     private MinioClient createMinioClient(MinioNodeConfig minioNodeConfig) {

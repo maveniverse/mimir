@@ -10,7 +10,7 @@ package eu.maveniverse.maven.mimir.shared.node;
 /**
  * A remote node represents some generic storage on some remote place.
  */
-public interface RemoteNode<E extends RemoteEntry> extends Node<E> {
+public interface RemoteNode extends Node {
     /**
      * The "distance" of node. Distance of 0 (zero) is "closest", and positive integers are "further away".
      */

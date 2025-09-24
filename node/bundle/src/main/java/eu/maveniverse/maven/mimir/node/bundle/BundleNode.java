@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class BundleNode extends NodeSupport<BundleEntry> implements LocalNode<BundleEntry> {
+public class BundleNode extends NodeSupport implements LocalNode {
     private final List<Bundle> bundles;
     private final List<String> checksumAlgorithms;
 

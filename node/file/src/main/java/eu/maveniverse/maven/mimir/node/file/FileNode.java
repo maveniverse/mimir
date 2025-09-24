@@ -45,7 +45,7 @@ import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 
-public final class FileNode extends NodeSupport<FileEntry> implements SystemNode<FileEntry> {
+public final class FileNode extends NodeSupport implements SystemNode {
     private final Path basedir;
     private final boolean mayLink;
     private final boolean exclusiveAccess;

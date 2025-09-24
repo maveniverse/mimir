@@ -7,4 +7,10 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
-public interface RemoteNodeFactory<N extends RemoteNode<?>> extends NodeFactory<N> {}
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
+import java.io.IOException;
+import java.util.Optional;
+
+public interface RemoteNodeFactory<N extends RemoteNode> {
+    Optional<N> createNode(SessionConfig config) throws IOException;
+}

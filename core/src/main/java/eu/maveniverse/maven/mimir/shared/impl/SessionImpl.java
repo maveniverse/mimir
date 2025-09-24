@@ -34,7 +34,7 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
     private final Predicate<RemoteRepository> repositoryPredicate;
     private final Predicate<Artifact> artifactPredicate;
     private final BiFunction<RemoteRepository, Artifact, URI> keyMapper;
-    private final LocalNode<?> localNode;
+    private final LocalNode localNode;
     private final Stats stats;
 
     private final ConcurrentHashMap<RemoteRepository, Set<String>> retrievedFromCache;
@@ -45,7 +45,7 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
             Predicate<RemoteRepository> repositoryPredicate,
             Predicate<Artifact> artifactPredicate,
             BiFunction<RemoteRepository, Artifact, URI> keyMapper,
-            LocalNode<?> localNode) {
+            LocalNode localNode) {
         super(sessionConfig);
         this.repositoryPredicate = requireNonNull(repositoryPredicate);
         this.artifactPredicate = requireNonNull(artifactPredicate);
@@ -89,9 +89,9 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
         requireNonNull(artifact, "artifact");
         if (repositoryPredicate.test(remoteRepository) && artifactPredicate.test(artifact)) {
             URI key = keyMapper.apply(remoteRepository, artifact);
-            Optional<? extends LocalEntry> result = localNode.locate(key);
+            Optional<? extends eu.maveniverse.maven.mimir.shared.node.Entry> result = localNode.locate(key);
             if (result.isPresent()) {
-                LocalEntry entry = result.orElseThrow();
+                LocalEntry entry = (LocalEntry) result.orElseThrow();
                 return stats.doLocate(Optional.of(new Entry() {
                     @Override
                     public void transferTo(Path file) throws IOException {
