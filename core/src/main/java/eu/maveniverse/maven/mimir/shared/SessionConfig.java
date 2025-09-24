@@ -9,6 +9,8 @@ package eu.maveniverse.maven.mimir.shared;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
+import eu.maveniverse.maven.mimir.shared.naming.RemoteRepositories;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import eu.maveniverse.maven.shared.core.maven.MavenUtils;
 import java.io.IOException;
@@ -16,11 +18,13 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import org.eclipse.aether.RepositorySystemSession;
 
 /**
@@ -89,6 +93,16 @@ public interface SessionConfig {
     Optional<String> localHostHint();
 
     Optional<RepositorySystemSession> repositorySystemSession();
+
+    // session impl config
+
+    String keyMapper();
+
+    Set<String> overlayNodes();
+
+    String localNode();
+
+    Set<String> repositories();
 
     default Builder toBuilder() {
         return new Builder(
@@ -251,6 +265,12 @@ public interface SessionConfig {
             private final String localHostHint;
             private final RepositorySystemSession repositorySystemSession;
 
+            // session impl config (derived from that above)
+            private final String keyMapper;
+            private final Set<String> overlayNodes;
+            private final String localNode;
+            private final Set<String> repositories;
+
             private Impl(
                     Boolean enabled,
                     Boolean ignoreErrorAtSessionEnd,
@@ -293,6 +313,34 @@ public interface SessionConfig {
 
                 this.localHostHint = effectiveProperties.get(CONF_LOCAL_HOST_HINT);
                 this.repositorySystemSession = repositorySystemSession;
+
+                // session impl (derived from those above)
+
+                String keyMapper = SimpleKeyMapperFactory.NAME;
+                Set<String> overlayNodes = Set.of();
+                String localNode = "daemon";
+                Set<String> repositories = Set.of(RemoteRepositories.CENTRAL_REPOSITORY_ID);
+
+                if (effectiveProperties.containsKey("mimir.session.keyMapper")) {
+                    keyMapper = effectiveProperties.get("mimir.session.keyMapper");
+                }
+                if (effectiveProperties.containsKey("mimir.session.overlayNodes")) {
+                    overlayNodes = Set.copyOf(Arrays.asList(effectiveProperties
+                            .get("mimir.session.overlayNodes")
+                            .split(",")));
+                }
+                if (effectiveProperties.containsKey("mimir.session.localNode")) {
+                    localNode = effectiveProperties.get("mimir.session.localNode");
+                }
+                if (effectiveProperties.containsKey("mimir.session.repositories")) {
+                    String value = effectiveProperties.get("mimir.session.repositories");
+                    repositories = Set.copyOf(Arrays.asList(value.split(",")));
+                }
+
+                this.keyMapper = keyMapper;
+                this.overlayNodes = overlayNodes;
+                this.localNode = localNode;
+                this.repositories = repositories;
             }
 
             @Override
@@ -342,6 +390,28 @@ public interface SessionConfig {
             @Override
             public Optional<RepositorySystemSession> repositorySystemSession() {
                 return Optional.ofNullable(repositorySystemSession);
+            }
+
+            // session impl
+
+            @Override
+            public String keyMapper() {
+                return keyMapper;
+            }
+
+            @Override
+            public Set<String> overlayNodes() {
+                return overlayNodes;
+            }
+
+            @Override
+            public String localNode() {
+                return localNode;
+            }
+
+            @Override
+            public Set<String> repositories() {
+                return repositories;
             }
         }
     }

@@ -54,31 +54,29 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
     public Session createSession(SessionConfig config) throws IOException {
         requireNonNull(config);
 
-        SessionImplConfig cfg = SessionImplConfig.with(config);
-
-        KeyMapperFactory keyMapperFactory = nameMapperFactories.get(cfg.keyMapper());
+        KeyMapperFactory keyMapperFactory = nameMapperFactories.get(config.keyMapper());
         if (keyMapperFactory == null) {
-            throw new IllegalStateException("No keyMapper: " + cfg.keyMapper());
+            throw new IllegalStateException("No keyMapper: " + config.keyMapper());
         }
         BiFunction<RemoteRepository, Artifact, URI> keyMapper =
                 requireNonNull(keyMapperFactory.createKeyMapper(config), "keyMapper");
 
         ArrayList<LocalNode> overlays = new ArrayList<>();
-        if (!cfg.overlayNodes().isEmpty()) {
-            for (String overlay : cfg.overlayNodes()) {
+        if (!config.overlayNodes().isEmpty()) {
+            for (String overlay : config.overlayNodes()) {
                 createLocalNode(overlay, config).ifPresent(overlays::add);
             }
         }
 
-        LocalNode localNode = createLocalNode(cfg.localNode(), config)
+        LocalNode localNode = createLocalNode(config.localNode(), config)
                 .orElseThrow(
-                        () -> new IllegalStateException("Chosen local node " + cfg.localNode() + " not configured"));
+                        () -> new IllegalStateException("Chosen local node " + config.localNode() + " not configured"));
 
         if (!overlays.isEmpty()) {
             localNode = new OverlayingLocalNode(overlays, localNode);
         }
 
-        Set<String> repositories = cfg.repositories();
+        Set<String> repositories = config.repositories();
         Predicate<RemoteRepository> repositoryPredicate;
         if (repositories.isEmpty()) {
             throw new IllegalStateException("No repositories to handle");
