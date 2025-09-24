@@ -27,7 +27,7 @@ public class BundleNodeConfig {
 
         String keyResolver = SimpleKeyResolverFactory.NAME;
         if (sessionConfig.effectiveProperties().containsKey("mimir.bundle.keyResolver")) {
-            keyResolver = sessionConfig.effectiveProperties().get("bundle.file.keyResolver");
+            keyResolver = sessionConfig.effectiveProperties().get("mimir.bundle.keyResolver");
         }
 
         if (sessionConfig.effectiveProperties().containsKey("mimir.bundle.sources")) {
