@@ -11,7 +11,6 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.node.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
-import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -20,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class BundleNode extends NodeSupport<BundleEntry> implements RemoteNode<BundleEntry>, LocalNode<BundleEntry> {
+public class BundleNode extends NodeSupport<BundleEntry> implements LocalNode<BundleEntry> {
     private final List<Bundle> bundles;
     private final List<String> checksumAlgorithms;
 
@@ -28,11 +27,6 @@ public class BundleNode extends NodeSupport<BundleEntry> implements RemoteNode<B
         super(BundleNodeConfig.NAME);
         this.bundles = requireNonNull(bundles);
         this.checksumAlgorithms = List.of("SHA-1");
-    }
-
-    @Override
-    public int distance() {
-        return 0;
     }
 
     @Override
@@ -56,7 +50,7 @@ public class BundleNode extends NodeSupport<BundleEntry> implements RemoteNode<B
     @Override
     public BundleEntry store(URI key, Path file, Map<String, String> md, Map<String, String> checksums) {
         checkClosed();
-        throw new IllegalStateException("ouch");
+        throw new IllegalStateException("bundle node cannot store");
     }
 
     @Override
