@@ -24,6 +24,8 @@ import java.nio.file.StandardCopyOption;
  * Note: this class expects that current property {@code user.home} be the "real" user home (so invocation must happen
  * outside), and that the passed in path to be the chroot-ed user home. Also, it expects Mimir in default location.
  * Feel free to copy-paste this class if any customization is needed.
+ * For simplicity reason is user-wide extension used (Maven 4 feature), as for Maven 3 sessionRoot would need to be
+ * passed all way to here.
  */
 public final class MimirInfuser {
     public static void infuse(Path chrootUserHome) throws IOException {
