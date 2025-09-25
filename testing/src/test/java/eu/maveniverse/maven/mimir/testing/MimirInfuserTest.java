@@ -25,7 +25,7 @@ public class MimirInfuserTest {
         Path extensionsXml = oldRoot.resolve(".m2").resolve("extensions.xml");
         Files.createDirectories(extensionsXml.getParent());
         Files.writeString(
-                oldRoot.resolve(".m2").resolve("extensions.xml"),
+                extensionsXml,
                 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<extensions>\n"
                         + "    <extension>\n"
                         + "        <groupId>eu.maveniverse.maven.mimir</groupId>\n"
