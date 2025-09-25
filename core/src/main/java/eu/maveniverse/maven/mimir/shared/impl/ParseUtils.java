@@ -25,8 +25,6 @@ import org.eclipse.aether.repository.RepositoryPolicy;
 public final class ParseUtils {
     private ParseUtils() {}
 
-    // BundleSource
-
     /**
      * Bundle source: carries a {@link RemoteRepository} and {@link Artifact}. If the artifact has file set
      * ({@link Artifact#getFile()} is not {@code null}), user used a file path. Otherwise, the artifact should be
