@@ -10,9 +10,11 @@ package eu.maveniverse.maven.mimir.testing;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Properties;
 
 /**
  * Class that sets up Mimir for embedded and chroot-ed maven executing tests; IF outer build uses Mimir as well
@@ -42,14 +44,21 @@ public final class MimirInfuser {
                     Files.createDirectories(chrootUserWideExtensions.getParent());
                     Files.copy(realUserWideExtensions, chrootUserWideExtensions, StandardCopyOption.REPLACE_EXISTING);
 
+                    Properties properties = new Properties();
+                    properties.setProperty(
+                            "mimir.daemon.basedir",
+                            Path.of(System.getProperty("user.home"))
+                                    .resolve(".mimir")
+                                    .toString());
+                    properties.setProperty("mimir.daemon.autoupdate", "false");
+                    properties.setProperty("mimir.daemon.autostart", "false");
+
                     Path chrootMimirProperties =
                             chrootUserHome.resolve(".mimir").resolve("session.properties");
                     Files.createDirectories(chrootMimirProperties.getParent());
-                    String sessionProperties = "# Written by MimirInfuser\n"
-                            + String.format("mimir.daemon.basedir=%s/.mimir\n", System.getProperty("user.home"))
-                            + "mimir.daemon.autoupdate=false\n"
-                            + "mimir.daemon.autostart=false";
-                    Files.writeString(chrootMimirProperties, sessionProperties);
+                    try (OutputStream os = Files.newOutputStream(chrootMimirProperties)) {
+                        properties.store(os, "Written by MimirInfuser");
+                    }
                 }
             }
         }
