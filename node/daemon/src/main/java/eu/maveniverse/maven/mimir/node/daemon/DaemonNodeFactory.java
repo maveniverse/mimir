@@ -25,11 +25,11 @@ import javax.inject.Singleton;
 import org.eclipse.aether.RepositorySystemSession;
 
 @Singleton
-@Named(DaemonConfig.NAME)
+@Named(DaemonNodeConfig.NAME)
 public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFactory<DaemonNode> {
     @Override
     public Optional<DaemonNode> createLocalNode(SessionConfig sessionConfig) throws IOException {
-        DaemonConfig cfg = DaemonConfig.with(sessionConfig);
+        DaemonNodeConfig cfg = DaemonNodeConfig.with(sessionConfig);
         if (tryLock(cfg)) {
             Files.deleteIfExists(cfg.socketPath());
             if (cfg.autostart()) {
@@ -72,9 +72,9 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
     /**
      * Starts damon process. This method must be entered ONLY if caller owns exclusive lock "start procedure".
      *
-     * @see #tryLock(DaemonConfig)
+     * @see #tryLock(DaemonNodeConfig)
      */
-    private Process startDaemon(DaemonConfig cfg) throws IOException {
+    private Process startDaemon(DaemonNodeConfig cfg) throws IOException {
         Path basedir = cfg.daemonBasedir();
         if (Files.isRegularFile(cfg.daemonJar())) {
             String java = cfg.daemonJavaHome()
@@ -134,11 +134,11 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
     }
 
     /**
-     * Locks the {@link DaemonConfig#daemonLockDir()}. If this method returns {@code true} it means there is no
+     * Locks the {@link DaemonNodeConfig#daemonLockDir()}. If this method returns {@code true} it means there is no
      * daemon running nor is there any other process trying to start daemon.
      * This process "owns" the start procedure alone.
      */
-    private boolean tryLock(DaemonConfig cfg) {
+    private boolean tryLock(DaemonNodeConfig cfg) {
         try {
             Files.createDirectories(cfg.daemonLockDir());
             DirectoryLocker.INSTANCE.lockDirectory(cfg.daemonLockDir(), true);
@@ -149,19 +149,19 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
     }
 
     /**
-     * Unlocks the {@link DaemonConfig#daemonLockDir()}.
+     * Unlocks the {@link DaemonNodeConfig#daemonLockDir()}.
      */
-    private void unlock(DaemonConfig cfg) throws IOException {
+    private void unlock(DaemonNodeConfig cfg) throws IOException {
         DirectoryLocker.INSTANCE.unlockDirectory(cfg.daemonLockDir());
     }
 
     /**
-     * The method will wait {@link DaemonConfig#autostartDuration()} time for socket to become available.
+     * The method will wait {@link DaemonNodeConfig#autostartDuration()} time for socket to become available.
      * Precondition: socket does not exist.
      * Exit condition: socket exist.
      * Fail condition: time passes and socket not exist.
      */
-    private void waitForSocket(DaemonConfig cfg) throws IOException {
+    private void waitForSocket(DaemonNodeConfig cfg) throws IOException {
         Instant startingUntil = Instant.now().plus(cfg.autostartDuration());
         logger.debug("Waiting for socket to become available until {}", startingUntil);
         try {

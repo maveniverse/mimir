@@ -15,8 +15,8 @@ import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.nio.file.Path;
 import java.time.Duration;
 
-public class DaemonConfig {
-    public static DaemonConfig with(SessionConfig sessionConfig) {
+public class DaemonNodeConfig {
+    public static DaemonNodeConfig with(SessionConfig sessionConfig) {
         requireNonNull(sessionConfig, "config");
 
         final boolean mimirVersionPresent = !SessionConfig.UNKNOWN_VERSION.equals(sessionConfig.mimirVersion());
@@ -81,7 +81,7 @@ public class DaemonConfig {
         if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.debug")) {
             debug = Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.daemon.debug"));
         }
-        return new DaemonConfig(
+        return new DaemonNodeConfig(
                 sessionConfig,
                 daemonBasedir,
                 daemonLockDir,
@@ -115,7 +115,7 @@ public class DaemonConfig {
     private final boolean passOnBasedir;
     private final boolean debug;
 
-    private DaemonConfig(
+    private DaemonNodeConfig(
             SessionConfig sessionConfig,
             Path daemonBasedir,
             Path daemonLockDir,
