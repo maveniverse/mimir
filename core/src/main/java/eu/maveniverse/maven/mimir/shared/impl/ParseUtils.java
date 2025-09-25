@@ -32,12 +32,12 @@ public final class ParseUtils {
      * ({@link Artifact#getFile()} is not {@code null}), user used a file path. Otherwise, the artifact should be
      * resolved from given remote repository.
      */
-    public record BundleSource(RemoteRepository remoteRepository, Artifact artifact) {}
+    public record ArtifactSource(RemoteRepository remoteRepository, Artifact artifact) {}
 
     /**
      * Central repository.
      */
-    private static final RemoteRepository CENTRAL = new RemoteRepository.Builder(
+    public static final RemoteRepository CENTRAL = new RemoteRepository.Builder(
                     "central", "default", "https://repo.maven.apache.org/maven2/")
             .setReleasePolicy(new RepositoryPolicy(
                     true, RepositoryPolicy.UPDATE_POLICY_NEVER, RepositoryPolicy.CHECKSUM_POLICY_WARN))
@@ -46,16 +46,16 @@ public final class ParseUtils {
             .build();
 
     /**
-     * Parses a sources string into list of {@link BundleSource}s. The string may contain multiple source definition
+     * Parses a sources string into list of {@link ArtifactSource}s. The string may contain multiple source definition
      * strings separated by comma (",") or semicolon (";"). Each source definition must have the following format:
      * {@code gav@repo}. The "gav" part corresponds to {@code <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>}
      * string, while "repo" part may be equal to "central" string, denoting Maven Central repository, or may be in
      * format of {@code id::url}, the usual remote repository definition string.
      */
-    public static List<BundleSource> parseBundleSources(SessionConfig sessionConfig, String sourcesString) {
+    public static List<ArtifactSource> parseBundleSources(SessionConfig sessionConfig, String sourcesString) {
         requireNonNull(sourcesString);
         String[] sources = sourcesString.split("[;,]");
-        ArrayList<BundleSource> bundleSources = new ArrayList<>();
+        ArrayList<ArtifactSource> artifactSources = new ArrayList<>();
         for (String source : sources) {
             RemoteRepository remoteRepository;
             Artifact artifact;
@@ -66,9 +66,9 @@ public final class ParseUtils {
             }
             remoteRepository = parseRemoteRepositoryString(sessionConfig, sourceParts[1]);
             artifact = parseArtifactString(sessionConfig, sourceParts[0]);
-            bundleSources.add(new BundleSource(remoteRepository, artifact));
+            artifactSources.add(new ArtifactSource(remoteRepository, artifact));
         }
-        return bundleSources;
+        return artifactSources;
     }
 
     /**

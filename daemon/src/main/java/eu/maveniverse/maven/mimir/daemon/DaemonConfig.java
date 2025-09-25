@@ -11,8 +11,11 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
+import eu.maveniverse.maven.mimir.shared.impl.ParseUtils;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DaemonConfig {
     public static DaemonConfig with(SessionConfig sessionConfig) {
@@ -21,6 +24,8 @@ public class DaemonConfig {
         Path daemonLockDir = sessionConfig.basedir().resolve("daemon");
         Path socketPath = sessionConfig.basedir().resolve(Handle.DEFAULT_SOCKET_PATH);
         String systemNode = "file";
+        boolean preSeedItself = false;
+        ArrayList<ParseUtils.ArtifactSource> preSeedArtifacts = new ArrayList<>();
 
         if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.socketPath")) {
             socketPath = FileUtils.canonicalPath(sessionConfig
@@ -30,19 +35,37 @@ public class DaemonConfig {
         if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.systemNode")) {
             systemNode = sessionConfig.effectiveProperties().get("mimir.daemon.systemNode");
         }
-        return new DaemonConfig(sessionConfig, daemonLockDir, socketPath, systemNode);
+        if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.preSeedItself")) {
+            preSeedItself =
+                    Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.daemon.preSeedItself"));
+        }
+        if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.preSeedArtifacts")) {
+            preSeedArtifacts.addAll(ParseUtils.parseBundleSources(
+                    sessionConfig, sessionConfig.effectiveProperties().get("mimir.daemon.preSeedArtifacts")));
+        }
+        return new DaemonConfig(sessionConfig, daemonLockDir, socketPath, systemNode, preSeedItself, preSeedArtifacts);
     }
 
     private final SessionConfig sessionConfig;
     private final Path daemonLockDir;
     private final Path socketPath;
     private final String systemNode;
+    private final boolean preSeedItself;
+    private final List<ParseUtils.ArtifactSource> preSeedArtifacts;
 
-    private DaemonConfig(SessionConfig sessionConfig, Path daemonLockDir, Path socketPath, String systemNode) {
+    private DaemonConfig(
+            SessionConfig sessionConfig,
+            Path daemonLockDir,
+            Path socketPath,
+            String systemNode,
+            boolean preSeedItself,
+            List<ParseUtils.ArtifactSource> preSeedArtifacts) {
         this.sessionConfig = requireNonNull(sessionConfig);
         this.daemonLockDir = requireNonNull(daemonLockDir);
         this.socketPath = requireNonNull(socketPath);
         this.systemNode = requireNonNull(systemNode);
+        this.preSeedItself = preSeedItself;
+        this.preSeedArtifacts = requireNonNull(preSeedArtifacts);
     }
 
     public SessionConfig config() {
@@ -59,5 +82,13 @@ public class DaemonConfig {
 
     public String systemNode() {
         return systemNode;
+    }
+
+    public boolean preSeedItself() {
+        return preSeedItself;
+    }
+
+    public List<ParseUtils.ArtifactSource> preSeedArtifacts() {
+        return preSeedArtifacts;
     }
 }
