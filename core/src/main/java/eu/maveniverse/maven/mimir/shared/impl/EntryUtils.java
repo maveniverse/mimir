@@ -11,6 +11,9 @@ import eu.maveniverse.maven.mimir.shared.node.Entry;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Utilities related to handling {@link Entry} and metadata.
+ */
 public final class EntryUtils {
     private EntryUtils() {}
 

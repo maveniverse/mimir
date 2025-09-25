@@ -10,6 +10,7 @@ package eu.maveniverse.maven.mimir.node.bundle;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
+import eu.maveniverse.maven.mimir.shared.impl.ParseUtils;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
@@ -59,7 +60,7 @@ public class BundleNodeFactory extends ComponentSupport implements LocalNodeFact
             KeyResolver keyResolver =
                     new SimpleKeyResolverFactory.SimpleKeyResolver(SimpleKeyResolverFactory::artifactRepositoryPath);
             ArrayList<Bundle> bundles = new ArrayList<>();
-            for (BundleNodeConfig.BundleSource bundleSource : bundleNodeConfig.bundleSources()) {
+            for (ParseUtils.BundleSource bundleSource : bundleNodeConfig.bundleSources()) {
                 RemoteRepository remoteRepository = bundleSource.remoteRepository();
                 Artifact artifact = bundleSource.artifact();
                 if (artifact.getFile() == null) {

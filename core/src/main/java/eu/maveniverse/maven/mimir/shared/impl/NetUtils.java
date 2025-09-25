@@ -13,6 +13,9 @@ import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.function.Predicate;
 
+/**
+ * Utilities related to network configuration.
+ */
 public final class NetUtils {
     private NetUtils() {}
 
