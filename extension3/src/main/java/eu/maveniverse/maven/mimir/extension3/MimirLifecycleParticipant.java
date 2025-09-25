@@ -118,8 +118,8 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
         if (!Files.exists(daemonNodeConfig.daemonJar())) {
             try {
                 logger.info("Resolving Mimir daemon version {}", sessionConfig.mimirVersion());
-                ArtifactRequest artifactRequest =
-                        new ArtifactRequest(new DefaultArtifact(daemonNodeConfig.daemonGav()), remoteRepositories, "mimir");
+                ArtifactRequest artifactRequest = new ArtifactRequest(
+                        new DefaultArtifact(daemonNodeConfig.daemonGav()), remoteRepositories, "mimir");
                 ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, artifactRequest);
                 Files.createDirectories(daemonNodeConfig.daemonJar().getParent());
                 FileUtils.copy(artifactResult.getArtifact().getFile().toPath(), daemonNodeConfig.daemonJar());

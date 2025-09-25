@@ -38,7 +38,8 @@ public class DaemonNode extends NodeSupport implements LocalNode {
     private final Map<String, String> session;
     private final Map<String, String> daemonData;
 
-    public DaemonNode(Map<String, String> clientData, DaemonNodeConfig daemonNodeConfig, boolean autostop) throws IOException {
+    public DaemonNode(Map<String, String> clientData, DaemonNodeConfig daemonNodeConfig, boolean autostop)
+            throws IOException {
         super(DaemonNodeConfig.NAME);
         this.daemonNodeConfig = requireNonNull(daemonNodeConfig, "daemonConfig");
         this.clientHandle = Handle.clientDomainSocket(daemonNodeConfig.socketPath());
