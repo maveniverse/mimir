@@ -10,6 +10,7 @@ package eu.maveniverse.maven.mimir.node.bundle;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
+import eu.maveniverse.maven.mimir.shared.impl.ParseUtils;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
@@ -59,20 +60,20 @@ public class BundleNodeFactory extends ComponentSupport implements LocalNodeFact
             KeyResolver keyResolver =
                     new SimpleKeyResolverFactory.SimpleKeyResolver(SimpleKeyResolverFactory::artifactRepositoryPath);
             ArrayList<Bundle> bundles = new ArrayList<>();
-            for (BundleNodeConfig.BundleSource bundleSource : bundleNodeConfig.bundleSources()) {
-                RemoteRepository remoteRepository = bundleSource.remoteRepository();
-                Artifact artifact = bundleSource.artifact();
+            for (ParseUtils.ArtifactSource artifactSource : bundleNodeConfig.bundleSources()) {
+                RemoteRepository remoteRepository = artifactSource.remoteRepository();
+                Artifact artifact = artifactSource.artifact();
                 if (artifact.getFile() == null) {
                     try {
                         ArtifactResult artifactResult = repositorySystem.resolveArtifact(
                                 sessionConfig.repositorySystemSession().orElseThrow(),
                                 new ArtifactRequest(
-                                        bundleSource.artifact(),
-                                        Collections.singletonList(bundleSource.remoteRepository()),
+                                        artifactSource.artifact(),
+                                        Collections.singletonList(artifactSource.remoteRepository()),
                                         "mimir-bundle-node"));
                         artifact = artifactResult.getArtifact();
                     } catch (ArtifactResolutionException e) {
-                        throw new IOException("Unable to resolve artifact " + bundleSource.artifact(), e);
+                        throw new IOException("Unable to resolve artifact " + artifactSource.artifact(), e);
                     }
                 }
                 bundles.add(new Bundle(

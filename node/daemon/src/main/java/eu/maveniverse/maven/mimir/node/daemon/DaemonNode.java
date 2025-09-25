@@ -7,9 +7,9 @@
  */
 package eu.maveniverse.maven.mimir.node.daemon;
 
-import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeEntry;
-import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
-import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
+import static eu.maveniverse.maven.mimir.shared.impl.EntryUtils.mergeEntry;
+import static eu.maveniverse.maven.mimir.shared.impl.EntryUtils.splitChecksums;
+import static eu.maveniverse.maven.mimir.shared.impl.EntryUtils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
@@ -32,16 +32,17 @@ import java.util.Optional;
  * This node is delegating all the work to daemon via Unix Domain Sockets.
  */
 public class DaemonNode extends NodeSupport implements LocalNode {
-    private final DaemonConfig daemonConfig;
+    private final DaemonNodeConfig daemonNodeConfig;
     private final Handle.ClientHandle clientHandle;
     private final boolean autostop;
     private final Map<String, String> session;
     private final Map<String, String> daemonData;
 
-    public DaemonNode(Map<String, String> clientData, DaemonConfig daemonConfig, boolean autostop) throws IOException {
-        super(DaemonConfig.NAME);
-        this.daemonConfig = requireNonNull(daemonConfig, "daemonConfig");
-        this.clientHandle = Handle.clientDomainSocket(daemonConfig.socketPath());
+    public DaemonNode(Map<String, String> clientData, DaemonNodeConfig daemonNodeConfig, boolean autostop)
+            throws IOException {
+        super(DaemonNodeConfig.NAME);
+        this.daemonNodeConfig = requireNonNull(daemonNodeConfig, "daemonConfig");
+        this.clientHandle = Handle.clientDomainSocket(daemonNodeConfig.socketPath());
         this.autostop = autostop;
 
         try (Handle handle = clientHandle.getHandle()) {
@@ -112,7 +113,7 @@ public class DaemonNode extends NodeSupport implements LocalNode {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + " (basedir=" + daemonConfig.daemonBasedir() + "; daemonPID="
+        return getClass().getSimpleName() + " (basedir=" + daemonNodeConfig.daemonBasedir() + "; daemonPID="
                 + daemonData.getOrDefault("daemon.pid", "n/a") + "; daemonVersion="
                 + daemonData.getOrDefault("daemon.version", "n/a") + ")";
     }

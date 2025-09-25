@@ -9,9 +9,9 @@ package eu.maveniverse.maven.mimir.node.minio;
 
 import static eu.maveniverse.maven.mimir.node.minio.Utils.popMap;
 import static eu.maveniverse.maven.mimir.node.minio.Utils.pushMap;
-import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeEntry;
-import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
-import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
+import static eu.maveniverse.maven.mimir.shared.impl.EntryUtils.mergeEntry;
+import static eu.maveniverse.maven.mimir.shared.impl.EntryUtils.splitChecksums;
+import static eu.maveniverse.maven.mimir.shared.impl.EntryUtils.splitMetadata;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumEnforcer;

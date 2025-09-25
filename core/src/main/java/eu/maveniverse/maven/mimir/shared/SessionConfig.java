@@ -306,10 +306,13 @@ public interface SessionConfig {
                 eff.putAll(userProperties);
                 this.effectiveProperties = Map.copyOf(eff);
 
-                this.enabled =
-                        Boolean.parseBoolean(effectiveProperties.getOrDefault(CONF_ENABLED, Boolean.TRUE.toString()));
-                this.ignoreErrorAtSessionEnd = Boolean.parseBoolean(
-                        effectiveProperties.getOrDefault(CONF_IGNORE_ERROR_AT_SESSION_END, Boolean.FALSE.toString()));
+                this.enabled = enabled == null
+                        ? Boolean.parseBoolean(effectiveProperties.getOrDefault(CONF_ENABLED, Boolean.TRUE.toString()))
+                        : enabled;
+                this.ignoreErrorAtSessionEnd = ignoreErrorAtSessionEnd == null
+                        ? Boolean.parseBoolean(effectiveProperties.getOrDefault(
+                                CONF_IGNORE_ERROR_AT_SESSION_END, Boolean.FALSE.toString()))
+                        : ignoreErrorAtSessionEnd;
 
                 this.localHostHint = effectiveProperties.get(CONF_LOCAL_HOST_HINT);
                 this.repositorySystemSession = repositorySystemSession;

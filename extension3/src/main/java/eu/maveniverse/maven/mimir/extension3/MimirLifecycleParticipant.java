@@ -7,7 +7,7 @@
  */
 package eu.maveniverse.maven.mimir.extension3;
 
-import eu.maveniverse.maven.mimir.node.daemon.DaemonConfig;
+import eu.maveniverse.maven.mimir.node.daemon.DaemonNodeConfig;
 import eu.maveniverse.maven.mimir.shared.MimirUtils;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.MavenExecutionException;
@@ -46,13 +45,12 @@ import org.slf4j.LoggerFactory;
 public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final RepositorySystem repositorySystem;
-    private final Provider<SessionFactory> sessionFactoryProvider;
+    private final SessionFactory sessionFactory;
 
     @Inject
-    public MimirLifecycleParticipant(
-            RepositorySystem repositorySystem, Provider<SessionFactory> sessionFactoryProvider) {
+    public MimirLifecycleParticipant(RepositorySystem repositorySystem, SessionFactory sessionFactory) {
         this.repositorySystem = repositorySystem;
-        this.sessionFactoryProvider = sessionFactoryProvider;
+        this.sessionFactory = sessionFactory;
     }
 
     @Override
@@ -74,7 +72,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
 
                 MimirUtils.lazyInit(session.getRepositorySession(), () -> {
                     try {
-                        return sessionFactoryProvider.get().createSession(sessionConfig);
+                        return sessionFactory.createSession(sessionConfig);
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -112,19 +110,19 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
 
     private void mayResolveDaemonArtifact(
             SessionConfig sessionConfig, RepositorySystemSession session, List<RemoteRepository> remoteRepositories) {
-        DaemonConfig daemonConfig = DaemonConfig.with(sessionConfig);
-        if (!daemonConfig.autostart()) {
+        DaemonNodeConfig daemonNodeConfig = DaemonNodeConfig.with(sessionConfig);
+        if (!daemonNodeConfig.autostart()) {
             logger.debug("Not resolving Mimir daemon; autostart not enabled or version not detected");
             return;
         }
-        if (!Files.exists(daemonConfig.daemonJar())) {
+        if (!Files.exists(daemonNodeConfig.daemonJar())) {
             try {
                 logger.info("Resolving Mimir daemon version {}", sessionConfig.mimirVersion());
-                ArtifactRequest artifactRequest =
-                        new ArtifactRequest(new DefaultArtifact(daemonConfig.daemonGav()), remoteRepositories, "mimir");
+                ArtifactRequest artifactRequest = new ArtifactRequest(
+                        new DefaultArtifact(daemonNodeConfig.daemonGav()), remoteRepositories, "mimir");
                 ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, artifactRequest);
-                Files.createDirectories(daemonConfig.daemonJar().getParent());
-                FileUtils.copy(artifactResult.getArtifact().getFile().toPath(), daemonConfig.daemonJar());
+                Files.createDirectories(daemonNodeConfig.daemonJar().getParent());
+                FileUtils.copy(artifactResult.getArtifact().getFile().toPath(), daemonNodeConfig.daemonJar());
             } catch (Exception e) {
                 if (logger.isDebugEnabled()) {
                     logger.warn("Failed to resolve daemon:", e);
@@ -137,8 +135,8 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
 
     private void mayCheckForUpdates(
             SessionConfig sessionConfig, RepositorySystemSession session, List<RemoteRepository> remoteRepositories) {
-        DaemonConfig daemonConfig = DaemonConfig.with(sessionConfig);
-        if (!daemonConfig.autoupdate()) {
+        DaemonNodeConfig daemonNodeConfig = DaemonNodeConfig.with(sessionConfig);
+        if (!daemonNodeConfig.autoupdate()) {
             logger.debug("Not checking for Mimir updates; not enabled or version not detected");
             return;
         }
@@ -146,7 +144,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
             String mimirVersion = sessionConfig.mimirVersion();
             logger.debug("Checking for Mimir updates...");
             VersionRangeRequest versionRangeRequest = new VersionRangeRequest(
-                    new DefaultArtifact(daemonConfig.daemonGav()).setVersion("[" + mimirVersion + ",)"),
+                    new DefaultArtifact(daemonNodeConfig.daemonGav()).setVersion("[" + mimirVersion + ",)"),
                     remoteRepositories,
                     "mimir");
             VersionRangeResult rangeResult = repositorySystem.resolveVersionRange(session, versionRangeRequest);

@@ -22,8 +22,11 @@ import eu.maveniverse.maven.mima.runtime.shared.PreBoot;
 import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
 import eu.maveniverse.maven.mimir.daemon.protocol.Request;
 import eu.maveniverse.maven.mimir.daemon.protocol.Session;
+import eu.maveniverse.maven.mimir.shared.MimirUtils;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
+import eu.maveniverse.maven.mimir.shared.SessionFactory;
 import eu.maveniverse.maven.mimir.shared.impl.Executors;
+import eu.maveniverse.maven.mimir.shared.impl.ParseUtils;
 import eu.maveniverse.maven.mimir.shared.impl.node.CachingSystemNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
@@ -34,10 +37,12 @@ import eu.maveniverse.maven.shared.core.fs.DirectoryLocker;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -45,12 +50,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.collection.CollectRequest;
+import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.DependencyRequest;
+import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 import org.eclipse.sisu.space.BeanScanning;
 import org.eclipse.sisu.space.SpaceModule;
@@ -70,12 +82,12 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
     public static void main(String[] args) {
         try {
             SessionConfig sessionConfig = SessionConfig.daemonDefaults().build();
-
             DaemonConfig daemonConfig = DaemonConfig.with(sessionConfig);
             Daemon daemon = Guice.createInjector(new WireModule(
                             new AbstractModule() {
                                 @Override
                                 protected void configure() {
+                                    bind(SessionConfig.class).toInstance(sessionConfig);
                                     bind(DaemonConfig.class).toInstance(daemonConfig);
                                     bind(PreBoot.class)
                                             .toInstance(new PreBoot(
@@ -89,7 +101,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                                 }
                             },
                             new SpaceModule(
-                                    new URLClassSpace(Daemon.class.getClassLoader()), BeanScanning.INDEX, true)))
+                                    new URLClassSpace(Daemon.class.getClassLoader()), BeanScanning.INDEX, false)))
                     .getInstance(Daemon.class);
 
             java.lang.Runtime.getRuntime().addShutdownHook(new Thread(daemon::shutdown));
@@ -121,18 +133,22 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
     }
 
     private final ExecutorService executor;
+    private final SessionFactory sessionFactory;
     private final SystemNode systemNode;
     private final List<RemoteNode> remoteNodes;
     private final Handle.ServerHandle serverHandle;
 
     @Inject
     public Daemon(
+            SessionConfig sessionConfig,
             DaemonConfig daemonConfig,
+            SessionFactory sessionFactory,
             SystemNode systemNode,
             Map<String, RemoteNodeFactory<?>> remoteNodeFactories,
             Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories)
             throws IOException {
         super(daemonConfig);
+        this.sessionFactory = requireNonNull(sessionFactory, "sessionFactory");
         this.systemNode = requireNonNull(systemNode, "systemNode");
         requireNonNull(remoteNodeFactories, "remoteNodeFactories");
 
@@ -161,12 +177,105 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         logger.info("  Socket: {}", socketPath);
         logger.info("  System Node: {}", systemNode);
         logger.info("  Using checksums: {}", systemNode.checksumAlgorithms());
-        logger.info("  {} remote node(s):", remoteNodes.size());
-        for (RemoteNode node : this.remoteNodes) {
-            logger.info("    {}", node);
+        if (remoteNodes.isEmpty()) {
+            logger.info("  No remote node(s) configured");
+        } else {
+            logger.info("  {} remote node(s):", remoteNodes.size());
+            for (RemoteNode node : this.remoteNodes) {
+                logger.info("    {}", node);
+            }
         }
 
-        dumpMima();
+        withResolver(this::dumpMima);
+
+        if (daemonConfig.preSeedItself() || !daemonConfig.preSeedArtifacts().isEmpty()) {
+            withResolver((s, c) -> {
+                logger.info(
+                        "Pre-seeding (LRM: {}; cache: {})",
+                        c.repositorySystemSession().getLocalRepository().getBasedir(),
+                        systemNode);
+                try {
+                    // redirect session localNode to our systemNode
+                    Map<String, String> userProperties = new HashMap<>(sessionConfig.userProperties());
+                    userProperties.put("mimir.session.localNode", systemNode.name());
+                    SessionConfig sc = sessionConfig.toBuilder()
+                            .userProperties(userProperties)
+                            .repositorySystemSession(c.repositorySystemSession())
+                            .build();
+                    try (eu.maveniverse.maven.mimir.shared.Session mimirSession =
+                            MimirUtils.lazyInit(c.repositorySystemSession(), () -> {
+                                try {
+                                    return sessionFactory.createSession(sc);
+                                } catch (IOException e) {
+                                    throw new UncheckedIOException(e);
+                                }
+                            })) {
+                        CollectRequest cr;
+                        DependencyResult dr;
+                        if (daemonConfig.preSeedItself()) {
+                            // extension
+                            cr = new CollectRequest(
+                                    new Dependency(
+                                            new DefaultArtifact(
+                                                    "eu.maveniverse.maven.mimir:extension3:" + sc.mimirVersion()),
+                                            ""),
+                                    Collections.singletonList(ParseUtils.CENTRAL));
+                            cr.setRequestContext("mimir-daemon");
+                            dr = c.repositorySystem()
+                                    .resolveDependencies(c.repositorySystemSession(), new DependencyRequest(cr, null));
+                            logger.info(
+                                    "Pre-seeded Mimir extension ({}) from Maven Central ({} artifacts)",
+                                    cr.getRoot().getArtifact(),
+                                    dr.getArtifactResults().size());
+                            for (ArtifactResult ar : dr.getArtifactResults()) {
+                                logger.debug("  - {}", ar.getArtifact());
+                            }
+
+                            // daemon
+                            // TODO: GAV! DaemonNodeConfig!
+                            cr = new CollectRequest(
+                                    new Dependency(
+                                            new DefaultArtifact("eu.maveniverse.maven.mimir:daemon:jar:daemon:"
+                                                    + sc.mimirVersion()),
+                                            ""),
+                                    Collections.singletonList(ParseUtils.CENTRAL));
+                            cr.setRequestContext("mimir-daemon");
+                            dr = c.repositorySystem()
+                                    .resolveDependencies(c.repositorySystemSession(), new DependencyRequest(cr, null));
+                            logger.info(
+                                    "Pre-seeded Mimir daemon ({}) from Maven Central ({} artifacts)",
+                                    cr.getRoot().getArtifact(),
+                                    dr.getArtifactResults().size());
+                            for (ArtifactResult ar : dr.getArtifactResults()) {
+                                logger.debug("  - {}", ar.getArtifact());
+                            }
+                        }
+                        for (ParseUtils.ArtifactSource source : daemonConfig.preSeedArtifacts()) {
+                            if (source.artifact().getFile() != null) {
+                                throw new IllegalArgumentException("Pre-seed cannot use pre-resolved artifact/file "
+                                        + source.artifact().getFile());
+                            }
+                            cr = new CollectRequest(
+                                    new Dependency(source.artifact(), ""),
+                                    Collections.singletonList(source.remoteRepository()));
+                            cr.setRequestContext("mimir-daemon");
+                            dr = c.repositorySystem()
+                                    .resolveDependencies(c.repositorySystemSession(), new DependencyRequest(cr, null));
+                            logger.info(
+                                    "Pre-seeded {} from {} ({} artifacts)",
+                                    source.artifact(),
+                                    source.remoteRepository(),
+                                    dr.getArtifactResults().size());
+                            for (ArtifactResult ar : dr.getArtifactResults()) {
+                                logger.debug("  - {}", ar.getArtifact());
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.warn("Pre-seeding failed", e);
+                }
+            });
+        }
 
         HashMap<String, String> daemonData = new HashMap<>();
         daemonData.put(Session.DAEMON_PID, Long.toString(ProcessHandle.current().pid()));
@@ -231,55 +340,56 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         }
     }
 
-    protected void dumpMima() {
+    protected void withResolver(BiConsumer<Runtime, Context> resolver) {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context =
                 runtime.create(ContextOverrides.create().withUserSettings(true).build())) {
-            logger.info("  Embeds MIMA Runtime '{}' version {}", runtime.name(), runtime.version());
-            if (logger.isDebugEnabled()) {
-                logger.info("MIMA dump:");
-                logger.info("");
-                logger.info("          Maven version {}", runtime.mavenVersion());
-                logger.info("                Managed {}", runtime.managedRepositorySystem());
-                logger.info("                Basedir {}", context.basedir());
-                logger.info(
-                        "                Offline {}",
-                        context.repositorySystemSession().isOffline());
+            resolver.accept(runtime, context);
+        }
+    }
 
-                MavenSystemHome mavenSystemHome = context.mavenSystemHome();
-                logger.info("");
-                logger.info(
-                        "             MAVEN_HOME {}",
-                        mavenSystemHome == null ? "undefined" : mavenSystemHome.basedir());
-                if (mavenSystemHome != null) {
-                    logger.info("           settings.xml {}", mavenSystemHome.settingsXml());
-                    logger.info("         toolchains.xml {}", mavenSystemHome.toolchainsXml());
-                }
+    protected void dumpMima(Runtime runtime, Context context) {
+        logger.info("  Embeds MIMA Runtime '{}' version {}", runtime.name(), runtime.version());
+        if (logger.isDebugEnabled()) {
+            logger.info("MIMA dump:");
+            logger.info("");
+            logger.info("          Maven version {}", runtime.mavenVersion());
+            logger.info("                Managed {}", runtime.managedRepositorySystem());
+            logger.info("                Basedir {}", context.basedir());
+            logger.info(
+                    "                Offline {}",
+                    context.repositorySystemSession().isOffline());
 
-                MavenUserHome mavenUserHome = context.mavenUserHome();
-                logger.info("");
-                logger.info("              USER_HOME {}", mavenUserHome.basedir());
-                logger.info("           settings.xml {}", mavenUserHome.settingsXml());
-                logger.info("  settings-security.xml {}", mavenUserHome.settingsSecurityXml());
-                logger.info("       local repository {}", mavenUserHome.localRepository());
+            MavenSystemHome mavenSystemHome = context.mavenSystemHome();
+            logger.info("");
+            logger.info(
+                    "             MAVEN_HOME {}", mavenSystemHome == null ? "undefined" : mavenSystemHome.basedir());
+            if (mavenSystemHome != null) {
+                logger.info("           settings.xml {}", mavenSystemHome.settingsXml());
+                logger.info("         toolchains.xml {}", mavenSystemHome.toolchainsXml());
+            }
 
-                logger.info("");
-                logger.info("               PROFILES");
-                logger.info(
-                        "                 Active {}", context.contextOverrides().getActiveProfileIds());
-                logger.info(
-                        "               Inactive {}", context.contextOverrides().getInactiveProfileIds());
+            MavenUserHome mavenUserHome = context.mavenUserHome();
+            logger.info("");
+            logger.info("              USER_HOME {}", mavenUserHome.basedir());
+            logger.info("           settings.xml {}", mavenUserHome.settingsXml());
+            logger.info("  settings-security.xml {}", mavenUserHome.settingsSecurityXml());
+            logger.info("       local repository {}", mavenUserHome.localRepository());
 
-                logger.info("");
-                logger.info("    REMOTE REPOSITORIES");
-                for (RemoteRepository repository : context.remoteRepositories()) {
-                    if (repository.getMirroredRepositories().isEmpty()) {
-                        logger.info("                        {}", repository);
-                    } else {
-                        logger.info("                        {}, mirror of", repository);
-                        for (RemoteRepository mirrored : repository.getMirroredRepositories()) {
-                            logger.info("                          {}", mirrored);
-                        }
+            logger.info("");
+            logger.info("               PROFILES");
+            logger.info("                 Active {}", context.contextOverrides().getActiveProfileIds());
+            logger.info("               Inactive {}", context.contextOverrides().getInactiveProfileIds());
+
+            logger.info("");
+            logger.info("    REMOTE REPOSITORIES");
+            for (RemoteRepository repository : context.remoteRepositories()) {
+                if (repository.getMirroredRepositories().isEmpty()) {
+                    logger.info("                        {}", repository);
+                } else {
+                    logger.info("                        {}, mirror of", repository);
+                    for (RemoteRepository mirrored : repository.getMirroredRepositories()) {
+                        logger.info("                          {}", mirrored);
                     }
                 }
             }
