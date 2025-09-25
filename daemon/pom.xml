@@ -28,6 +28,16 @@
     </dependency>
     <dependency>
       <groupId>eu.maveniverse.maven.mimir</groupId>
+      <artifactId>extension3</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mimir</groupId>
       <artifactId>daemon-protocol</artifactId>
     </dependency>
     <dependency>

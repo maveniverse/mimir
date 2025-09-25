@@ -89,6 +89,11 @@
       </dependency>
       <dependency>
         <groupId>eu.maveniverse.maven.mimir</groupId>
+        <artifactId>extension3</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.mimir</groupId>
         <artifactId>daemon-protocol</artifactId>
         <version>${project.version}</version>
       </dependency>

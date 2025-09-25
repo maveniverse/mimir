@@ -70,12 +70,12 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
     public static void main(String[] args) {
         try {
             SessionConfig sessionConfig = SessionConfig.daemonDefaults().build();
-
             DaemonConfig daemonConfig = DaemonConfig.with(sessionConfig);
             Daemon daemon = Guice.createInjector(new WireModule(
                             new AbstractModule() {
                                 @Override
                                 protected void configure() {
+                                    bind(SessionConfig.class).toInstance(sessionConfig);
                                     bind(DaemonConfig.class).toInstance(daemonConfig);
                                     bind(PreBoot.class)
                                             .toInstance(new PreBoot(
@@ -89,7 +89,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                                 }
                             },
                             new SpaceModule(
-                                    new URLClassSpace(Daemon.class.getClassLoader()), BeanScanning.INDEX, true)))
+                                    new URLClassSpace(Daemon.class.getClassLoader()), BeanScanning.INDEX, false)))
                     .getInstance(Daemon.class);
 
             java.lang.Runtime.getRuntime().addShutdownHook(new Thread(daemon::shutdown));
