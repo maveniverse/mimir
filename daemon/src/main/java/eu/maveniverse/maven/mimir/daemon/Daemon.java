@@ -210,18 +210,40 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                                     throw new UncheckedIOException(e);
                                 }
                             })) {
+                        CollectRequest cr;
+                        DependencyResult dr;
                         if (daemonConfig.preSeedItself()) {
-                            CollectRequest cr = new CollectRequest(
+                            // extension
+                            cr = new CollectRequest(
                                     new Dependency(
                                             new DefaultArtifact(
                                                     "eu.maveniverse.maven.mimir:extension3:" + sc.mimirVersion()),
                                             ""),
                                     Collections.singletonList(ParseUtils.CENTRAL));
                             cr.setRequestContext("mimir-daemon");
-                            DependencyResult dr = c.repositorySystem()
+                            dr = c.repositorySystem()
                                     .resolveDependencies(c.repositorySystemSession(), new DependencyRequest(cr, null));
                             logger.info(
                                     "Pre-seeded Mimir extension ({}) from Maven Central ({} artifacts)",
+                                    cr.getRoot().getArtifact(),
+                                    dr.getArtifactResults().size());
+                            for (ArtifactResult ar : dr.getArtifactResults()) {
+                                logger.debug("  - {}", ar.getArtifact());
+                            }
+
+                            // daemon
+                            // TODO: GAV! DaemonNodeConfig!
+                            cr = new CollectRequest(
+                                    new Dependency(
+                                            new DefaultArtifact("eu.maveniverse.maven.mimir:daemon:jar:daemon:"
+                                                    + sc.mimirVersion()),
+                                            ""),
+                                    Collections.singletonList(ParseUtils.CENTRAL));
+                            cr.setRequestContext("mimir-daemon");
+                            dr = c.repositorySystem()
+                                    .resolveDependencies(c.repositorySystemSession(), new DependencyRequest(cr, null));
+                            logger.info(
+                                    "Pre-seeded Mimir daemon ({}) from Maven Central ({} artifacts)",
                                     cr.getRoot().getArtifact(),
                                     dr.getArtifactResults().size());
                             for (ArtifactResult ar : dr.getArtifactResults()) {
@@ -233,11 +255,11 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                                 throw new IllegalArgumentException("Pre-seed cannot use pre-resolved artifact/file "
                                         + source.artifact().getFile());
                             }
-                            CollectRequest cr = new CollectRequest(
+                            cr = new CollectRequest(
                                     new Dependency(source.artifact(), ""),
                                     Collections.singletonList(source.remoteRepository()));
                             cr.setRequestContext("mimir-daemon");
-                            DependencyResult dr = c.repositorySystem()
+                            dr = c.repositorySystem()
                                     .resolveDependencies(c.repositorySystemSession(), new DependencyRequest(cr, null));
                             logger.info(
                                     "Pre-seeded {} from {} ({} artifacts)",
