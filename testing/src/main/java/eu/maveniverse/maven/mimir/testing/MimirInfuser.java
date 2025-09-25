@@ -18,11 +18,12 @@ import java.nio.file.StandardCopyOption;
  * Class that sets up Mimir for embedded and chroot-ed maven executing tests; IF outer build uses Mimir as well
  * (like CI setup).
  * <p>
- * Using this class with transparently use outer build used Mimir daemon, contributing whatever it needs to cache, and
+ * Using this class will transparently use outer build used Mimir daemon, contributing whatever it needs to cache, and
  * enjoying caching benefits.
  * <p>
  * Note: this class expects that current property {@code user.home} be the "real" user home (so invocation must happen
- * outside), and that the passed in path to be the chroot-ed user home.
+ * outside), and that the passed in path to be the chroot-ed user home. Also, it expects Mimir in default location.
+ * Feel free to copy-paste this class if any customization is needed.
  */
 public final class MimirInfuser {
     public static void infuse(Path chrootUserHome) throws IOException {
