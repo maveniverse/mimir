@@ -40,6 +40,7 @@
     <module>node</module>
     <module>daemon</module>
     <module>extension3</module>
+    <module>testing</module>
     <module>it</module>
   </modules>
 
