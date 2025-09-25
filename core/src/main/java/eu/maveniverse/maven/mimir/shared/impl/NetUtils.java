@@ -7,47 +7,14 @@
  */
 package eu.maveniverse.maven.mimir.shared.impl;
 
-import eu.maveniverse.maven.mimir.shared.node.Entry;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Predicate;
 
-public final class Utils {
-    private Utils() {}
-
-    private static final String METADATA_PREFIX = "m.";
-    private static final String CHECKSUM_PREFIX = "c.";
-
-    public static Map<String, String> mergeEntry(Entry entry) {
-        return mergeEntry(entry.metadata(), entry.checksums());
-    }
-
-    public static Map<String, String> mergeEntry(Map<String, String> metadata, Map<String, String> checksums) {
-        HashMap<String, String> merged = new HashMap<>();
-        metadata.forEach((k, v) -> merged.put(METADATA_PREFIX + k, v));
-        checksums.forEach((k, v) -> merged.put(CHECKSUM_PREFIX + k, v));
-        return merged;
-    }
-
-    private static Map<String, String> split(Map<String, String> merged, String prefix) {
-        HashMap<String, String> result = new HashMap<>();
-        merged.entrySet().stream()
-                .filter(e -> e.getKey().startsWith(prefix))
-                .forEach(e -> result.put(e.getKey().substring(prefix.length()), e.getValue()));
-        return result;
-    }
-
-    public static Map<String, String> splitMetadata(Map<String, String> merged) {
-        return split(merged, METADATA_PREFIX);
-    }
-
-    public static Map<String, String> splitChecksums(Map<String, String> merged) {
-        return split(merged, CHECKSUM_PREFIX);
-    }
+public final class NetUtils {
+    private NetUtils() {}
 
     /**
      * Copied from <a href="https://gist.github.com/vorburger/d64a0463da7391afa2d3eba610915178">https://gist.github.com/vorburger/d64a0463da7391afa2d3eba610915178</a>

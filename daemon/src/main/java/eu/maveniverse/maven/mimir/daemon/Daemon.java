@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -161,12 +162,16 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         logger.info("  Socket: {}", socketPath);
         logger.info("  System Node: {}", systemNode);
         logger.info("  Using checksums: {}", systemNode.checksumAlgorithms());
-        logger.info("  {} remote node(s):", remoteNodes.size());
-        for (RemoteNode node : this.remoteNodes) {
-            logger.info("    {}", node);
+        if (remoteNodes.isEmpty()) {
+            logger.info("  No remote node(s) configured");
+        } else {
+            logger.info("  {} remote node(s):", remoteNodes.size());
+            for (RemoteNode node : this.remoteNodes) {
+                logger.info("    {}", node);
+            }
         }
 
-        dumpMima();
+        withResolver(this::dumpMima);
 
         HashMap<String, String> daemonData = new HashMap<>();
         daemonData.put(Session.DAEMON_PID, Long.toString(ProcessHandle.current().pid()));
@@ -231,55 +236,56 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         }
     }
 
-    protected void dumpMima() {
+    protected void withResolver(BiConsumer<Runtime, Context> resolver) {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context =
                 runtime.create(ContextOverrides.create().withUserSettings(true).build())) {
-            logger.info("  Embeds MIMA Runtime '{}' version {}", runtime.name(), runtime.version());
-            if (logger.isDebugEnabled()) {
-                logger.info("MIMA dump:");
-                logger.info("");
-                logger.info("          Maven version {}", runtime.mavenVersion());
-                logger.info("                Managed {}", runtime.managedRepositorySystem());
-                logger.info("                Basedir {}", context.basedir());
-                logger.info(
-                        "                Offline {}",
-                        context.repositorySystemSession().isOffline());
+            resolver.accept(runtime, context);
+        }
+    }
 
-                MavenSystemHome mavenSystemHome = context.mavenSystemHome();
-                logger.info("");
-                logger.info(
-                        "             MAVEN_HOME {}",
-                        mavenSystemHome == null ? "undefined" : mavenSystemHome.basedir());
-                if (mavenSystemHome != null) {
-                    logger.info("           settings.xml {}", mavenSystemHome.settingsXml());
-                    logger.info("         toolchains.xml {}", mavenSystemHome.toolchainsXml());
-                }
+    protected void dumpMima(Runtime runtime, Context context) {
+        logger.info("  Embeds MIMA Runtime '{}' version {}", runtime.name(), runtime.version());
+        if (logger.isDebugEnabled()) {
+            logger.info("MIMA dump:");
+            logger.info("");
+            logger.info("          Maven version {}", runtime.mavenVersion());
+            logger.info("                Managed {}", runtime.managedRepositorySystem());
+            logger.info("                Basedir {}", context.basedir());
+            logger.info(
+                    "                Offline {}",
+                    context.repositorySystemSession().isOffline());
 
-                MavenUserHome mavenUserHome = context.mavenUserHome();
-                logger.info("");
-                logger.info("              USER_HOME {}", mavenUserHome.basedir());
-                logger.info("           settings.xml {}", mavenUserHome.settingsXml());
-                logger.info("  settings-security.xml {}", mavenUserHome.settingsSecurityXml());
-                logger.info("       local repository {}", mavenUserHome.localRepository());
+            MavenSystemHome mavenSystemHome = context.mavenSystemHome();
+            logger.info("");
+            logger.info(
+                    "             MAVEN_HOME {}", mavenSystemHome == null ? "undefined" : mavenSystemHome.basedir());
+            if (mavenSystemHome != null) {
+                logger.info("           settings.xml {}", mavenSystemHome.settingsXml());
+                logger.info("         toolchains.xml {}", mavenSystemHome.toolchainsXml());
+            }
 
-                logger.info("");
-                logger.info("               PROFILES");
-                logger.info(
-                        "                 Active {}", context.contextOverrides().getActiveProfileIds());
-                logger.info(
-                        "               Inactive {}", context.contextOverrides().getInactiveProfileIds());
+            MavenUserHome mavenUserHome = context.mavenUserHome();
+            logger.info("");
+            logger.info("              USER_HOME {}", mavenUserHome.basedir());
+            logger.info("           settings.xml {}", mavenUserHome.settingsXml());
+            logger.info("  settings-security.xml {}", mavenUserHome.settingsSecurityXml());
+            logger.info("       local repository {}", mavenUserHome.localRepository());
 
-                logger.info("");
-                logger.info("    REMOTE REPOSITORIES");
-                for (RemoteRepository repository : context.remoteRepositories()) {
-                    if (repository.getMirroredRepositories().isEmpty()) {
-                        logger.info("                        {}", repository);
-                    } else {
-                        logger.info("                        {}, mirror of", repository);
-                        for (RemoteRepository mirrored : repository.getMirroredRepositories()) {
-                            logger.info("                          {}", mirrored);
-                        }
+            logger.info("");
+            logger.info("               PROFILES");
+            logger.info("                 Active {}", context.contextOverrides().getActiveProfileIds());
+            logger.info("               Inactive {}", context.contextOverrides().getInactiveProfileIds());
+
+            logger.info("");
+            logger.info("    REMOTE REPOSITORIES");
+            for (RemoteRepository repository : context.remoteRepositories()) {
+                if (repository.getMirroredRepositories().isEmpty()) {
+                    logger.info("                        {}", repository);
+                } else {
+                    logger.info("                        {}, mirror of", repository);
+                    for (RemoteRepository mirrored : repository.getMirroredRepositories()) {
+                        logger.info("                          {}", mirrored);
                     }
                 }
             }

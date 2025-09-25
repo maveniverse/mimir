@@ -13,9 +13,9 @@ import static eu.maveniverse.maven.mimir.daemon.protocol.Request.CMD_LOCATE;
 import static eu.maveniverse.maven.mimir.daemon.protocol.Request.CMD_LS_CHECKSUMS;
 import static eu.maveniverse.maven.mimir.daemon.protocol.Request.CMD_STORE_PATH;
 import static eu.maveniverse.maven.mimir.daemon.protocol.Request.CMD_TRANSFER;
-import static eu.maveniverse.maven.mimir.shared.impl.Utils.mergeEntry;
-import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitChecksums;
-import static eu.maveniverse.maven.mimir.shared.impl.Utils.splitMetadata;
+import static eu.maveniverse.maven.mimir.shared.impl.EntryUtils.mergeEntry;
+import static eu.maveniverse.maven.mimir.shared.impl.EntryUtils.splitChecksums;
+import static eu.maveniverse.maven.mimir.shared.impl.EntryUtils.splitMetadata;
 
 import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
 import eu.maveniverse.maven.mimir.daemon.protocol.ImmutableResponse;

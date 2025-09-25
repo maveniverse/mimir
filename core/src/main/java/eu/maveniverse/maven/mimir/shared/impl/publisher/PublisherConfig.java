@@ -10,15 +10,15 @@ package eu.maveniverse.maven.mimir.shared.impl.publisher;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
-import eu.maveniverse.maven.mimir.shared.impl.Utils;
+import eu.maveniverse.maven.mimir.shared.impl.NetUtils;
 import java.io.IOException;
 
 public class PublisherConfig {
     public static PublisherConfig with(SessionConfig sessionConfig) throws IOException {
         requireNonNull(sessionConfig);
 
-        String hostAddress =
-                Utils.getLocalHost(sessionConfig.localHostHint().orElse(null)).getHostAddress();
+        String hostAddress = NetUtils.getLocalHost(sessionConfig.localHostHint().orElse(null))
+                .getHostAddress();
         int hostPort = 0;
 
         if (sessionConfig.effectiveProperties().containsKey("mimir.publisher.hostAddress")) {
