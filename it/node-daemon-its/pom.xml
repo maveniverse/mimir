@@ -21,10 +21,6 @@
 
   <name>${project.groupId}:${project.artifactId}</name>
 
-  <properties>
-    <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>eu.maveniverse.maven.mimir.node</groupId>
@@ -84,7 +80,7 @@
                 </goals>
                 <configuration>
                   <forkCount>1</forkCount>
-                  <argLine>-Djava.io.tmpdir=${java.io.tmpdir}</argLine>
+                  <argLine>-Djava.io.tmpdir=${project.build.directory} -Dreal.java.io.tmpdir=${java.io.tmpdir}</argLine>
                   <systemPropertyVariables>
                     <daemon.jar.path>${project.build.directory}/dependency/daemon-daemon.jar</daemon.jar.path>
                   </systemPropertyVariables>
