@@ -41,7 +41,8 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
                         logger.info("Mimir daemon started (pid={})", daemon.pid());
                     } else {
                         unlock(cfg.daemonLockDir());
-                        throw new IOException("Mimir daemon does not run and autostart is disabled; start daemon manually");
+                        throw new IOException(
+                                "Mimir daemon does not run and autostart is disabled; start daemon manually");
                     }
                 } else {
                     // daemon may be running; but nobody is trying to start it
