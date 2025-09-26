@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -83,6 +82,14 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         try {
             SessionConfig sessionConfig = SessionConfig.daemonDefaults().build();
             DaemonConfig daemonConfig = DaemonConfig.with(sessionConfig);
+
+            // lock exclusively (and early) the basedir; if other daemon tries to run here it will fail
+            Files.createDirectories(daemonConfig.daemonLockDir());
+            DirectoryLocker.INSTANCE.lockDirectory(daemonConfig.daemonLockDir(), true);
+
+            // clear up possible remnants; stale socket path
+            Files.deleteIfExists(daemonConfig.socketPath());
+
             Daemon daemon = Guice.createInjector(new WireModule(
                             new AbstractModule() {
                                 @Override
@@ -161,20 +168,12 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         this.remoteNodes = List.copyOf(nds);
         this.executor = Executors.executorService();
 
-        // lock exclusively the basedir; if other daemon tries to run here will fail
-        Files.createDirectories(config.daemonLockDir());
-        DirectoryLocker.INSTANCE.lockDirectory(config.daemonLockDir(), true);
-
-        Path socketPath = daemonConfig.socketPath();
-        Files.deleteIfExists(socketPath);
-        this.serverHandle = Handle.serverDomainSocket(socketPath);
-
         logger.info("Mimir Daemon {} started", config.config().mimirVersion());
         logger.info("  PID: {}", ProcessHandle.current().pid());
         logger.info("  Basedir: {}", config.config().basedir());
         logger.info("  Properties: {}", config.config().propertiesPath());
         logger.info("  Supported checksums: {}", checksumAlgorithmFactories.keySet());
-        logger.info("  Socket: {}", socketPath);
+        logger.info("  Socket: {}", daemonConfig.socketPath());
         logger.info("  System Node: {}", systemNode);
         logger.info("  Using checksums: {}", systemNode.checksumAlgorithms());
         if (remoteNodes.isEmpty()) {
@@ -284,7 +283,9 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         Predicate<Request> clientPredicate =
                 req -> Objects.equals(req.requireData(Session.NODE_VERSION), daemonData.get(Session.DAEMON_VERSION));
 
-        try {
+        // open the UDS; daemon is ready
+        this.serverHandle = Handle.serverDomainSocket(daemonConfig.socketPath());
+        try (this.serverHandle) {
             while (serverHandle.isOpen()) {
                 Handle handle = serverHandle.accept();
                 executor.submit(new DaemonServer(
@@ -298,6 +299,13 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
             // we are done
         } catch (Exception e) {
             logger.error("Error while accepting client connection", e);
+        } finally {
+            try {
+                Files.deleteIfExists(daemonConfig.socketPath());
+            } finally {
+                DirectoryLocker.INSTANCE.unlockDirectory(config.daemonLockDir());
+            }
+            logger.info("Daemon stopped");
         }
     }
 
@@ -310,33 +318,28 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
     }
 
     @Override
-    protected void doClose() throws IOException {
+    protected void doClose() {
         try {
+            serverHandle.close();
+        } catch (Exception e) {
+            logger.warn("Error closing server socket channel", e);
+        }
+        try {
+            executor.shutdown();
+        } catch (Exception e) {
+            logger.warn("Error closing executor", e);
+        }
+        for (RemoteNode node : remoteNodes) {
             try {
-                serverHandle.close();
-            } catch (Exception e) {
-                logger.warn("Error closing server socket channel", e);
-            }
-            try {
-                executor.shutdown();
-            } catch (Exception e) {
-                logger.warn("Error closing executor", e);
-            }
-            for (RemoteNode node : remoteNodes) {
-                try {
-                    node.close();
-                } catch (IOException e) {
-                    logger.warn("Error closing node", e);
-                }
-            }
-            try {
-                systemNode.close();
+                node.close();
             } catch (IOException e) {
-                logger.warn("Error closing local node", e);
+                logger.warn("Error closing node", e);
             }
-        } finally {
-            DirectoryLocker.INSTANCE.unlockDirectory(config.daemonLockDir());
-            logger.info("Daemon stopped");
+        }
+        try {
+            systemNode.close();
+        } catch (IOException e) {
+            logger.warn("Error closing local node", e);
         }
     }
 
