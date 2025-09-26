@@ -84,15 +84,9 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
                     // we locked both exclusively; we control everything
                     if (cfg.autostart()) {
                         logger.debug("Mimir daemon is not running, starting it");
-                        // start daemon unlocks daemonLockDir
+                        // start daemon unlocks daemonLockDir; returns when socket available
                         Process daemon = startDaemon(cfg);
                         logger.info("Mimir daemon started (pid={})", daemon.pid());
-                        try {
-                            waitForSocket(cfg);
-                        } catch (IOException e) {
-                            daemon.destroy();
-                            throw e;
-                        }
                     } else {
                         locker.unlock(cfg.daemonLockDir());
                         throw new IOException(

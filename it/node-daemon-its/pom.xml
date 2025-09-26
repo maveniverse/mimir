@@ -21,6 +21,10 @@
 
   <name>${project.groupId}:${project.artifactId}</name>
 
+  <properties>
+    <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>eu.maveniverse.maven.mimir.node</groupId>
@@ -45,16 +49,6 @@
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>jcl-over-slf4j</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <profiles>
@@ -62,6 +56,23 @@
       <id>run-its</id>
       <build>
         <plugins>
+          <plugin>
+            <groupId>eu.maveniverse.maven.plugins</groupId>
+            <artifactId>toolbox</artifactId>
+            <executions>
+              <execution>
+                <id>prepare-daemon-jar</id>
+                <goals>
+                  <goal>gav-copy</goal>
+                </goals>
+                <phase>generate-test-resources</phase>
+                <configuration>
+                  <sourceSpec>resolve(gav(eu.maveniverse.maven.mimir:daemon:jar:daemon:${project.version}))</sourceSpec>
+                  <sinkSpec>flat(${project.build.directory}/dependency, ACE())</sinkSpec>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
@@ -71,6 +82,13 @@
                   <goal>integration-test</goal>
                   <goal>verify</goal>
                 </goals>
+                <configuration>
+                  <forkCount>1</forkCount>
+                  <argLine>-Djava.io.tmpdir=${java.io.tmpdir}</argLine>
+                  <systemPropertyVariables>
+                    <daemon.jar.path>${project.build.directory}/dependency/daemon-daemon.jar</daemon.jar.path>
+                  </systemPropertyVariables>
+                </configuration>
               </execution>
             </executions>
           </plugin>

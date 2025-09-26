@@ -10,10 +10,13 @@ package eu.maveniverse.maven.mimir.it.node.daemon;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.maveniverse.maven.mimir.node.daemon.DaemonNode;
+import eu.maveniverse.maven.mimir.node.daemon.DaemonNodeConfig;
 import eu.maveniverse.maven.mimir.node.daemon.DaemonNodeFactory;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Optional;
@@ -71,20 +74,42 @@ public class DaemonNodeFactoryIT {
     }
 
     @Test
-    void concurrentStart(@TempDir Path tempDir) throws IOException {
+    void concurrentStart(@TempDir Path tempDir) throws Exception {
+        Path baseDir = tempDir.resolve("mimir");
+        Files.createDirectories(baseDir);
+
+        SessionConfig sessionConfig = SessionConfig.daemonDefaults()
+                .basedir(baseDir)
+                .setUserProperty("mimir.daemon.passOnBasedir", "true")
+                .setUserProperty("mimir.daemon.debug", "false")
+                .build();
+
+        DaemonNodeConfig daemonNodeConfig = DaemonNodeConfig.with(sessionConfig);
+        Path daemonJar = daemonNodeConfig.daemonJar();
+        Path daemonLog = daemonNodeConfig.daemonLog();
+
+        // copy JAR to place; like it was resolved and copied there by extension3
+        Files.copy(
+                Path.of(System.getProperty("daemon.jar.path")),
+                daemonJar,
+                StandardCopyOption.REPLACE_EXISTING);
+
         TestLocker locker = new TestLocker();
         DaemonNodeFactory factory1 = new DaemonNodeFactory(locker);
         DaemonNodeFactory factory2 = new DaemonNodeFactory(locker);
         DaemonNodeFactory factory3 = new DaemonNodeFactory(locker);
 
-        SessionConfig sessionConfig =
-                SessionConfig.daemonDefaults().basedir(tempDir).build();
-        Optional<DaemonNode> daemonNode1 = factory1.createLocalNode(sessionConfig);
-        Optional<DaemonNode> daemonNode2 = factory2.createLocalNode(sessionConfig);
-        Optional<DaemonNode> daemonNode3 = factory3.createLocalNode(sessionConfig);
+        try {
+            Optional<DaemonNode> daemonNode1 = factory1.createLocalNode(sessionConfig);
+            Optional<DaemonNode> daemonNode2 = factory2.createLocalNode(sessionConfig);
+            Optional<DaemonNode> daemonNode3 = factory3.createLocalNode(sessionConfig);
 
-        assertTrue(daemonNode1.isPresent());
-        assertTrue(daemonNode2.isPresent());
-        assertTrue(daemonNode3.isPresent());
+            assertTrue(daemonNode1.isPresent());
+            assertTrue(daemonNode2.isPresent());
+            assertTrue(daemonNode3.isPresent());
+        } catch (Exception ex) {
+            System.out.println(Files.readAllLines(daemonLog));
+            throw ex;
+        }
     }
 }

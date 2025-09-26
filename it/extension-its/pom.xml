@@ -25,8 +25,6 @@
   <properties>
     <maven3Version>3.9.11</maven3Version>
     <maven4Version>4.0.0-rc-4</maven4Version>
-
-    <toolboxVersion>0.13.7</toolboxVersion>
   </properties>
 
   <dependencies>
@@ -57,7 +55,6 @@
           <plugin>
             <groupId>eu.maveniverse.maven.plugins</groupId>
             <artifactId>toolbox</artifactId>
-            <version>${toolboxVersion}</version>
             <executions>
               <execution>
                 <id>prepare-maven-distros</id>
