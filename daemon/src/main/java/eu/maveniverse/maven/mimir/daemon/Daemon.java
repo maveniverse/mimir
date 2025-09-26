@@ -300,8 +300,11 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         } catch (Exception e) {
             logger.error("Error while accepting client connection", e);
         } finally {
-            Files.deleteIfExists(daemonConfig.socketPath());
-            DirectoryLocker.INSTANCE.unlockDirectory(config.daemonLockDir());
+            try {
+                Files.deleteIfExists(daemonConfig.socketPath());
+            } finally {
+                DirectoryLocker.INSTANCE.unlockDirectory(config.daemonLockDir());
+            }
             logger.info("Daemon stopped");
         }
     }
