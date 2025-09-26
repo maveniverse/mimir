@@ -72,6 +72,8 @@ public class MimirInfuserTest {
         assertEquals("false", props.getProperty("mimir.daemon.autostart"));
         assertEquals("false", props.getProperty("mimir.daemon.autoupdate"));
 
-        assertEquals(EXTENSIONS_XML, Files.readString(newProjectBasedir.resolve(".mvn").resolve("extensions.xml")));
+        assertEquals(
+                EXTENSIONS_XML,
+                Files.readString(newProjectBasedir.resolve(".mvn").resolve("extensions.xml")));
     }
 }
