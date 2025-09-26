@@ -76,7 +76,7 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
      */
     private Process startDaemon(DaemonNodeConfig cfg) throws IOException {
         Path basedir = cfg.daemonBasedir();
-        if (Files.isRegularFile(cfg.daemonJar())) {
+        if (Files.isRegularFile(cfg.daemonJar()) && Files.isReadable(cfg.daemonJar())) {
             String java = cfg.daemonJavaHome()
                     .resolve("bin")
                     .resolve(
@@ -102,9 +102,25 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
             ProcessBuilder pb = new ProcessBuilder()
                     .directory(basedir.toFile())
                     .redirectOutput(cfg.daemonLog().toFile())
+                    .redirectError(
+                            ProcessBuilder.Redirect.appendTo(cfg.daemonLog().toFile()))
                     .command(command);
 
+            logger.debug("Starting daemon with command: {}", command);
+            logger.debug("Working directory: {}", basedir);
+            logger.debug("Log file: {}", cfg.daemonLog());
+            logger.debug("Socket path: {}", cfg.socketPath());
+
+            // Release lock before starting daemon so daemon can acquire it
             unlock(cfg);
+
+            // Give a small delay to ensure lock is properly released
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Interrupted while waiting to start daemon", e);
+            }
 
             Process p = pb.start();
             try {
@@ -120,7 +136,15 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
                 throw new IOException("Failed to start daemon; check daemon logs in " + cfg.daemonLog());
             }
         } else {
-            throw new IOException("Mimir daemon JAR not found");
+            if (!Files.exists(cfg.daemonJar())) {
+                throw new IOException("Mimir daemon JAR not found: " + cfg.daemonJar());
+            } else if (!Files.isRegularFile(cfg.daemonJar())) {
+                throw new IOException("Mimir daemon JAR is not a regular file: " + cfg.daemonJar());
+            } else if (!Files.isReadable(cfg.daemonJar())) {
+                throw new IOException("Mimir daemon JAR is not readable: " + cfg.daemonJar());
+            } else {
+                throw new IOException("Mimir daemon JAR cannot be used: " + cfg.daemonJar());
+            }
         }
     }
 
@@ -129,7 +153,18 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
      */
     private void mayDumpDaemonLog(Path daemonLog) throws IOException {
         if (Files.isRegularFile(daemonLog)) {
-            logger.error("Daemon log dump:\n{}", Files.readString(daemonLog));
+            try {
+                String logContent = Files.readString(daemonLog);
+                if (logContent.trim().isEmpty()) {
+                    logger.error("Daemon log file {} exists but is empty", daemonLog);
+                } else {
+                    logger.error("Daemon log dump from {}:\n{}", daemonLog, logContent);
+                }
+            } catch (IOException e) {
+                logger.error("Failed to read daemon log file {}: {}", daemonLog, e.getMessage());
+            }
+        } else {
+            logger.error("Daemon log file {} does not exist or is not a regular file", daemonLog);
         }
     }
 
@@ -163,23 +198,47 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
      */
     private void waitForSocket(DaemonNodeConfig cfg) throws IOException {
         Instant startingUntil = Instant.now().plus(cfg.autostartDuration());
-        logger.debug("Waiting for socket to become available until {}", startingUntil);
+        logger.debug("Waiting for socket {} to become available until {}", cfg.socketPath(), startingUntil);
+
+        int attempts = 0;
         try {
             while (!Files.exists(cfg.socketPath())) {
+                attempts++;
                 if (Instant.now().isAfter(startingUntil)) {
+                    logger.error(
+                            "Timeout waiting for daemon socket after {} attempts over {}",
+                            attempts,
+                            cfg.autostartDuration());
                     mayDumpDaemonLog(cfg.daemonLog());
-                    throw new IOException("Failed to start daemon in time " + cfg.autostartDuration()
-                            + "; check daemon logs in " + cfg.daemonLog());
+                    throw new IOException("Failed to start daemon in time " + cfg.autostartDuration() + " after "
+                            + attempts + " attempts; check daemon logs in " + cfg.daemonLog());
                 }
-                logger.debug("... waiting");
+
+                // Log progress every 10 seconds to help with debugging
+                if (attempts % 20 == 0) {
+                    logger.info(
+                            "Still waiting for daemon socket after {} attempts ({} seconds)...",
+                            attempts,
+                            attempts * 0.5);
+                }
+
+                logger.debug("... waiting (attempt {})", attempts);
                 Thread.sleep(500);
             }
         } catch (InterruptedException e) {
-            throw new IOException("Interrupted", e);
+            logger.warn("Interrupted while waiting for daemon socket after {} attempts", attempts);
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted while waiting for daemon socket", e);
         }
+
+        // Final check to ensure socket exists
         if (!Files.exists(cfg.socketPath())) {
+            logger.error("Socket check failed after wait loop completed");
             mayDumpDaemonLog(cfg.daemonLog());
-            throw new IOException("Failed to start daemon; check daemon logs in " + cfg.daemonLog());
+            throw new IOException(
+                    "Failed to start daemon; socket not found after waiting; check daemon logs in " + cfg.daemonLog());
         }
+
+        logger.debug("Socket {} is now available after {} attempts", cfg.socketPath(), attempts);
     }
 }
