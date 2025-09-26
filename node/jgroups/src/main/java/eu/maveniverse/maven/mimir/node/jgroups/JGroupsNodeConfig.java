@@ -27,7 +27,7 @@ public class JGroupsNodeConfig {
             }
         }
 
-        boolean enabled = true;
+        boolean enabled = false;
         boolean publisherEnabled = true;
         String publisherTransport = "socket";
         String jgroupsProps = "udp-new.xml";
