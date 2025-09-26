@@ -24,6 +24,7 @@
   <name>${project.groupId}:${project.artifactId}</name>
 
   <modules>
+    <module>node-daemon-its</module>
     <module>extension-its</module>
   </modules>
 
@@ -34,6 +35,18 @@
     <maven.install.skip>true</maven.install.skip>
     <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>eu.maveniverse.maven.plugins</groupId>
+          <artifactId>toolbox</artifactId>
+          <version>0.13.7</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 
   <profiles>
     <profile>

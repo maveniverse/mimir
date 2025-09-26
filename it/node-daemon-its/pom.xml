@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) 2023-2024 Maveniverse Org.
+    All rights reserved. This program and the accompanying materials
+    are made available under the terms of the Eclipse Public License v2.0
+    which accompanies this distribution, and is available at
+    https://www.eclipse.org/legal/epl-v20.html
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>eu.maveniverse.maven.mimir.it</groupId>
+    <artifactId>it</artifactId>
+    <version>0.9.3-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>node-daemon-its</artifactId>
+
+  <name>${project.groupId}:${project.artifactId}</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mimir.node</groupId>
+      <artifactId>daemon</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mimir</groupId>
+      <artifactId>daemon</artifactId>
+      <version>${project.version}</version>
+      <classifier>daemon</classifier>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>run-its</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>eu.maveniverse.maven.plugins</groupId>
+            <artifactId>toolbox</artifactId>
+            <executions>
+              <execution>
+                <id>prepare-daemon-jar</id>
+                <goals>
+                  <goal>gav-copy</goal>
+                </goals>
+                <phase>generate-test-resources</phase>
+                <configuration>
+                  <sourceSpec>resolve(gav(eu.maveniverse.maven.mimir:daemon:jar:daemon:${project.version}))</sourceSpec>
+                  <sinkSpec>flat(${project.build.directory}/dependency, ACE())</sinkSpec>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+                <configuration>
+                  <forkCount>1</forkCount>
+                  <argLine>-Djava.io.tmpdir=${project.build.directory} -Dreal.java.io.tmpdir=${java.io.tmpdir}</argLine>
+                  <systemPropertyVariables>
+                    <daemon.jar.path>${project.build.directory}/dependency/daemon-daemon.jar</daemon.jar.path>
+                  </systemPropertyVariables>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>
