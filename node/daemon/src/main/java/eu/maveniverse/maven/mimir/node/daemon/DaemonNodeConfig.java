@@ -29,6 +29,7 @@ public class DaemonNodeConfig {
         }
 
         Path daemonLockDir = daemonBasedir.resolve("daemon");
+        Path daemonStarterLockDir = daemonBasedir.resolve("daemonStarter");
         Path socketPath = daemonBasedir.resolve(Handle.DEFAULT_SOCKET_PATH);
         Path daemonJavaHome = FileUtils.canonicalPath(daemonBasedir.resolve(sessionConfig
                 .effectiveProperties()
@@ -85,6 +86,7 @@ public class DaemonNodeConfig {
                 sessionConfig,
                 daemonBasedir,
                 daemonLockDir,
+                daemonStarterLockDir,
                 socketPath,
                 daemonJavaHome,
                 autoupdate,
@@ -103,6 +105,7 @@ public class DaemonNodeConfig {
     private final SessionConfig sessionConfig;
     private final Path daemonBasedir;
     private final Path daemonLockDir;
+    private final Path daemonStarterLockDir;
     private final Path socketPath;
     private final Path daemonJavaHome;
     private final boolean autoupdate;
@@ -119,6 +122,7 @@ public class DaemonNodeConfig {
             SessionConfig sessionConfig,
             Path daemonBasedir,
             Path daemonLockDir,
+            Path daemonStarterLockDir,
             Path socketPath,
             Path daemonJavaHome,
             boolean autoupdate,
@@ -133,6 +137,7 @@ public class DaemonNodeConfig {
         this.sessionConfig = requireNonNull(sessionConfig);
         this.daemonBasedir = requireNonNull(daemonBasedir);
         this.daemonLockDir = requireNonNull(daemonLockDir);
+        this.daemonStarterLockDir = requireNonNull(daemonStarterLockDir);
         this.socketPath = requireNonNull(socketPath);
         this.daemonJavaHome = requireNonNull(daemonJavaHome);
         this.autoupdate = autoupdate;
@@ -156,6 +161,10 @@ public class DaemonNodeConfig {
 
     public Path daemonLockDir() {
         return daemonLockDir;
+    }
+
+    public Path daemonStarterLockDir() {
+        return daemonStarterLockDir;
     }
 
     public Path socketPath() {

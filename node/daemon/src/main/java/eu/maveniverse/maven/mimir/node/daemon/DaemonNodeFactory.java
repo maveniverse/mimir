@@ -30,16 +30,30 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
     @Override
     public Optional<DaemonNode> createLocalNode(SessionConfig sessionConfig) throws IOException {
         DaemonNodeConfig cfg = DaemonNodeConfig.with(sessionConfig);
-        if (tryLock(cfg)) {
-            Files.deleteIfExists(cfg.socketPath());
-            if (cfg.autostart()) {
-                logger.debug("Mimir daemon is not running, starting it");
-                Process daemon = startDaemon(cfg);
-                logger.info("Mimir daemon started (pid={})", daemon.pid());
-            } else {
-                throw new IOException("Mimir daemon does not run and autostart is disabled; start daemon manually");
+        if (tryLock(cfg.daemonStarterLockDir(), true)) {
+            try {
+                if (tryLock(cfg.daemonLockDir(), true)) {
+                    // we locked both exclusively; we control everything
+                    if (cfg.autostart()) {
+                        logger.debug("Mimir daemon is not running, starting it");
+                        // start daemon unlocks daemonLockDir
+                        Process daemon = startDaemon(cfg);
+                        logger.info("Mimir daemon started (pid={})", daemon.pid());
+                    } else {
+                        unlock(cfg.daemonLockDir());
+                        throw new IOException("Mimir daemon does not run and autostart is disabled; start daemon manually");
+                    }
+                } else {
+                    // daemon may be running; but nobody is trying to start it
+                    if (!Files.exists(cfg.socketPath())) {
+                        waitForSocket(cfg);
+                    }
+                }
+            } finally {
+                unlock(cfg.daemonStarterLockDir());
             }
         } else {
+            // someone else is trying to start it; hopefully daemon may be running soon
             if (!Files.exists(cfg.socketPath())) {
                 waitForSocket(cfg);
             }
@@ -70,9 +84,11 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
     }
 
     /**
-     * Starts damon process. This method must be entered ONLY if caller owns exclusive lock "start procedure".
+     * Starts damon process. This method must be entered ONLY if caller owns exclusive lock of
+     * {@link DaemonNodeConfig#daemonLockDir()}, as this method will release this lock.
      *
-     * @see #tryLock(DaemonNodeConfig)
+     * @see #tryLock(Path, boolean)
+     * @see #unlock(Path)
      */
     private Process startDaemon(DaemonNodeConfig cfg) throws IOException {
         Path basedir = cfg.daemonBasedir();
@@ -104,7 +120,7 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
                     .redirectOutput(cfg.daemonLog().toFile())
                     .command(command);
 
-            unlock(cfg);
+            unlock(cfg.daemonLockDir());
 
             Process p = pb.start();
             try {
@@ -138,10 +154,10 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
      * daemon running nor is there any other process trying to start daemon.
      * This process "owns" the start procedure alone.
      */
-    private boolean tryLock(DaemonNodeConfig cfg) {
+    private boolean tryLock(Path dir, boolean exclusive) throws IOException {
         try {
-            Files.createDirectories(cfg.daemonLockDir());
-            DirectoryLocker.INSTANCE.lockDirectory(cfg.daemonLockDir(), true);
+            Files.createDirectories(dir);
+            DirectoryLocker.INSTANCE.lockDirectory(dir, exclusive);
             return true;
         } catch (IOException e) {
             return false;
@@ -151,8 +167,8 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
     /**
      * Unlocks the {@link DaemonNodeConfig#daemonLockDir()}.
      */
-    private void unlock(DaemonNodeConfig cfg) throws IOException {
-        DirectoryLocker.INSTANCE.unlockDirectory(cfg.daemonLockDir());
+    private void unlock(Path dir) throws IOException {
+        DirectoryLocker.INSTANCE.unlockDirectory(dir);
     }
 
     /**
