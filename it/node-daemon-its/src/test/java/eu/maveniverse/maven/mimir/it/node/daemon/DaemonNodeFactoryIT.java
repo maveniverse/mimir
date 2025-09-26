@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.mimir.it.node.daemon;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -22,8 +23,10 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -80,8 +83,12 @@ public class DaemonNodeFactoryIT {
         }
     }
 
-    @Test
-    void simple(@TempDir Path tempDir) throws Exception {
+    private SessionConfig sessionConfig;
+    private SessionConfig daemonSessionConfig;
+    private Path daemonJar;
+    private Path daemonLog;
+
+    private void prepareEnv(Path tempDir) throws Exception {
         // to circumvent stupid "SocketException: Unix domain path too long"
         Path realTmp = Path.of(System.getProperty("real.java.io.tmpdir"));
         Path socketPath = realTmp.resolve(
@@ -105,28 +112,37 @@ public class DaemonNodeFactoryIT {
             sessionProperties.store(os, null);
         }
 
-        SessionConfig sessionConfig = SessionConfig.defaults().basedir(baseDir).build();
+        sessionConfig = SessionConfig.defaults().basedir(baseDir).build();
         assertTrue(sessionConfig.effectiveProperties().keySet().containsAll(sessionProperties.stringPropertyNames()));
 
-        SessionConfig daemonSessionConfig =
-                SessionConfig.daemonDefaults().basedir(baseDir).build();
+        daemonSessionConfig = SessionConfig.daemonDefaults().basedir(baseDir).build();
         assertTrue(
                 daemonSessionConfig.effectiveProperties().keySet().containsAll(daemonProperties.stringPropertyNames()));
 
         DaemonNodeConfig daemonNodeConfig = DaemonNodeConfig.with(sessionConfig);
-        Path daemonJar = daemonNodeConfig.daemonJar();
-        Path daemonLog = daemonNodeConfig.daemonLog();
+        daemonJar = daemonNodeConfig.daemonJar();
+        daemonLog = daemonNodeConfig.daemonLog();
 
         // copy JAR to place; like it was resolved and copied there by extension3
         Files.copy(Path.of(System.getProperty("daemon.jar.path")), daemonJar, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    @Test
+    void simple(@TempDir Path tempDir) throws Exception {
+        prepareEnv(tempDir);
 
         TestLocker locker = new TestLocker();
         DaemonNodeFactory factory1 = new DaemonNodeFactory(locker);
 
         try {
-            Optional<DaemonNode> daemonNode1 = factory1.createLocalNode(sessionConfig);
-            assertTrue(daemonNode1.isPresent());
-            daemonNode1.orElseThrow().close();
+            Optional<DaemonNode> dno = factory1.createLocalNode(sessionConfig);
+            assertTrue(dno.isPresent());
+            try (DaemonNode daemonNode = dno.orElseThrow()) {
+                System.out.println("Session:");
+                System.out.println(daemonNode.getSession());
+                System.out.println("Daemon data:");
+                System.out.println(daemonNode.getDaemonData());
+            }
         } catch (Exception ex) {
             ex.printStackTrace(System.out);
         }
@@ -137,49 +153,14 @@ public class DaemonNodeFactoryIT {
 
     @Test
     void concurrent(@TempDir Path tempDir) throws Exception {
-        // to circumvent stupid "SocketException: Unix domain path too long"
-        Path realTmp = Path.of(System.getProperty("real.java.io.tmpdir"));
-        Path socketPath = realTmp.resolve(
-                        "mimir.socket-" + ThreadLocalRandom.current().nextLong())
-                .toAbsolutePath();
-
-        Path baseDir = tempDir.resolve("mimir");
-        Files.createDirectories(baseDir);
-
-        Properties daemonProperties = new Properties();
-        daemonProperties.setProperty("mimir.daemon.socketPath", socketPath.toString());
-        try (OutputStream os = Files.newOutputStream(baseDir.resolve("daemon.properties"))) {
-            daemonProperties.store(os, null);
-        }
-
-        Properties sessionProperties = new Properties();
-        sessionProperties.setProperty("mimir.daemon.socketPath", socketPath.toString());
-        sessionProperties.setProperty("mimir.daemon.passOnBasedir", "true");
-        sessionProperties.setProperty("mimir.daemon.debug", "false");
-        try (OutputStream os = Files.newOutputStream(baseDir.resolve("session.properties"))) {
-            sessionProperties.store(os, null);
-        }
-
-        SessionConfig sessionConfig = SessionConfig.defaults().basedir(baseDir).build();
-        assertTrue(sessionConfig.effectiveProperties().keySet().containsAll(sessionProperties.stringPropertyNames()));
-
-        SessionConfig daemonSessionConfig =
-                SessionConfig.daemonDefaults().basedir(baseDir).build();
-        assertTrue(
-                daemonSessionConfig.effectiveProperties().keySet().containsAll(daemonProperties.stringPropertyNames()));
-
-        DaemonNodeConfig daemonNodeConfig = DaemonNodeConfig.with(sessionConfig);
-        Path daemonJar = daemonNodeConfig.daemonJar();
-        Path daemonLog = daemonNodeConfig.daemonLog();
-
-        // copy JAR to place; like it was resolved and copied there by extension3
-        Files.copy(Path.of(System.getProperty("daemon.jar.path")), daemonJar, StandardCopyOption.REPLACE_EXISTING);
+        prepareEnv(tempDir);
 
         TestLocker locker = new TestLocker();
 
         int concurrency = 5;
 
         CountDownLatch cl = new CountDownLatch(concurrency);
+        CopyOnWriteArrayList<Map<String, String>> daemonData = new CopyOnWriteArrayList<>();
         AtomicBoolean failure = new AtomicBoolean(false);
 
         ArrayList<Thread> threads = new ArrayList<>(concurrency);
@@ -188,9 +169,11 @@ public class DaemonNodeFactoryIT {
             threads.add(new Thread(() -> {
                 try {
                     DaemonNodeFactory factory = new DaemonNodeFactory(locker);
-                    Optional<DaemonNode> daemonNode = factory.createLocalNode(sessionConfig);
-                    assertTrue(daemonNode.isPresent());
-                    daemonNode.orElseThrow().close();
+                    Optional<DaemonNode> dno = factory.createLocalNode(sessionConfig);
+                    assertTrue(dno.isPresent());
+                    try (DaemonNode daemonNode = dno.orElseThrow()) {
+                        daemonData.add(daemonNode.getDaemonData());
+                    }
                 } catch (Exception ex) {
                     failure.set(true);
                     ex.printStackTrace(System.out);
@@ -202,7 +185,12 @@ public class DaemonNodeFactoryIT {
 
         threads.forEach(Thread::start);
         cl.await();
-
         assertFalse(failure.get());
+
+        // they all ended up with same daemon
+        Map<String, String> first = daemonData.get(0);
+        for (int i = 1; i < concurrency; i++) {
+            assertEquals(first, daemonData.get(i));
+        }
     }
 }

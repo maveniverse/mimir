@@ -54,6 +54,14 @@ public class DaemonNode extends NodeSupport implements LocalNode {
         }
     }
 
+    public Map<String, String> getSession() {
+        return session;
+    }
+
+    public Map<String, String> getDaemonData() {
+        return daemonData;
+    }
+
     @Override
     public List<String> checksumAlgorithms() throws IOException {
         try (Handle handle = clientHandle.getHandle()) {
