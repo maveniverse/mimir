@@ -5,10 +5,12 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.mimir.node.daemon;
+package eu.maveniverse.maven.mimir.it.node.daemon;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import eu.maveniverse.maven.mimir.node.daemon.DaemonNode;
+import eu.maveniverse.maven.mimir.node.daemon.DaemonNodeFactory;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -16,13 +18,9 @@ import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import javax.inject.Named;
-import javax.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-@Singleton
-@Named(DaemonNodeConfig.NAME)
 public class DaemonNodeFactoryIT {
     /**
      * Locker implementation using {@link ReentrantReadWriteLock} as FS locking is JVM wide.
