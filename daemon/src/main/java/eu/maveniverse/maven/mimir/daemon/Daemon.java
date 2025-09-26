@@ -148,28 +148,54 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
             Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories)
             throws IOException {
         super(daemonConfig);
+
+        long startTime = System.currentTimeMillis();
+        logger.info("Daemon startup initiated at {}", java.time.Instant.ofEpochMilli(startTime));
         this.sessionFactory = requireNonNull(sessionFactory, "sessionFactory");
         this.systemNode = requireNonNull(systemNode, "systemNode");
         requireNonNull(remoteNodeFactories, "remoteNodeFactories");
 
+        long remoteNodesStart = System.currentTimeMillis();
+        logger.info("Creating remote nodes... ({}ms elapsed)", remoteNodesStart - startTime);
         ArrayList<RemoteNode> nds = new ArrayList<>();
         for (RemoteNodeFactory<?> remoteNodeFactory : remoteNodeFactories.values()) {
+            long factoryStart = System.currentTimeMillis();
+            logger.debug("Creating remote node with factory: {}", remoteNodeFactory.getClass().getSimpleName());
             Optional<? extends RemoteNode> node = remoteNodeFactory.createRemoteNode(config.config());
-            node.ifPresent(nds::add);
+            if (node.isPresent()) {
+                long factoryEnd = System.currentTimeMillis();
+                logger.info("Remote node created: {} (took {}ms)",
+                    node.get().getClass().getSimpleName(), factoryEnd - factoryStart);
+                nds.add(node.get());
+            } else {
+                logger.debug("Remote node factory {} returned empty", remoteNodeFactory.getClass().getSimpleName());
+            }
         }
         nds.sort(Comparator.comparing(RemoteNode::distance));
         this.remoteNodes = List.copyOf(nds);
+
+        long executorStart = System.currentTimeMillis();
+        logger.info("Remote nodes created ({}ms elapsed), creating executor...", executorStart - startTime);
         this.executor = Executors.executorService();
 
         // lock exclusively the basedir; if other daemon tries to run here will fail
+        long lockStart = System.currentTimeMillis();
+        logger.info("Acquiring daemon lock... ({}ms elapsed)", lockStart - startTime);
         Files.createDirectories(config.daemonLockDir());
         DirectoryLocker.INSTANCE.lockDirectory(config.daemonLockDir(), true);
+        long lockEnd = System.currentTimeMillis();
+        logger.info("Daemon lock acquired (took {}ms, {}ms total elapsed)", lockEnd - lockStart, lockEnd - startTime);
 
+        long socketStart = System.currentTimeMillis();
+        logger.info("Creating daemon socket... ({}ms elapsed)", socketStart - startTime);
         Path socketPath = daemonConfig.socketPath();
         Files.deleteIfExists(socketPath);
         this.serverHandle = Handle.serverDomainSocket(socketPath);
+        long socketEnd = System.currentTimeMillis();
+        logger.info("Daemon socket created (took {}ms, {}ms total elapsed)", socketEnd - socketStart, socketEnd - startTime);
 
-        logger.info("Mimir Daemon {} started", config.config().mimirVersion());
+        long totalTime = System.currentTimeMillis() - startTime;
+        logger.info("Mimir Daemon {} started (total startup time: {}ms)", config.config().mimirVersion(), totalTime);
         logger.info("  PID: {}", ProcessHandle.current().pid());
         logger.info("  Basedir: {}", config.config().basedir());
         logger.info("  Properties: {}", config.config().propertiesPath());
