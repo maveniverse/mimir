@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.mimir.testing;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,7 +37,7 @@ public class MimirInfuserTest {
 
         Path newRoot = tmpDir.resolve("newRoot");
         System.setProperty("user.home", oldRoot.toString());
-        MimirInfuser.infuseUW(newRoot);
+        assertTrue(MimirInfuser.infuseUW(newRoot));
 
         Properties props = new Properties();
         try (InputStream is = Files.newInputStream(newRoot.resolve(".mimir").resolve("session.properties"))) {
@@ -62,7 +63,8 @@ public class MimirInfuserTest {
         Path newRoot = tmpDir.resolve("newRoot");
         Path newProjectBasedir = newRoot.resolve("project");
         System.setProperty("user.home", oldRoot.toString());
-        MimirInfuser.infusePW(projectBasedir, newProjectBasedir, newRoot);
+        assertTrue(MimirInfuser.infusePW(projectBasedir, newProjectBasedir, newRoot));
+
         Properties props = new Properties();
         try (InputStream is = Files.newInputStream(newRoot.resolve(".mimir").resolve("session.properties"))) {
             props.load(is);

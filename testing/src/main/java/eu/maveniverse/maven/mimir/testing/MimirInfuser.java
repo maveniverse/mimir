@@ -37,12 +37,12 @@ public final class MimirInfuser {
      *     <li>passed in {@link Path} represents the chroot-ed user home</li>
      * </ul>
      */
-    public static void infuseUW(Path innerUserHome) throws IOException {
+    public static boolean infuseUW(Path innerUserHome) throws IOException {
         requireNonNull(innerUserHome);
         Path outerUserHome = Path.of(System.getProperty("user.home"));
         Path outerUWExtensions = outerUserHome.resolve(".m2").resolve("extensions.xml");
         Path innerUWExtensions = innerUserHome.resolve(".m2").resolve("extensions.xml");
-        infuseMimir(outerUWExtensions, outerUserHome, innerUWExtensions, innerUserHome);
+        return infuseMimir(outerUWExtensions, outerUserHome, innerUWExtensions, innerUserHome);
     }
 
     /**
