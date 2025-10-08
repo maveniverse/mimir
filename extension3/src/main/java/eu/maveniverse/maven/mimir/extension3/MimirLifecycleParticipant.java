@@ -17,6 +17,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -46,47 +47,30 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final RepositorySystem repositorySystem;
     private final SessionFactory sessionFactory;
+    private final AtomicBoolean initializationAttempted;
 
     @Inject
     public MimirLifecycleParticipant(RepositorySystem repositorySystem, SessionFactory sessionFactory) {
         this.repositorySystem = repositorySystem;
         this.sessionFactory = sessionFactory;
+
+        this.initializationAttempted = new AtomicBoolean(false);
     }
 
+    /**
+     * When loaded as core extension; we want to be loaded as early as possible.
+     */
+    @Override
+    public void afterSessionStart(MavenSession session) throws MavenExecutionException {
+        mayInitialize(session);
+    }
+
+    /**
+     * When loaded as build extension; previous event is not received as it is "too late".
+     */
     @Override
     public void afterProjectsRead(MavenSession session) throws MavenExecutionException {
-        try {
-            RepositorySystemSession repoSession = session.getRepositorySession();
-            SessionConfig sessionConfig = SessionConfig.defaults()
-                    .userProperties(repoSession.getUserProperties())
-                    .systemProperties(repoSession.getSystemProperties())
-                    .repositorySystemSession(repoSession)
-                    .build();
-            if (sessionConfig.enabled()) {
-                List<RemoteRepository> remoteRepositories = RepositoryUtils.toRepos(
-                        session.getProjectBuildingRequest().getRemoteRepositories());
-                mayCheckForUpdates(sessionConfig, repoSession, remoteRepositories);
-                if ("daemon".equals(sessionConfig.localNode())) {
-                    mayResolveDaemonArtifact(sessionConfig, repoSession, remoteRepositories);
-                }
-
-                MimirUtils.lazyInit(session.getRepositorySession(), () -> {
-                    try {
-                        return sessionFactory.createSession(sessionConfig);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                });
-            } else {
-                logger.info("Mimir {} is disabled", sessionConfig.mimirVersion());
-            }
-        } catch (Exception e) {
-            if ("com.google.inject.ProvisionException".equals(e.getClass().getName())) {
-                logger.error("Minir session creation failed", e); // here runtime req will kick in
-            } else {
-                throw new MavenExecutionException("Error enabling Mimir", e);
-            }
-        }
+        mayInitialize(session);
     }
 
     @Override
@@ -105,6 +89,43 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
             });
         } catch (Exception e) {
             throw new MavenExecutionException("Error closing Mimir session", e);
+        }
+    }
+
+    private void mayInitialize(MavenSession session) throws MavenExecutionException {
+        if (initializationAttempted.compareAndSet(false, true)) {
+            try {
+                RepositorySystemSession repoSession = session.getRepositorySession();
+                SessionConfig sessionConfig = SessionConfig.defaults()
+                        .userProperties(repoSession.getUserProperties())
+                        .systemProperties(repoSession.getSystemProperties())
+                        .repositorySystemSession(repoSession)
+                        .build();
+                if (sessionConfig.enabled()) {
+                    List<RemoteRepository> remoteRepositories = RepositoryUtils.toRepos(
+                            session.getProjectBuildingRequest().getRemoteRepositories());
+                    mayCheckForUpdates(sessionConfig, repoSession, remoteRepositories);
+                    if ("daemon".equals(sessionConfig.localNode())) {
+                        mayResolveDaemonArtifact(sessionConfig, repoSession, remoteRepositories);
+                    }
+
+                    MimirUtils.lazyInit(session.getRepositorySession(), () -> {
+                        try {
+                            return sessionFactory.createSession(sessionConfig);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    });
+                } else {
+                    logger.info("Mimir {} is disabled", sessionConfig.mimirVersion());
+                }
+            } catch (Exception e) {
+                if ("com.google.inject.ProvisionException".equals(e.getClass().getName())) {
+                    logger.error("Minir session creation failed", e); // here runtime req will kick in
+                } else {
+                    throw new MavenExecutionException("Error enabling Mimir", e);
+                }
+            }
         }
     }
 
