@@ -18,7 +18,7 @@ import java.util.Properties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-public class MimirInfuserTest {
+public class MimirInfuserIT {
     private static final String EXTENSIONS_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<extensions>\n"
             + "    <extension>\n"
             + "        <groupId>eu.maveniverse.maven.mimir</groupId>\n"
