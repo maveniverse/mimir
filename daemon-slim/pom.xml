@@ -17,7 +17,7 @@
     <version>0.9.5-SNAPSHOT</version>
   </parent>
 
-  <artifactId>daemon</artifactId>
+  <artifactId>daemon-slim</artifactId>
 
   <name>${project.groupId}:${project.artifactId}</name>
 
@@ -47,14 +47,6 @@
     <dependency>
       <groupId>eu.maveniverse.maven.mimir.node</groupId>
       <artifactId>file</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>eu.maveniverse.maven.mimir.node</groupId>
-      <artifactId>jgroups</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>eu.maveniverse.maven.mimir.node</groupId>
-      <artifactId>minio</artifactId>
     </dependency>
 
     <dependency>

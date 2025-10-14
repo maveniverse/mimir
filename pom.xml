@@ -38,7 +38,8 @@
     <module>core</module>
     <module>daemon-protocol</module>
     <module>node</module>
-    <module>daemon</module>
+    <module>daemon-slim</module>
+    <module>daemon-fat</module>
     <module>extension3</module>
     <module>testing</module>
     <module>it</module>
@@ -77,6 +78,7 @@
     <version.resolver>1.9.24</version.resolver>
     <version.mima>2.4.34</version.mima>
     <version.slf4j>1.7.36</version.slf4j>
+    <version.okhttp3>5.2.1</version.okhttp3>
     <version.testcontainers>1.21.3</version.testcontainers>
   </properties>
 
@@ -98,6 +100,17 @@
         <artifactId>daemon-protocol</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.mimir</groupId>
+        <artifactId>daemon-slim</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.mimir</groupId>
+        <artifactId>daemon-fat</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <dependency>
         <groupId>eu.maveniverse.maven.mimir.node</groupId>
         <artifactId>bundle</artifactId>
@@ -284,7 +297,7 @@
       <dependency>
         <groupId>io.minio</groupId>
         <artifactId>minio</artifactId>
-        <version>8.5.17</version>
+        <version>8.6.0</version>
       </dependency>
 
       <!-- Overrides/Updates for Minio Java -->
@@ -317,7 +330,7 @@
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>
-        <version>5.13.4</version>
+        <version>6.0.0</version>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>

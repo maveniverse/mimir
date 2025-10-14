@@ -151,12 +151,14 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
             DaemonConfig daemonConfig,
             SessionFactory sessionFactory,
             SystemNode systemNode,
+            Map<String, SystemNodeFactory<?>> systemNodeFactories,
             Map<String, RemoteNodeFactory<?>> remoteNodeFactories,
             Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories)
             throws IOException {
         super(daemonConfig);
         this.sessionFactory = requireNonNull(sessionFactory, "sessionFactory");
         this.systemNode = requireNonNull(systemNode, "systemNode");
+        requireNonNull(systemNodeFactories, "systemNodeFactories");
         requireNonNull(remoteNodeFactories, "remoteNodeFactories");
 
         ArrayList<RemoteNode> nds = new ArrayList<>();
@@ -172,6 +174,8 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         logger.info("  PID: {}", ProcessHandle.current().pid());
         logger.info("  Basedir: {}", config.config().basedir());
         logger.info("  Properties: {}", config.config().propertiesPath());
+        logger.info("  Supported System Nodes: {}", systemNodeFactories.keySet());
+        logger.info("  Supported Remote Nodes: {}", remoteNodeFactories.keySet());
         logger.info("  Supported checksums: {}", checksumAlgorithmFactories.keySet());
         logger.info("  Socket: {}", daemonConfig.socketPath());
         logger.info("  System Node: {}", systemNode);

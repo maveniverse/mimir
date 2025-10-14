@@ -42,7 +42,7 @@ public class DaemonNodeConfig {
         boolean autostop = false;
         Path daemonJar = daemonBasedir.resolve("daemon-" + sessionConfig.mimirVersion() + ".jar");
         Path daemonLog = daemonBasedir.resolve("daemon-" + sessionConfig.mimirVersion() + ".log");
-        String daemonGav = "eu.maveniverse.maven.mimir:daemon:jar:daemon:" + sessionConfig.mimirVersion();
+        String daemonGav = "eu.maveniverse.maven.mimir:daemon-slim:jar:daemon:" + sessionConfig.mimirVersion();
         boolean passOnBasedir = false;
         boolean debug = false;
 
