@@ -36,6 +36,8 @@ public final class MimirInfuser {
     /**
      * Generates {@code extension.xml} contents for Mimir using given version. Usable when Mimir is the only
      * extension to be used.
+     *
+     * @since 0.10.0
      */
     public static String extensionsXml(String version) {
         requireNonNull(version);
@@ -51,6 +53,8 @@ public final class MimirInfuser {
 
     /**
      * Returns {@code true} if {@code extensions.xml} contains Mimir extension.
+     *
+     * @since 0.10.0
      */
     public static boolean isMimirPresentInExtensionsXml(Path extensionXmlPath) throws IOException {
         if (Files.isRegularFile(extensionXmlPath)) {
@@ -63,6 +67,8 @@ public final class MimirInfuser {
 
     /**
      * Returns {@code true} if "outer" UW extensions are detected to contain Mimir.
+     *
+     * @since 0.10.0
      */
     public static boolean isMimirPresentUW() throws IOException {
         return isMimirPresentInExtensionsXml(
@@ -71,6 +77,8 @@ public final class MimirInfuser {
 
     /**
      * Returns {@code true} if "outer" PW extensions are detected to contain Mimir.
+     *
+     * @since 0.10.0
      */
     public static boolean isMimirPresentPW(Path outerSessionRoot) throws IOException {
         return isMimirPresentInExtensionsXml(outerSessionRoot.resolve(".mvn").resolve("extensions.xml"));
@@ -84,6 +92,8 @@ public final class MimirInfuser {
      *     <li>inner build want to use user wide extensions.xml</li>
      * </ul>
      * This method unconditionally writes out UW extensions.xml with Mimir.
+     *
+     * @since 0.10.0
      */
     public static void doInfuseUW(String mimirVersion, Path innerUserHome) throws IOException {
         Path outerUserHome = Path.of(System.getProperty("user.home"));
@@ -101,6 +111,8 @@ public final class MimirInfuser {
      *     <li>inner build want to use project wide extensions.xml</li>
      * </ul>
      * This method unconditionally writes out PW extensions.xml with Mimir.
+     *
+     * @since 0.10.0
      */
     public static void doInfusePW(String mimirVersion, Path innerSessionRoot, Path innerUserHome) throws IOException {
         Path outerUserHome = Path.of(System.getProperty("user.home"));
@@ -118,6 +130,7 @@ public final class MimirInfuser {
      *     <li>passed in {@link Path} represents the chroot-ed user home</li>
      *     <li>inner build want to use user wide extensions.xml</li>
      * </ul>
+     * Infuses only IF outer UW detected to use Mimir, and returns {@code true}.
      */
     public static boolean infuseUW(Path innerUserHome) throws IOException {
         requireNonNull(innerUserHome);
@@ -135,6 +148,7 @@ public final class MimirInfuser {
      *     <li>passed in paths represent the outer Maven session root, inner Maven session root, and inner user home, respectively</li>
      *     <li>inner build want to use project wide extensions.xml</li>
      * </ul>
+     * Infuses only IF outer PW detected to use Mimir, and returns {@code true}.
      */
     public static boolean infusePW(Path outerSessionRoot, Path innerSessionRoot, Path innerUserHome)
             throws IOException {
@@ -148,7 +162,7 @@ public final class MimirInfuser {
     }
 
     /**
-     * Infuses Mimir.
+     * Infuses Mimir if detected in "outer" env.
      *
      * @param outerExtensions the location of "outer" {@code extensions.xml}
      * @param outerUserHome the location of "outer" user home
