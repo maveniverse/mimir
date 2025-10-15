@@ -16,66 +16,112 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.CleanupMode;
 import org.junit.jupiter.api.io.TempDir;
 
 public class MimirInfuserTest {
-    private static final String EXTENSIONS_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<extensions>\n"
-            + "    <extension>\n"
-            + "        <groupId>eu.maveniverse.maven.mimir</groupId>\n"
-            + "        <artifactId>extension3</artifactId>\n"
-            + "        <version>0.8.0</version>\n"
-            + "    </extension>\n"
-            + "</extensions>\n";
+    private static final String MIMIR_VERSION = System.getProperty("version.mimir");
 
     @Test
-    void infuseUW(@TempDir Path tmpDir) throws IOException {
-        Path oldRoot = tmpDir.resolve("oldRoot");
-        Path mimirBasedir = oldRoot.resolve(".mimir");
-        Path extensionsXml = oldRoot.resolve(".m2").resolve("extensions.xml");
-        Files.createDirectories(extensionsXml.getParent());
-        Files.writeString(extensionsXml, EXTENSIONS_XML);
+    void doInfuseUW(@TempDir(cleanup = CleanupMode.NEVER) Path tmpDir) throws IOException {
+        Path outerHome = tmpDir.resolve("oldRoot");
+        Path outerMimirBasedir = outerHome.resolve(".mimir");
 
-        Path newRoot = tmpDir.resolve("newRoot");
-        System.setProperty("user.home", oldRoot.toString());
-        assertTrue(MimirInfuser.infuseUW(newRoot));
+        Path innerHome = tmpDir.resolve("newRoot");
+
+        System.setProperty("user.home", outerHome.toString());
+        MimirInfuser.doInfuseUW(MIMIR_VERSION, innerHome);
 
         Properties props = new Properties();
-        try (InputStream is = Files.newInputStream(newRoot.resolve(".mimir").resolve("session.properties"))) {
+        try (InputStream is = Files.newInputStream(innerHome.resolve(".mimir").resolve("session.properties"))) {
             props.load(is);
         }
         assertEquals(3, props.size());
-        assertEquals(mimirBasedir.toString(), props.getProperty("mimir.daemon.basedir"));
-        assertEquals("false", props.getProperty("mimir.daemon.autostart"));
-        assertEquals("false", props.getProperty("mimir.daemon.autoupdate"));
-
-        assertEquals(EXTENSIONS_XML, Files.readString(newRoot.resolve(".m2").resolve("extensions.xml")));
-    }
-
-    @Test
-    void infusePW(@TempDir Path tmpDir) throws IOException {
-        Path oldRoot = tmpDir.resolve("oldRoot");
-        Path mimirBasedir = oldRoot.resolve(".mimir");
-        Path projectBasedir = mimirBasedir.resolve("project");
-        Path extensionsXml = projectBasedir.resolve(".mvn").resolve("extensions.xml");
-        Files.createDirectories(extensionsXml.getParent());
-        Files.writeString(extensionsXml, EXTENSIONS_XML);
-
-        Path newRoot = tmpDir.resolve("newRoot");
-        Path newProjectBasedir = newRoot.resolve("project");
-        System.setProperty("user.home", oldRoot.toString());
-        assertTrue(MimirInfuser.infusePW(projectBasedir, newProjectBasedir, newRoot));
-
-        Properties props = new Properties();
-        try (InputStream is = Files.newInputStream(newRoot.resolve(".mimir").resolve("session.properties"))) {
-            props.load(is);
-        }
-        assertEquals(3, props.size());
-        assertEquals(mimirBasedir.toString(), props.getProperty("mimir.daemon.basedir"));
+        assertEquals(outerMimirBasedir.toString(), props.getProperty("mimir.daemon.basedir"));
         assertEquals("false", props.getProperty("mimir.daemon.autostart"));
         assertEquals("false", props.getProperty("mimir.daemon.autoupdate"));
 
         assertEquals(
-                EXTENSIONS_XML,
-                Files.readString(newProjectBasedir.resolve(".mvn").resolve("extensions.xml")));
+                MimirInfuser.extensionsXml(MIMIR_VERSION),
+                Files.readString(innerHome.resolve(".m2").resolve("extensions.xml")));
+    }
+
+    @Test
+    void doInfusePW(@TempDir(cleanup = CleanupMode.NEVER) Path tmpDir) throws IOException {
+        Path outerHome = tmpDir.resolve("oldRoot");
+        Path outerMimirBasedir = outerHome.resolve(".mimir");
+
+        Path innerHome = tmpDir.resolve("newRoot");
+        Path innerProject = innerHome.resolve("project");
+
+        System.setProperty("user.home", outerHome.toString());
+        MimirInfuser.doInfusePW(MIMIR_VERSION, innerProject, innerHome);
+
+        Properties props = new Properties();
+        try (InputStream is = Files.newInputStream(innerHome.resolve(".mimir").resolve("session.properties"))) {
+            props.load(is);
+        }
+        assertEquals(3, props.size());
+        assertEquals(outerMimirBasedir.toString(), props.getProperty("mimir.daemon.basedir"));
+        assertEquals("false", props.getProperty("mimir.daemon.autostart"));
+        assertEquals("false", props.getProperty("mimir.daemon.autoupdate"));
+
+        assertEquals(
+                MimirInfuser.extensionsXml(MIMIR_VERSION),
+                Files.readString(innerProject.resolve(".mvn").resolve("extensions.xml")));
+    }
+
+    @Test
+    void infuseUW(@TempDir(cleanup = CleanupMode.NEVER) Path tmpDir) throws IOException {
+        Path outerHome = tmpDir.resolve("oldRoot");
+        Path outerMimirBasedir = outerHome.resolve(".mimir");
+        Path outerExtensionsXml = outerHome.resolve(".m2").resolve("extensions.xml");
+        Files.createDirectories(outerExtensionsXml.getParent());
+        Files.writeString(outerExtensionsXml, MimirInfuser.extensionsXml(MIMIR_VERSION));
+
+        Path innerHome = tmpDir.resolve("newRoot");
+        System.setProperty("user.home", outerHome.toString());
+        assertTrue(MimirInfuser.infuseUW(innerHome));
+
+        Properties props = new Properties();
+        try (InputStream is = Files.newInputStream(innerHome.resolve(".mimir").resolve("session.properties"))) {
+            props.load(is);
+        }
+        assertEquals(3, props.size());
+        assertEquals(outerMimirBasedir.toString(), props.getProperty("mimir.daemon.basedir"));
+        assertEquals("false", props.getProperty("mimir.daemon.autostart"));
+        assertEquals("false", props.getProperty("mimir.daemon.autoupdate"));
+
+        assertEquals(
+                MimirInfuser.extensionsXml(MIMIR_VERSION),
+                Files.readString(innerHome.resolve(".m2").resolve("extensions.xml")));
+    }
+
+    @Test
+    void infusePW(@TempDir(cleanup = CleanupMode.NEVER) Path tmpDir) throws IOException {
+        Path outerHome = tmpDir.resolve("oldRoot");
+        Path outerMimirBasedir = outerHome.resolve(".mimir");
+        Path outerProjectBasedir = outerHome.resolve("project");
+        Path extensionsXml = outerProjectBasedir.resolve(".mvn").resolve("extensions.xml");
+        Files.createDirectories(extensionsXml.getParent());
+        Files.writeString(extensionsXml, MimirInfuser.extensionsXml(MIMIR_VERSION));
+
+        Path innerHome = tmpDir.resolve("newRoot");
+        Path innerProjectBasedir = innerHome.resolve("project");
+        System.setProperty("user.home", outerHome.toString());
+        assertTrue(MimirInfuser.infusePW(outerProjectBasedir, innerProjectBasedir, innerHome));
+
+        Properties props = new Properties();
+        try (InputStream is = Files.newInputStream(innerHome.resolve(".mimir").resolve("session.properties"))) {
+            props.load(is);
+        }
+        assertEquals(3, props.size());
+        assertEquals(outerMimirBasedir.toString(), props.getProperty("mimir.daemon.basedir"));
+        assertEquals("false", props.getProperty("mimir.daemon.autostart"));
+        assertEquals("false", props.getProperty("mimir.daemon.autoupdate"));
+
+        assertEquals(
+                MimirInfuser.extensionsXml(MIMIR_VERSION),
+                Files.readString(innerProjectBasedir.resolve(".mvn").resolve("extensions.xml")));
     }
 }

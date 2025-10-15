@@ -63,7 +63,7 @@
                 </goals>
                 <phase>generate-test-resources</phase>
                 <configuration>
-                  <sourceSpec>resolve(gav(eu.maveniverse.maven.mimir:daemon:jar:daemon:${project.version}))</sourceSpec>
+                  <sourceSpec>resolve(gav(eu.maveniverse.maven.mimir:daemon-slim:jar:daemon:${project.version}))</sourceSpec>
                   <sinkSpec>flat(${project.build.directory}/dependency, ACE())</sinkSpec>
                 </configuration>
               </execution>
@@ -80,9 +80,9 @@
                 </goals>
                 <configuration>
                   <forkCount>1</forkCount>
-                  <argLine>-Djava.io.tmpdir=${project.build.directory} -Dreal.java.io.tmpdir=${java.io.tmpdir}</argLine>
+                  <argLine>-Djava.io.tmpdir=${failsafe.tempdir} -Dreal.java.io.tmpdir=${java.io.tmpdir}</argLine>
                   <systemPropertyVariables>
-                    <daemon.jar.path>${project.build.directory}/dependency/daemon-daemon.jar</daemon.jar.path>
+                    <daemon.jar.path>${project.build.directory}/dependency/daemon-slim-daemon.jar</daemon.jar.path>
                   </systemPropertyVariables>
                 </configuration>
               </execution>
