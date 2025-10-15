@@ -19,13 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 public class MimirInfuserTest {
-    private static final String EXTENSIONS_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<extensions>\n"
-            + "    <extension>\n"
-            + "        <groupId>eu.maveniverse.maven.mimir</groupId>\n"
-            + "        <artifactId>extension3</artifactId>\n"
-            + "        <version>" + MimirInfuser.MIMIR_VERSION.get() + "</version>\n"
-            + "    </extension>\n"
-            + "</extensions>\n";
+    private static final String MIMIR_VERSION = System.getProperty("version.mimir");
 
     @Test
     void infuseUW(@TempDir Path tmpDir) throws IOException {
@@ -33,7 +27,7 @@ public class MimirInfuserTest {
         Path mimirBasedir = oldRoot.resolve(".mimir");
         Path extensionsXml = oldRoot.resolve(".m2").resolve("extensions.xml");
         Files.createDirectories(extensionsXml.getParent());
-        Files.writeString(extensionsXml, EXTENSIONS_XML);
+        Files.writeString(extensionsXml, MimirInfuser.extensionsXml(MIMIR_VERSION));
 
         Path newRoot = tmpDir.resolve("newRoot");
         System.setProperty("user.home", oldRoot.toString());
@@ -48,7 +42,9 @@ public class MimirInfuserTest {
         assertEquals("false", props.getProperty("mimir.daemon.autostart"));
         assertEquals("false", props.getProperty("mimir.daemon.autoupdate"));
 
-        assertEquals(EXTENSIONS_XML, Files.readString(newRoot.resolve(".m2").resolve("extensions.xml")));
+        assertEquals(
+                MimirInfuser.extensionsXml(MIMIR_VERSION),
+                Files.readString(newRoot.resolve(".m2").resolve("extensions.xml")));
     }
 
     @Test
@@ -58,7 +54,7 @@ public class MimirInfuserTest {
         Path projectBasedir = mimirBasedir.resolve("project");
         Path extensionsXml = projectBasedir.resolve(".mvn").resolve("extensions.xml");
         Files.createDirectories(extensionsXml.getParent());
-        Files.writeString(extensionsXml, EXTENSIONS_XML);
+        Files.writeString(extensionsXml, MimirInfuser.extensionsXml(MIMIR_VERSION));
 
         Path newRoot = tmpDir.resolve("newRoot");
         Path newProjectBasedir = newRoot.resolve("project");
@@ -75,7 +71,7 @@ public class MimirInfuserTest {
         assertEquals("false", props.getProperty("mimir.daemon.autoupdate"));
 
         assertEquals(
-                EXTENSIONS_XML,
+                MimirInfuser.extensionsXml(MIMIR_VERSION),
                 Files.readString(newProjectBasedir.resolve(".mvn").resolve("extensions.xml")));
     }
 }
