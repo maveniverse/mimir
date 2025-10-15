@@ -29,7 +29,7 @@
     </dependency>
     <dependency>
       <groupId>eu.maveniverse.maven.mimir</groupId>
-      <artifactId>daemon</artifactId>
+      <artifactId>daemon-slim</artifactId>
       <version>${project.version}</version>
       <classifier>daemon</classifier>
       <exclusions>
