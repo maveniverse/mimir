@@ -23,6 +23,14 @@
 
   <dependencies>
     <dependency>
+      <groupId>eu.maveniverse.maven.mimir</groupId>
+      <artifactId>core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mimir</groupId>
+      <artifactId>daemon-protocol</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>

@@ -22,7 +22,7 @@ public class BundleNodeConfig {
         List<ParseUtils.ArtifactSource> artifactSources = List.of();
         if (sessionConfig.effectiveProperties().containsKey("mimir.bundle.sources")) {
             artifactSources = parseBundleSources(
-                    sessionConfig, sessionConfig.effectiveProperties().get("mimir.bundle.sources"));
+                    sessionConfig, sessionConfig.effectiveProperties().get("mimir.bundle.sources"), true);
         }
         return new BundleNodeConfig(artifactSources);
     }

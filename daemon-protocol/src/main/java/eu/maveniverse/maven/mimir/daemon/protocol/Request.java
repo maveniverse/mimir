@@ -21,10 +21,14 @@ public abstract class Request extends Message {
     public static final String CMD_TRANSFER = "TRANSFER";
     public static final String CMD_LS_CHECKSUMS = "LS_CHECKSUMS";
     public static final String CMD_STORE_PATH = "STORE_PATH";
+    public static final String CMD_PRESEED = "PRESEED";
 
     public static final String DATA_KEYSTRING = "keyString";
     public static final String DATA_PATHSTRING = "pathString";
     public static final String DATA_SHUTDOWN = "shutdown";
+    public static final String DATA_GAVS = "gavs";
+
+    public static final String DATA_GAV_ITSELF = "itself";
 
     public abstract String cmd();
 
@@ -73,6 +77,21 @@ public abstract class Request extends Message {
         requestData.put(DATA_KEYSTRING, keyString);
         requestData.put(DATA_PATHSTRING, filePath);
         return request(session, CMD_STORE_PATH, requestData);
+    }
+
+    public static Request preseedItself(Map<String, String> session, String filePath, Map<String, String> data) {
+        return preseed(session, DATA_GAV_ITSELF, filePath, data);
+    }
+
+    public static Request preseed(Map<String, String> session, String gavs, String filePath, Map<String, String> data) {
+        requireNonNull(session, "session");
+        requireNonNull(gavs, "gavs");
+        requireNonNull(filePath, "filePath");
+        requireNonNull(data, "data");
+        HashMap<String, String> requestData = new HashMap<>(data);
+        requestData.put(DATA_GAVS, gavs);
+        requestData.put(DATA_PATHSTRING, filePath);
+        return request(session, CMD_PRESEED, requestData);
     }
 
     private static Request request(Map<String, String> session, String cmd, Map<String, String> data) {

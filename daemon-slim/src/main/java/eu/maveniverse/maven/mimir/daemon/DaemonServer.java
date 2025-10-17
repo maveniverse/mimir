@@ -11,8 +11,10 @@ import static eu.maveniverse.maven.mimir.daemon.protocol.Request.CMD_BYE;
 import static eu.maveniverse.maven.mimir.daemon.protocol.Request.CMD_HELLO;
 import static eu.maveniverse.maven.mimir.daemon.protocol.Request.CMD_LOCATE;
 import static eu.maveniverse.maven.mimir.daemon.protocol.Request.CMD_LS_CHECKSUMS;
+import static eu.maveniverse.maven.mimir.daemon.protocol.Request.CMD_PRESEED;
 import static eu.maveniverse.maven.mimir.daemon.protocol.Request.CMD_STORE_PATH;
 import static eu.maveniverse.maven.mimir.daemon.protocol.Request.CMD_TRANSFER;
+import static eu.maveniverse.maven.mimir.daemon.protocol.Request.DATA_GAV_ITSELF;
 import static eu.maveniverse.maven.mimir.shared.impl.EntryUtils.mergeEntry;
 import static eu.maveniverse.maven.mimir.shared.impl.EntryUtils.splitChecksums;
 import static eu.maveniverse.maven.mimir.shared.impl.EntryUtils.splitMetadata;
@@ -34,6 +36,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 final class DaemonServer extends ComponentSupport implements Runnable {
@@ -41,6 +45,8 @@ final class DaemonServer extends ComponentSupport implements Runnable {
     private final Map<String, String> daemonData;
     private final CachingSystemNode cachingSystemNode;
     private final Predicate<Request> clientPredicate;
+    private final Function<Path, Boolean> preseedItself;
+    private final BiFunction<Path, String, Boolean> preseedGAVS;
     private final Runnable shutdownHook;
     private final Map<String, Map<String, String>> sessions;
 
@@ -49,11 +55,15 @@ final class DaemonServer extends ComponentSupport implements Runnable {
             Map<String, String> daemonData,
             CachingSystemNode cachingSystemNode,
             Predicate<Request> clientPredicate,
+            Function<Path, Boolean> preseedItself,
+            BiFunction<Path, String, Boolean> preseedGAVS,
             Runnable shutdownHook) {
         this.handle = handle;
         this.daemonData = daemonData;
         this.cachingSystemNode = cachingSystemNode;
         this.clientPredicate = clientPredicate;
+        this.preseedItself = preseedItself;
+        this.preseedGAVS = preseedGAVS;
         this.shutdownHook = shutdownHook;
         this.sessions = new HashMap<>();
     }
@@ -140,6 +150,37 @@ final class DaemonServer extends ComponentSupport implements Runnable {
                                 request,
                                 mergeEntry(cachingSystemNode.store(
                                         key, Path.of(pathString), splitMetadata(data), splitChecksums(data)))));
+                    }
+                    case CMD_PRESEED -> {
+                        String gavs = request.requireData(Request.DATA_GAVS);
+                        String pathString = request.requireData(Request.DATA_PATHSTRING);
+                        logger.debug("{} {} <- {}", request.cmd(), gavs, pathString);
+                        boolean result = false;
+                        String errorMessage = null;
+                        try {
+                            Path path = Path.of(pathString);
+                            if (!path.isAbsolute()) {
+                                throw new IllegalArgumentException("path must be absolute");
+                            }
+                            if (DATA_GAV_ITSELF.equals(gavs)) {
+                                result = preseedItself.apply(path);
+                            } else {
+                                result = preseedGAVS.apply(path, gavs);
+                            }
+                        } catch (Exception e) {
+                            logger.warn("PreSeed failure", e);
+                            errorMessage = e.getMessage();
+                        }
+                        if (result) {
+                            handle.writeResponse(Response.okData(request, Map.of()));
+                        } else {
+                            if (errorMessage != null) {
+                                handle.writeResponse(
+                                        Response.koMessage(request, "Bad preseed request: " + errorMessage));
+                            } else {
+                                handle.writeResponse(Response.koMessage(request, "Preseed failed"));
+                            }
+                        }
                     }
                     default -> handle.writeResponse(Response.koMessage(request, "Bad command"));
                 }

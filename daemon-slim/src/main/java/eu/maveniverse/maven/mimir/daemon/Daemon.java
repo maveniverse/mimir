@@ -37,9 +37,9 @@ import eu.maveniverse.maven.shared.core.fs.DirectoryLocker;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -49,15 +49,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
-import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyRequest;
@@ -139,6 +141,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         }
     }
 
+    private final SessionConfig sessionConfig;
     private final ExecutorService executor;
     private final SessionFactory sessionFactory;
     private final SystemNode systemNode;
@@ -156,6 +159,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
             Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories)
             throws IOException {
         super(daemonConfig);
+        this.sessionConfig = requireNonNull(sessionConfig);
         this.sessionFactory = requireNonNull(sessionFactory, "sessionFactory");
         this.systemNode = requireNonNull(systemNode, "systemNode");
         requireNonNull(systemNodeFactories, "systemNodeFactories");
@@ -192,92 +196,12 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         withResolver(this::dumpMima);
 
         if (daemonConfig.preSeedItself() || !daemonConfig.preSeedArtifacts().isEmpty()) {
-            withResolver((s, c) -> {
-                logger.info(
-                        "Pre-seeding (LRM: {}; cache: {})",
-                        c.repositorySystemSession().getLocalRepository().getBasedir(),
-                        systemNode);
-                try {
-                    // redirect session localNode to our systemNode
-                    Map<String, String> userProperties = new HashMap<>(sessionConfig.userProperties());
-                    userProperties.put("mimir.session.localNode", systemNode.name());
-                    SessionConfig sc = sessionConfig.toBuilder()
-                            .userProperties(userProperties)
-                            .repositorySystemSession(c.repositorySystemSession())
-                            .build();
-                    try (eu.maveniverse.maven.mimir.shared.Session mimirSession =
-                            MimirUtils.lazyInit(c.repositorySystemSession(), () -> {
-                                try {
-                                    return sessionFactory.createSession(sc);
-                                } catch (IOException e) {
-                                    throw new UncheckedIOException(e);
-                                }
-                            })) {
-                        CollectRequest cr;
-                        DependencyResult dr;
-                        if (daemonConfig.preSeedItself()) {
-                            // extension
-                            cr = new CollectRequest(
-                                    new Dependency(
-                                            new DefaultArtifact(
-                                                    "eu.maveniverse.maven.mimir:extension3:" + sc.mimirVersion()),
-                                            ""),
-                                    Collections.singletonList(ParseUtils.CENTRAL));
-                            cr.setRequestContext("mimir-daemon");
-                            dr = c.repositorySystem()
-                                    .resolveDependencies(c.repositorySystemSession(), new DependencyRequest(cr, null));
-                            logger.info(
-                                    "Pre-seeded Mimir extension ({}) from Maven Central ({} artifacts)",
-                                    cr.getRoot().getArtifact(),
-                                    dr.getArtifactResults().size());
-                            for (ArtifactResult ar : dr.getArtifactResults()) {
-                                logger.debug("  - {}", ar.getArtifact());
-                            }
-
-                            // daemon
-                            // TODO: GAV! DaemonNodeConfig!
-                            cr = new CollectRequest(
-                                    new Dependency(
-                                            new DefaultArtifact("eu.maveniverse.maven.mimir:daemon:jar:daemon:"
-                                                    + sc.mimirVersion()),
-                                            ""),
-                                    Collections.singletonList(ParseUtils.CENTRAL));
-                            cr.setRequestContext("mimir-daemon");
-                            dr = c.repositorySystem()
-                                    .resolveDependencies(c.repositorySystemSession(), new DependencyRequest(cr, null));
-                            logger.info(
-                                    "Pre-seeded Mimir daemon ({}) from Maven Central ({} artifacts)",
-                                    cr.getRoot().getArtifact(),
-                                    dr.getArtifactResults().size());
-                            for (ArtifactResult ar : dr.getArtifactResults()) {
-                                logger.debug("  - {}", ar.getArtifact());
-                            }
-                        }
-                        for (ParseUtils.ArtifactSource source : daemonConfig.preSeedArtifacts()) {
-                            if (source.artifact().getFile() != null) {
-                                throw new IllegalArgumentException("Pre-seed cannot use pre-resolved artifact/file "
-                                        + source.artifact().getFile());
-                            }
-                            cr = new CollectRequest(
-                                    new Dependency(source.artifact(), ""),
-                                    Collections.singletonList(source.remoteRepository()));
-                            cr.setRequestContext("mimir-daemon");
-                            dr = c.repositorySystem()
-                                    .resolveDependencies(c.repositorySystemSession(), new DependencyRequest(cr, null));
-                            logger.info(
-                                    "Pre-seeded {} from {} ({} artifacts)",
-                                    source.artifact(),
-                                    source.remoteRepository(),
-                                    dr.getArtifactResults().size());
-                            for (ArtifactResult ar : dr.getArtifactResults()) {
-                                logger.debug("  - {}", ar.getArtifact());
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    logger.warn("Pre-seeding failed", e);
-                }
-            });
+            ArrayList<ParseUtils.ArtifactSource> sources = new ArrayList<>();
+            if (daemonConfig.preSeedItself()) {
+                sources.addAll(daemonConfig.itselfArtifacts());
+            }
+            sources.addAll(daemonConfig.preSeedArtifacts());
+            preseed(null, sources);
         }
 
         HashMap<String, String> daemonData = new HashMap<>();
@@ -297,6 +221,8 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                         daemonData,
                         new CachingSystemNode(systemNode, remoteNodes),
                         clientPredicate,
+                        this::preseedItself,
+                        this::preseedGAVS,
                         this::shutdown));
             }
         } catch (AsynchronousCloseException ignored) {
@@ -347,15 +273,15 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         }
     }
 
-    protected void withResolver(BiConsumer<Runtime, Context> resolver) {
+    protected <T> T withResolver(BiFunction<Runtime, Context, T> resolver) {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context =
                 runtime.create(ContextOverrides.create().withUserSettings(true).build())) {
-            resolver.accept(runtime, context);
+            return resolver.apply(runtime, context);
         }
     }
 
-    protected void dumpMima(Runtime runtime, Context context) {
+    protected Void dumpMima(Runtime runtime, Context context) {
         logger.info("  Embeds MIMA Runtime '{}' version {}", runtime.name(), runtime.version());
         if (logger.isDebugEnabled()) {
             logger.info("MIMA dump:");
@@ -401,5 +327,99 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                 }
             }
         }
+        return null;
+    }
+
+    /**
+     * Prepopulates local repository with "itself".
+     *
+     * @param localRepository may be {@code null} in which case MIMA discovered Maven local repository is used.
+     * @return {@code true} if operation went okay.
+     * @see DaemonConfig#itselfArtifacts()
+     */
+    protected boolean preseedItself(Path localRepository) {
+        return preseed(localRepository, config.itselfArtifacts());
+    }
+
+    /**
+     * Prepopulates local repository with given sources.
+     *
+     * @param localRepository may be {@code null} in which case MIMA discovered Maven local repository is used.
+     * @param gavs the sources string representation
+     * @return {@code true} if operation went okay.
+     * @see ParseUtils#parseArtifactString(SessionConfig, String, boolean)
+     */
+    protected boolean preseedGAVS(Path localRepository, String gavs) {
+        return preseed(localRepository, ParseUtils.parseBundleSources(sessionConfig, gavs, false));
+    }
+
+    /**
+     * Prepopulates local repository with given sources.
+     *
+     * @param localRepository may be {@code null} in which case MIMA discovered Maven local repository is used.
+     * @param sources the sources to pre-populate.
+     * @return {@code true} if operation went okay.
+     */
+    protected boolean preseed(Path localRepository, List<ParseUtils.ArtifactSource> sources) {
+        return withResolver((s, c) -> {
+            RepositorySystemSession session = c.repositorySystemSession();
+            if (localRepository != null) {
+                logger.info("Pre-seeding (LRM: {}; cache: {})", localRepository, systemNode);
+            } else {
+                logger.info(
+                        "Pre-seeding (LRM: {}; cache: {})",
+                        session.getLocalRepository().getBasedir(),
+                        systemNode);
+            }
+            try {
+                if (localRepository != null
+                        && !Objects.equals(
+                                session.getLocalRepository()
+                                        .getBasedir()
+                                        .toPath()
+                                        .toAbsolutePath(),
+                                localRepository.toAbsolutePath())) {
+                    DefaultRepositorySystemSession ownSession = new DefaultRepositorySystemSession(session);
+                    ownSession.setLocalRepositoryManager(c.repositorySystem()
+                            .newLocalRepositoryManager(ownSession, new LocalRepository(localRepository.toFile())));
+                    session = ownSession;
+                }
+                // redirect session localNode to our systemNode
+                Map<String, String> userProperties = new HashMap<>(sessionConfig.userProperties());
+                userProperties.put("mimir.session.localNode", systemNode.name());
+                SessionConfig sc = sessionConfig.toBuilder()
+                        .userProperties(userProperties)
+                        .repositorySystemSession(session)
+                        .build();
+                try (eu.maveniverse.maven.mimir.shared.Session mimirSession =
+                        MimirUtils.lazyInit(session, sessionFactory, sc)) {
+                    CollectRequest cr;
+                    DependencyResult dr;
+                    for (ParseUtils.ArtifactSource source : sources) {
+                        if (source.artifact().getFile() != null) {
+                            throw new IllegalArgumentException("Pre-seed cannot use pre-resolved artifact/file "
+                                    + source.artifact().getFile());
+                        }
+                        cr = new CollectRequest(
+                                new Dependency(source.artifact(), ""),
+                                Collections.singletonList(source.remoteRepository()));
+                        cr.setRequestContext("mimir-daemon");
+                        dr = c.repositorySystem().resolveDependencies(session, new DependencyRequest(cr, null));
+                        logger.info(
+                                "Pre-seeded {} from {} ({} artifacts)",
+                                source.artifact(),
+                                source.remoteRepository(),
+                                dr.getArtifactResults().size());
+                        for (ArtifactResult ar : dr.getArtifactResults()) {
+                            logger.debug("  - {}", ar.getArtifact());
+                        }
+                    }
+                }
+                return true;
+            } catch (Exception e) {
+                logger.warn("Pre-seeding failed", e);
+                return false;
+            }
+        });
     }
 }
