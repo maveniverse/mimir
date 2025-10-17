@@ -63,7 +63,7 @@ public final class MimirInfuser {
      * Preseeds the Mimir extension into given inner user home. It assumes default location for Maven local repository.
      *
      * @since 0.10.1
-     * @see #preseedItselfIntoInnerLocalRepository(Path) 
+     * @see #preseedItselfIntoInnerLocalRepository(Path)
      */
     public static void preseedItselfIntoInnerUserHome(Path innerUserHome) throws IOException {
         requireNonNull(innerUserHome);
