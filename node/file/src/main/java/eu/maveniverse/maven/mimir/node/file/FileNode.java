@@ -85,7 +85,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
         Files.createDirectories(basedir);
         this.directoryLocker.lockDirectory(basedir, exclusiveAccess);
 
-        // at this point, if exclusiveAccess=true we "own" exclusive lock over storage
+        // at this point, if cachePurge != OFF we have exclusiveAccess=true and we "own" exclusive lock over storage
         if (cachePurge == FileNodeConfig.CachePurge.OFF) {
             // normal operation
             this.basedir = basedir;
