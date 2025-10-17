@@ -55,6 +55,8 @@ public final class FileNode extends NodeSupport implements SystemNode {
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
     private final DirectoryLocker directoryLocker;
 
+    private final Path shadowBasedir;
+
     public FileNode(
             Path basedir,
             boolean mayLink,
@@ -77,6 +79,26 @@ public final class FileNode extends NodeSupport implements SystemNode {
 
         Files.createDirectories(basedir);
         this.directoryLocker.lockDirectory(basedir, exclusiveAccess);
+
+        // at this point, if exclusiveAccess=true we "own" exclusive lock over storage
+        if (exclusiveAccess && cachePurge) {
+            // in this mode we move (if exists) our basedir to shadow basedir, and whatever is touched we pull back
+            this.shadowBasedir = basedir.getParent().resolve(basedir.getFileName() + "-" + System.nanoTime());
+            if (Files.isDirectory(this.basedir)) {
+                if (Files.isDirectory(this.shadowBasedir)) {
+                    FileUtils.deleteRecursively(this.shadowBasedir);
+                }
+                Files.move(
+                        this.basedir,
+                        this.shadowBasedir,
+                        StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING);
+                Files.createDirectories(basedir);
+            }
+        } else {
+            // operating in ordinary mode
+            this.shadowBasedir = null;
+        }
     }
 
     @Override
@@ -87,7 +109,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
     @Override
     public Optional<FileEntry> locate(URI key) throws IOException {
         checkClosed();
-        Path path = resolveKey(key);
+        Path path = resolveKey(key, this.shadowBasedir != null);
         if (Files.isRegularFile(path)) {
             Map<String, String> data = loadMetadata(path);
             return Optional.of(createEntry(path, splitMetadata(data), splitChecksums(data)));
@@ -100,7 +122,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
     public FileEntry store(URI key, Path file, Map<String, String> md, Map<String, String> checksums)
             throws IOException {
         checkClosed();
-        Path path = resolveKey(key);
+        Path path = resolveKey(key, false);
         HashMap<String, String> metadata = new HashMap<>(md);
         FileTime fileTime = Files.getLastModifiedTime(file);
         ChecksumEnforcer checksumEnforcer;
@@ -133,7 +155,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
     @Override
     public FileEntry store(URI key, Entry entry) throws IOException {
         checkClosed();
-        Path path = resolveKey(key);
+        Path path = resolveKey(key, false);
         if (entry instanceof RemoteEntry remoteEntry) {
             try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
                 remoteEntry.handleContent(inputStream -> {
@@ -161,9 +183,19 @@ public final class FileNode extends NodeSupport implements SystemNode {
         return createEntry(path, entry.metadata(), entry.checksums());
     }
 
-    private Path resolveKey(URI key) {
-        Key resolved = keyResolver.apply(key);
-        return basedir.resolve(resolved.container()).resolve(resolved.name());
+    private Path resolveKey(URI key, boolean mayRestore) throws IOException {
+        Key resolved = this.keyResolver.apply(key);
+        Path target = this.basedir.resolve(resolved.container()).resolve(resolved.name());
+        if (mayRestore && this.shadowBasedir != null && !Files.isRegularFile(target)) {
+            Path shadow = this.shadowBasedir.resolve(resolved.container()).resolve(resolved.name());
+            if (Files.isRegularFile(shadow)) {
+                Path source = shadow.getParent();
+                Path destination = target.getParent();
+                Files.createDirectories(destination);
+                Files.move(source, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+        return target;
     }
 
     private FileEntry createEntry(Path file, Map<String, String> metadata, Map<String, String> checksums)
@@ -177,18 +209,12 @@ public final class FileNode extends NodeSupport implements SystemNode {
     @Override
     protected void doClose() throws IOException {
         try {
-            if (exclusiveAccess && cachePurge) {
-                purgeCaches();
+            if (this.shadowBasedir != null && Files.isDirectory(this.shadowBasedir)) {
+                FileUtils.deleteRecursively(this.shadowBasedir);
             }
         } finally {
             directoryLocker.unlockDirectory(basedir);
         }
-    }
-
-    private void purgeCaches() {
-        logger.info("Purging caches...");
-        // purge all unused entries (+ apply some window from "now" to +time)
-        // all - touched - not in timeframe (if not "now") -> delete?
     }
 
     private void storeMetadata(Path file, Map<String, String> metadata) throws IOException {

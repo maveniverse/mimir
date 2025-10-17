@@ -96,6 +96,9 @@ public final class FileNodeConfig {
         this.keyResolver = keyResolver;
         this.exclusiveAccess = exclusiveAccess;
         this.cachePurge = cachePurge;
+        if (!exclusiveAccess && cachePurge) {
+            throw new IllegalArgumentException("Invalid configuration: cachePurge implies exclusiveAccess");
+        }
     }
 
     public Path basedir() {
