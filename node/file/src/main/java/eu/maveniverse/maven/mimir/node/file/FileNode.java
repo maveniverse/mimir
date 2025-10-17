@@ -215,6 +215,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
                                 StandardCopyOption.ATOMIC_MOVE,
                                 StandardCopyOption.REPLACE_EXISTING);
                     case ON_END -> FileUtils.copyRecursively(source, destination, p -> true, false);
+                    default -> throw new UnsupportedOperationException("Unsupported purge mode: " + cachePurge);
                 }
             }
         }
@@ -232,13 +233,11 @@ public final class FileNode extends NodeSupport implements SystemNode {
     @Override
     protected void doClose() throws IOException {
         try {
-            if (cachePurge == FileNodeConfig.CachePurge.ON_BEGIN && Files.isDirectory(this.shadowBasedir)) {
+            if (cachePurge == FileNodeConfig.CachePurge.ON_BEGIN) {
                 // just delete shadow; we pulled all we needed
                 logger.info("Purge on begin; cleanup");
                 FileUtils.deleteRecursively(this.shadowBasedir);
-            } else if (cachePurge == FileNodeConfig.CachePurge.ON_END
-                    && Files.isDirectory(this.basedir)
-                    && Files.isDirectory(this.shadowBasedir)) {
+            } else if (cachePurge == FileNodeConfig.CachePurge.ON_END) {
                 // swap out shadow and basedir
                 logger.info("Purge on end; performing swap-out of storage");
                 Path backup =
