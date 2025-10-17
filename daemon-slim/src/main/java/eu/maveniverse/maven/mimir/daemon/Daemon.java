@@ -37,7 +37,6 @@ import eu.maveniverse.maven.shared.core.fs.DirectoryLocker;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -375,8 +374,11 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
             try {
                 if (localRepository != null
                         && !Objects.equals(
-                                session.getLocalRepository().getBasedir().getAbsolutePath(),
-                                localRepository.toAbsolutePath().toString())) {
+                                session.getLocalRepository()
+                                        .getBasedir()
+                                        .toPath()
+                                        .toAbsolutePath(),
+                                localRepository.toAbsolutePath())) {
                     DefaultRepositorySystemSession ownSession = new DefaultRepositorySystemSession(session);
                     ownSession.setLocalRepositoryManager(c.repositorySystem()
                             .newLocalRepositoryManager(ownSession, new LocalRepository(localRepository.toFile())));
@@ -389,13 +391,8 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                         .userProperties(userProperties)
                         .repositorySystemSession(session)
                         .build();
-                try (eu.maveniverse.maven.mimir.shared.Session mimirSession = MimirUtils.lazyInit(session, () -> {
-                    try {
-                        return sessionFactory.createSession(sc);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                })) {
+                try (eu.maveniverse.maven.mimir.shared.Session mimirSession =
+                        MimirUtils.lazyInit(session, sessionFactory, sc)) {
                     CollectRequest cr;
                     DependencyResult dr;
                     for (ParseUtils.ArtifactSource source : sources) {

@@ -109,13 +109,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                         mayResolveDaemonArtifact(sessionConfig, repoSession, remoteRepositories);
                     }
 
-                    MimirUtils.lazyInit(session.getRepositorySession(), () -> {
-                        try {
-                            return sessionFactory.createSession(sessionConfig);
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                        }
-                    });
+                    MimirUtils.lazyInit(session.getRepositorySession(), sessionFactory, sessionConfig);
                 } else {
                     logger.info("Mimir {} is disabled", sessionConfig.mimirVersion());
                 }

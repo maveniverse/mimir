@@ -9,6 +9,8 @@ package eu.maveniverse.maven.mimir.shared;
 
 import static java.util.Objects.requireNonNull;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.eclipse.aether.RepositorySystemSession;
@@ -25,6 +27,22 @@ public final class MimirUtils {
             repositorySystemSession.getData().set(Session.class.getName(), session);
         }
         return session;
+    }
+
+    public static Session lazyInit(
+            RepositorySystemSession repositorySystemSession,
+            SessionFactory sessionFactory,
+            SessionConfig sessionConfig) {
+        requireNonNull(repositorySystemSession, "repositorySystemSession");
+        requireNonNull(sessionFactory, "sessionFactory");
+        requireNonNull(sessionConfig, "sessionConfig");
+        return lazyInit(repositorySystemSession, () -> {
+            try {
+                return sessionFactory.createSession(sessionConfig);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
     }
 
     public static Optional<Session> mayGetSession(RepositorySystemSession repositorySystemSession) {
