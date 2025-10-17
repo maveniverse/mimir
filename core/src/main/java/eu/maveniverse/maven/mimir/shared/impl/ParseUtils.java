@@ -49,8 +49,11 @@ public final class ParseUtils {
      * {@code gav@repo}. The "gav" part corresponds to {@code <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>}
      * string, while "repo" part may be equal to "central" string, denoting Maven Central repository, or may be in
      * format of {@code id::url}, the usual remote repository definition string.
+     *
+     * @param allowFiles If true, parser will allow parsing paths pointing to existing local files.
      */
-    public static List<ArtifactSource> parseBundleSources(SessionConfig sessionConfig, String sourcesString) {
+    public static List<ArtifactSource> parseBundleSources(
+            SessionConfig sessionConfig, String sourcesString, boolean allowFiles) {
         requireNonNull(sourcesString);
         String[] sources = sourcesString.split("[;,]");
         ArrayList<ArtifactSource> artifactSources = new ArrayList<>();
@@ -63,7 +66,7 @@ public final class ParseUtils {
                         "Invalid bundle sources element (must have form of 'gav@repo'): " + source);
             }
             remoteRepository = parseRemoteRepositoryString(sessionConfig, sourceParts[1]);
-            artifact = parseArtifactString(sessionConfig, sourceParts[0]);
+            artifact = parseArtifactString(sessionConfig, sourceParts[0], allowFiles);
             artifactSources.add(new ArtifactSource(remoteRepository, artifact));
         }
         return artifactSources;
@@ -75,7 +78,7 @@ public final class ParseUtils {
      * and if resolved path points to existing file, an "artificial" artifact will be created and have the file
      * attached.
      */
-    public static Artifact parseArtifactString(SessionConfig sessionConfig, String sourcesString) {
+    public static Artifact parseArtifactString(SessionConfig sessionConfig, String sourcesString, boolean allowFiles) {
         requireNonNull(sourcesString);
         Artifact artifact;
         if (sourcesString.contains(":")) {
@@ -84,7 +87,7 @@ public final class ParseUtils {
         } else {
             // assume file
             Path path = sessionConfig.basedir().resolve(sourcesString).normalize();
-            if (Files.isRegularFile(path)) {
+            if (allowFiles && Files.isRegularFile(path)) {
                 String artifactId = path.getFileName().toString().replaceAll("\\.", "_");
                 artifact = new DefaultArtifact("local:" + artifactId + ":1.0").setFile(path.toFile());
             } else {

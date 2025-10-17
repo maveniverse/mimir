@@ -9,12 +9,21 @@ package eu.maveniverse.maven.mimir.testing;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
+import eu.maveniverse.maven.mimir.daemon.protocol.Request;
+import eu.maveniverse.maven.mimir.daemon.protocol.Response;
+import eu.maveniverse.maven.mimir.daemon.protocol.Session;
+import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Class that sets up Mimir for embedded and chroot-ed maven executing tests; IF outer build uses Mimir as well
@@ -32,6 +41,75 @@ import java.util.Properties;
 public final class MimirInfuser {
     public static final String MIMIR_EXTENSION_GROUP_ID = "eu.maveniverse.maven.mimir";
     public static final String MIMIR_EXTENSION_ARTIFACT_ID = "extension3";
+    public static final AtomicReference<String> MIMIR_VERSION = new AtomicReference<>("UNKNOWN");
+
+    static {
+        final Properties props = new Properties();
+        try (InputStream is = MimirInfuser.class
+                .getClassLoader()
+                .getResourceAsStream("META-INF/maven/" + MIMIR_EXTENSION_GROUP_ID + "/testing/pom.properties")) {
+            if (is != null) {
+                props.load(is);
+            }
+        } catch (IOException e) {
+            // fall through
+        }
+        if (!props.isEmpty()) {
+            MIMIR_VERSION.set(props.getProperty("version"));
+        }
+    }
+
+    /**
+     * Preseeds the Mimir extension into given inner user home.
+     *
+     * @since 0.10.1
+     */
+    public static void preseedItselfIntoInnerUserHome(Path innerUserHome) throws IOException {
+        requireNonNull(innerUserHome);
+        preseedItselfIntoInnerLocalRepository(innerUserHome.resolve(".m2").resolve("repository"));
+    }
+
+    /**
+     * Preseeds the Mimir extension into given Maven local repository.
+     *
+     * @since 0.10.1
+     */
+    public static void preseedItselfIntoInnerLocalRepository(Path innerLocalRepository) throws IOException {
+        requireNonNull(innerLocalRepository);
+        SessionConfig sessionConfig = SessionConfig.defaults().build();
+        try (Handle.ClientHandle client =
+                Handle.clientDomainSocket(sessionConfig.basedir().resolve(Handle.DEFAULT_SOCKET_PATH))) {
+            Response response;
+            Map<String, String> session;
+            try (Handle handle = client.getHandle()) {
+                HashMap<String, String> clientData = new HashMap<>();
+                clientData.put(
+                        Session.NODE_PID, Long.toString(ProcessHandle.current().pid()));
+                clientData.put(Session.NODE_VERSION, MIMIR_VERSION.get());
+                handle.writeRequest(Request.hello(clientData));
+                response = handle.readResponse();
+                if (Response.STATUS_KO.equals(response.status())) {
+                    throw new IOException("KO: " + response.data());
+                }
+                session = response.session();
+            }
+            try (Handle handle = client.getHandle()) {
+                handle.writeRequest(Request.preseedItself(
+                        session, innerLocalRepository.toAbsolutePath().toString(), Map.of()));
+                response = handle.readResponse();
+                if (Response.STATUS_KO.equals(response.status())) {
+                    throw new IOException("KO: " + response.data());
+                }
+            }
+            try (Handle handle = client.getHandle()) {
+                handle.writeRequest(Request.bye(session, false));
+                response = handle.readResponse();
+                if (Response.STATUS_KO.equals(response.status())) {
+                    throw new IOException("KO: " + response.data());
+                }
+            }
+        }
+    }
 
     /**
      * Generates {@code extension.xml} contents for Mimir using given version. Usable when Mimir is the only
@@ -93,6 +171,21 @@ public final class MimirInfuser {
      * </ul>
      * This method unconditionally writes out UW extensions.xml with Mimir.
      *
+     * @since 0.10.1
+     */
+    public static void doInfuseUW(Path innerUserHome) throws IOException {
+        doInfuseUW(MIMIR_VERSION.get(), innerUserHome);
+    }
+
+    /**
+     * This method assumes:
+     * <ul>
+     *     <li>Java System Property {@code user.hom} contains "outer" user home</li>
+     *     <li>passed in {@link Path} represents the "inner" user home</li>
+     *     <li>inner build want to use user wide extensions.xml</li>
+     * </ul>
+     * This method unconditionally writes out UW extensions.xml with Mimir.
+     *
      * @since 0.10.0
      */
     public static void doInfuseUW(String mimirVersion, Path innerUserHome) throws IOException {
@@ -101,6 +194,21 @@ public final class MimirInfuser {
         Files.createDirectories(innerUWExtensions.getParent());
         Files.writeString(innerUWExtensions, extensionsXml(mimirVersion));
         infuseMimirSession(outerUserHome, innerUserHome);
+    }
+
+    /**
+     * This method assumes:
+     * <ul>
+     *     <li>Java System Property {@code user.hom} contains "outer" user home</li>
+     *     <li>passed in {@link Path} represents the "inner" session root and user home</li>
+     *     <li>inner build want to use project wide extensions.xml</li>
+     * </ul>
+     * This method unconditionally writes out PW extensions.xml with Mimir.
+     *
+     * @since 0.10.0
+     */
+    public static void doInfusePW(Path innerSessionRoot, Path innerUserHome) throws IOException {
+        doInfusePW(MIMIR_VERSION.get(), innerSessionRoot, innerUserHome);
     }
 
     /**

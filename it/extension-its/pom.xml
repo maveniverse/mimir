@@ -35,6 +35,11 @@
     </dependency>
     <dependency>
       <groupId>eu.maveniverse.maven.mimir</groupId>
+      <artifactId>testing</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mimir</groupId>
       <artifactId>daemon-slim</artifactId>
       <version>${project.version}</version>
       <classifier>daemon</classifier>
