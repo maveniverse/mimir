@@ -5,7 +5,7 @@ cache purge.
 
 To make cache purge work, following is required:
 * configure daemon for `mimir.file.exclusiveAccess=true`
-* configure daemon for `mimir.file.cachePurge=true`
+* configure daemon for `mimir.file.cachePurge=ON_BEGIN`
 
 In "exclusive access" the file now "owns" the storage, it is guaranteed only one node is accessing it. And 
 cache purge when enabled, is applied. BOTH are needed, otherwise configuration failure is reported.

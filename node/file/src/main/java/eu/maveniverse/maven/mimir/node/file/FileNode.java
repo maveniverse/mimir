@@ -46,10 +46,11 @@ import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 
 public final class FileNode extends NodeSupport implements SystemNode {
+
     private final Path basedir;
     private final boolean mayLink;
     private final boolean exclusiveAccess;
-    private final boolean cachePurge;
+    private final FileNodeConfig.CachePurge cachePurge;
     private final Function<URI, Key> keyResolver;
     private final List<String> checksumAlgorithms;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
@@ -61,14 +62,13 @@ public final class FileNode extends NodeSupport implements SystemNode {
             Path basedir,
             boolean mayLink,
             boolean exclusiveAccess,
-            boolean cachePurge,
+            FileNodeConfig.CachePurge cachePurge,
             Function<URI, Key> keyResolver,
             List<String> checksumAlgorithms,
             Map<String, ChecksumAlgorithmFactory> checksumFactories,
             DirectoryLocker directoryLocker)
             throws IOException {
         super(FileNodeConfig.NAME);
-        this.basedir = basedir;
         this.mayLink = mayLink;
         this.exclusiveAccess = exclusiveAccess;
         this.cachePurge = cachePurge;
@@ -77,12 +77,18 @@ public final class FileNode extends NodeSupport implements SystemNode {
         this.checksumFactories = Map.copyOf(checksumFactories);
         this.directoryLocker = requireNonNull(directoryLocker);
 
+        if (cachePurge != FileNodeConfig.CachePurge.OFF && !exclusiveAccess) {
+            throw new IllegalArgumentException(
+                    "Invalid configuration: cachePurge possible only with exclusiveAccess enabled");
+        }
+
         Files.createDirectories(basedir);
         this.directoryLocker.lockDirectory(basedir, exclusiveAccess);
 
         // at this point, if exclusiveAccess=true we "own" exclusive lock over storage
-        if (exclusiveAccess && cachePurge) {
+        if (cachePurge == FileNodeConfig.CachePurge.ON_BEGIN) {
             // in this mode we move (if exists) our basedir to shadow basedir, and whatever is touched we pull back
+            this.basedir = basedir;
             this.shadowBasedir = basedir.getParent().resolve(basedir.getFileName() + "-" + System.nanoTime());
             if (Files.isDirectory(this.basedir)) {
                 if (Files.isDirectory(this.shadowBasedir)) {
@@ -93,10 +99,19 @@ public final class FileNode extends NodeSupport implements SystemNode {
                         this.shadowBasedir,
                         StandardCopyOption.ATOMIC_MOVE,
                         StandardCopyOption.REPLACE_EXISTING);
-                Files.createDirectories(basedir);
             }
+            Files.createDirectories(this.basedir);
+            Files.createDirectories(this.shadowBasedir);
+        } else if (cachePurge == FileNodeConfig.CachePurge.ON_END) {
+            // in this mode we leave (if exists) our basedir in place, and will copy touched elements to shadow basedir
+            // and swap them at end
+            this.basedir = basedir.getParent().resolve(basedir.getFileName() + "-" + System.nanoTime());
+            this.shadowBasedir = basedir;
+            Files.createDirectories(this.basedir);
+            Files.createDirectories(this.shadowBasedir);
         } else {
-            // operating in ordinary mode
+            // normal operation
+            this.basedir = basedir;
             this.shadowBasedir = null;
         }
     }
@@ -109,7 +124,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
     @Override
     public Optional<FileEntry> locate(URI key) throws IOException {
         checkClosed();
-        Path path = resolveKey(key, this.shadowBasedir != null);
+        Path path = resolveKey(key);
         if (Files.isRegularFile(path)) {
             Map<String, String> data = loadMetadata(path);
             return Optional.of(createEntry(path, splitMetadata(data), splitChecksums(data)));
@@ -122,7 +137,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
     public FileEntry store(URI key, Path file, Map<String, String> md, Map<String, String> checksums)
             throws IOException {
         checkClosed();
-        Path path = resolveKey(key, false);
+        Path path = resolveKey(key);
         HashMap<String, String> metadata = new HashMap<>(md);
         FileTime fileTime = Files.getLastModifiedTime(file);
         ChecksumEnforcer checksumEnforcer;
@@ -155,7 +170,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
     @Override
     public FileEntry store(URI key, Entry entry) throws IOException {
         checkClosed();
-        Path path = resolveKey(key, false);
+        Path path = resolveKey(key);
         if (entry instanceof RemoteEntry remoteEntry) {
             try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
                 remoteEntry.handleContent(inputStream -> {
@@ -183,16 +198,24 @@ public final class FileNode extends NodeSupport implements SystemNode {
         return createEntry(path, entry.metadata(), entry.checksums());
     }
 
-    private Path resolveKey(URI key, boolean mayRestore) throws IOException {
+    private Path resolveKey(URI key) throws IOException {
         Key resolved = this.keyResolver.apply(key);
         Path target = this.basedir.resolve(resolved.container()).resolve(resolved.name());
-        if (mayRestore && this.shadowBasedir != null && !Files.isRegularFile(target)) {
+        if (cachePurge != FileNodeConfig.CachePurge.OFF && !Files.isRegularFile(target)) {
             Path shadow = this.shadowBasedir.resolve(resolved.container()).resolve(resolved.name());
             if (Files.isRegularFile(shadow)) {
                 Path source = shadow.getParent();
                 Path destination = target.getParent();
                 Files.createDirectories(destination);
-                Files.move(source, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                switch (cachePurge) {
+                    case ON_BEGIN ->
+                        Files.move(
+                                source,
+                                destination,
+                                StandardCopyOption.ATOMIC_MOVE,
+                                StandardCopyOption.REPLACE_EXISTING);
+                    case ON_END -> FileUtils.copyRecursively(source, destination, p -> true, false);
+                }
             }
         }
         return target;
@@ -209,8 +232,24 @@ public final class FileNode extends NodeSupport implements SystemNode {
     @Override
     protected void doClose() throws IOException {
         try {
-            if (this.shadowBasedir != null && Files.isDirectory(this.shadowBasedir)) {
+            if (cachePurge == FileNodeConfig.CachePurge.ON_BEGIN && Files.isDirectory(this.shadowBasedir)) {
+                // just delete shadow; we pulled all we needed
+                logger.info("Purge on begin; cleanup");
                 FileUtils.deleteRecursively(this.shadowBasedir);
+            } else if (cachePurge == FileNodeConfig.CachePurge.ON_END
+                    && Files.isDirectory(this.basedir)
+                    && Files.isDirectory(this.shadowBasedir)) {
+                // swap out shadow and basedir
+                logger.info("Purge on end; performing swap-out of storage");
+                Path backup =
+                        this.basedir.getParent().resolve(this.basedir.getFileName() + "-purge-" + System.nanoTime());
+                Files.move(this.basedir, backup, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                Files.move(
+                        this.shadowBasedir,
+                        this.basedir,
+                        StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING);
+                FileUtils.deleteRecursively(backup);
             }
         } finally {
             directoryLocker.unlockDirectory(basedir);
