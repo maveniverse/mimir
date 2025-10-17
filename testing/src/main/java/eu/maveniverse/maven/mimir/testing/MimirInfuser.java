@@ -54,15 +54,16 @@ public final class MimirInfuser {
         } catch (IOException e) {
             // fall through
         }
-        if (!props.isEmpty()) {
+        if (props.containsKey("version")) {
             MIMIR_VERSION.set(props.getProperty("version"));
         }
     }
 
     /**
-     * Preseeds the Mimir extension into given inner user home.
+     * Preseeds the Mimir extension into given inner user home. It assumes default location for Maven local repository.
      *
      * @since 0.10.1
+     * @see #preseedItselfIntoInnerLocalRepository(Path) 
      */
     public static void preseedItselfIntoInnerUserHome(Path innerUserHome) throws IOException {
         requireNonNull(innerUserHome);
@@ -205,7 +206,7 @@ public final class MimirInfuser {
      * </ul>
      * This method unconditionally writes out PW extensions.xml with Mimir.
      *
-     * @since 0.10.0
+     * @since 0.10.1
      */
     public static void doInfusePW(Path innerSessionRoot, Path innerUserHome) throws IOException {
         doInfusePW(MIMIR_VERSION.get(), innerSessionRoot, innerUserHome);
