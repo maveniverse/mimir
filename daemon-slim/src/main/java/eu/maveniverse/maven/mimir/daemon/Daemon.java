@@ -198,7 +198,9 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
 
         if (daemonConfig.preSeedItself() || !daemonConfig.preSeedArtifacts().isEmpty()) {
             ArrayList<ParseUtils.ArtifactSource> sources = new ArrayList<>();
-            sources.addAll(daemonConfig.itselfArtifacts());
+            if (daemonConfig.preSeedItself()) {
+                sources.addAll(daemonConfig.itselfArtifacts());
+            }
             sources.addAll(daemonConfig.preSeedArtifacts());
             preseed(null, sources);
         }
