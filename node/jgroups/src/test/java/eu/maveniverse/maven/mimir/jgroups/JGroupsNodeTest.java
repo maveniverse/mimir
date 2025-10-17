@@ -43,7 +43,12 @@ public class JGroupsNodeTest {
         Files.writeString(contentPath, content);
 
         FileNodeConfig configOne = FileNodeConfig.of(
-                one, true, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME, false, false);
+                one,
+                true,
+                Collections.singletonList("SHA-1"),
+                SimpleKeyResolverFactory.NAME,
+                false,
+                FileNodeConfig.CachePurge.OFF);
         FileNode nodeOne = new FileNode(
                 configOne.basedir(),
                 configOne.mayLink(),
@@ -54,7 +59,12 @@ public class JGroupsNodeTest {
                 Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()),
                 DirectoryLocker.INSTANCE);
         FileNodeConfig configTwo = FileNodeConfig.of(
-                two, true, Collections.singletonList("SHA-1"), SimpleKeyResolverFactory.NAME, false, false);
+                two,
+                true,
+                Collections.singletonList("SHA-1"),
+                SimpleKeyResolverFactory.NAME,
+                false,
+                FileNodeConfig.CachePurge.OFF);
         FileNode nodeTwo = new FileNode(
                 configTwo.basedir(),
                 configTwo.mayLink(),

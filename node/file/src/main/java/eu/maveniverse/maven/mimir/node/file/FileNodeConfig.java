@@ -18,6 +18,47 @@ import java.util.Arrays;
 import java.util.List;
 
 public final class FileNodeConfig {
+    /**
+     * The cache purge mode.
+     * Cache purge operates on <em>whole artifacts</em>, over all constituents of a GAV (POM, JAR, ...). A GAV is
+     * either purged from cache or preserved all together. Mimir cache does not operate on file level.
+     * Note: to use any purge mode other than {@link #OFF}, the exclusive access to store must be enabled
+     * via config as well, see {@link FileNodeConfig#exclusiveAccess()}.
+     */
+    public enum CachePurge {
+        /**
+         * The default mode, no cache reduction happens. In this mode, cache just grows, collects all seen artifacts.
+         * This is good mode for workstations, as it makes sure more and more builds can be served with cached artifacts.
+         * On the other hand, on CI this may not be the thing you want, as cache sizes will grow endlessly (with new
+         * artifacts being added).
+         */
+        OFF,
+        /**
+         * Cache reduction mode that performs reduction on begin, when node is started. In this mode the cache is
+         * atomically moved to "shadow", and on every request entry pulled from "shadow" back into its place. When
+         * node is closed, the "shadow" is deleted, with all remaining artifacts, and the file node store will contain
+         * only the touched artifacts.
+         * <p>
+         * Positive side of this mode is that it does not require daemon shutdown to perform purge, but the cost is
+         * that in case of failure, cache may be lost (cache archival in case of any failure on CI should not happen).
+         * Once the build is done, it is guaranteed that cache contains all the touched artifacts, daemon needs no
+         * special care. Also, this mode uses atomic moves, so overall storage consumption grows only with newly
+         * cached items.
+         */
+        ON_BEGIN,
+        /**
+         * Cache reduction mode that performs reduction on end, when node is stopped. In this mode the cache is
+         * left in place, and on every request entry is copied to "shadow" location. When node is closed,
+         * the file node store and "shadow" are swapped, and the file node store will contain only the touched artifacts.
+         * <p>
+         * Positive side of this mode is that it is safer against data loss (cache is unchanged in case of crash or
+         * failure), at the cost of explicit daemon shutdown requirement, since purge happens on file node close.
+         * Storage wise this mode requires more space, as it uses copy operation and cache entries are duplicated at
+         * one point (cleaned up at close).
+         */
+        ON_END
+    }
+
     public static FileNodeConfig with(SessionConfig sessionConfig) {
         requireNonNull(sessionConfig, "config");
 
@@ -26,7 +67,7 @@ public final class FileNodeConfig {
         List<String> checksumAlgorithms = Arrays.asList("SHA-1", "SHA-512");
         String keyResolver = SimpleKeyResolverFactory.NAME;
         boolean exclusiveAccess = false;
-        boolean cachePurge = false;
+        CachePurge cachePurge = CachePurge.OFF;
 
         if (sessionConfig.effectiveProperties().containsKey("mimir.file.basedir")) {
             basedir = FileUtils.canonicalPath(
@@ -51,8 +92,7 @@ public final class FileNodeConfig {
                     Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.file.exclusiveAccess"));
         }
         if (sessionConfig.effectiveProperties().containsKey("mimir.file.cachePurge")) {
-            cachePurge =
-                    Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.file.cachePurge"));
+            cachePurge = CachePurge.valueOf(sessionConfig.effectiveProperties().get("mimir.file.cachePurge"));
         }
 
         return new FileNodeConfig(basedir, mayLink, checksumAlgorithms, keyResolver, exclusiveAccess, cachePurge);
@@ -64,7 +104,7 @@ public final class FileNodeConfig {
             List<String> checksumAlgorithms,
             String keyResolver,
             boolean exclusiveAccess,
-            boolean cachePurge) {
+            CachePurge cachePurge) {
         return new FileNodeConfig(
                 FileUtils.canonicalPath(basedir),
                 mayLink,
@@ -81,7 +121,7 @@ public final class FileNodeConfig {
     private final List<String> checksumAlgorithms;
     private final String keyResolver;
     private final boolean exclusiveAccess;
-    private final boolean cachePurge;
+    private final CachePurge cachePurge;
 
     private FileNodeConfig(
             Path basedir,
@@ -89,13 +129,17 @@ public final class FileNodeConfig {
             List<String> checksumAlgorithms,
             String keyResolver,
             boolean exclusiveAccess,
-            boolean cachePurge) {
+            CachePurge cachePurge) {
         this.basedir = basedir;
         this.mayLink = mayLink;
         this.checksumAlgorithms = List.copyOf(checksumAlgorithms);
         this.keyResolver = keyResolver;
         this.exclusiveAccess = exclusiveAccess;
         this.cachePurge = cachePurge;
+        if (!exclusiveAccess && cachePurge != CachePurge.OFF) {
+            throw new IllegalArgumentException(
+                    "Invalid configuration: cachePurge possible only with exclusiveAccess enabled");
+        }
     }
 
     public Path basedir() {
@@ -118,7 +162,7 @@ public final class FileNodeConfig {
         return exclusiveAccess;
     }
 
-    public boolean cachePurge() {
+    public CachePurge cachePurge() {
         return cachePurge;
     }
 }

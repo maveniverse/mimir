@@ -29,3 +29,7 @@ assert first.contains('CACHED=') && !first.contains('CACHED=0')
 assert second.contains('[INFO] Mimir session closed')
 assert second.contains('RETRIEVED=') && !second.contains('RETRIEVED=0')
 assert second.contains('CACHED=4')
+
+// aftermath: we used slf4j-api 2.0.10 in first run, but is not present in cache, only 2.0.11
+assert !new File(basedir, 'mimir/local/central/org.slf4j/slf4j-api/2.0.10/slf4j-api-2.0.10.pom').exists()
+assert new File(basedir, 'mimir/local/central/org.slf4j/slf4j-api/2.0.11/slf4j-api-2.0.11.pom').exists()
