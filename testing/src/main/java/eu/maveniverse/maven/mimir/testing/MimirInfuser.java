@@ -20,6 +20,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -61,6 +62,10 @@ public final class MimirInfuser {
 
     /**
      * Preseeds the Mimir extension into given inner user home. It assumes default location for Maven local repository.
+     * Limitations:
+     * <ul>
+     *     <li>No split repository support yet</li>
+     * </ul>
      *
      * @since 0.10.1
      * @see #preseedItselfIntoInnerLocalRepository(Path)
@@ -72,6 +77,10 @@ public final class MimirInfuser {
 
     /**
      * Preseeds the Mimir extension into given Maven local repository.
+     * Limitations:
+     * <ul>
+     *     <li>No split repository support yet</li>
+     * </ul>
      *
      * @since 0.10.1
      */
@@ -97,6 +106,88 @@ public final class MimirInfuser {
             try (Handle handle = client.getHandle()) {
                 handle.writeRequest(Request.preseedItself(
                         session, innerLocalRepository.toAbsolutePath().toString(), Map.of()));
+                response = handle.readResponse();
+                if (Response.STATUS_KO.equals(response.status())) {
+                    throw new IOException("KO: " + response.data());
+                }
+            }
+            try (Handle handle = client.getHandle()) {
+                handle.writeRequest(Request.bye(session, false));
+                response = handle.readResponse();
+                if (Response.STATUS_KO.equals(response.status())) {
+                    throw new IOException("KO: " + response.data());
+                }
+            }
+        }
+    }
+
+    /**
+     * Preseeds the given artifacts into given inner user home. It assumes default location for Maven local repository.
+     * Each artifact is represented as string {@code "gav@repo"}. The GAV follows usual Resolver string representation of
+     * artifact coordinates as {@code "G:A[:E[:C]]:V"}. The repo may be string "central", or any custom repository
+     * in form of {@code id::url}.
+     * Examples:
+     * <ul>
+     *     <li>{@code org.slf4j:slf4j-api:2.0.11@central}</li>
+     *     <li>{@code org.something:my-lib:1.0@myrepo::https://myrepo.com/maven2}</li>
+     * </ul>
+     * Limitations:
+     * <ul>
+     *     <li>No split repository support yet</li>
+     * </ul>
+     *
+     * @since 0.10.1
+     * @see #preseedArtifactIntoInnerLocalRepository(Path, Collection)
+     */
+    public static void preseedArtifactsIntoInnerUserHome(Path innerUserHome, Collection<String> artifacts)
+            throws IOException {
+        requireNonNull(innerUserHome);
+        preseedArtifactIntoInnerLocalRepository(innerUserHome.resolve(".m2").resolve("repository"), artifacts);
+    }
+
+    /**
+     * Preseeds the given artifacts into given Maven local repository.
+     * Each artifact is represented as string {@code "gav@repo"}. The GAV follows usual Resolver string representation of
+     * artifact coordinates as {@code "G:A[:E[:C]]:V"}. The repo may be string "central", or any custom repository
+     * in form of {@code id::url}.
+     * Examples:
+     * <ul>
+     *     <li>{@code org.slf4j:slf4j-api:2.0.11@central}</li>
+     *     <li>{@code org.something:my-lib:1.0@myrepo::https://myrepo.com/maven2}</li>
+     * </ul>
+     * Limitations:
+     * <ul>
+     *     <li>No split repository support yet</li>
+     * </ul>
+     *
+     * @since 0.10.1
+     */
+    public static void preseedArtifactIntoInnerLocalRepository(Path innerLocalRepository, Collection<String> artifacts)
+            throws IOException {
+        requireNonNull(innerLocalRepository);
+        SessionConfig sessionConfig = SessionConfig.defaults().build();
+        try (Handle.ClientHandle client =
+                Handle.clientDomainSocket(sessionConfig.basedir().resolve(Handle.DEFAULT_SOCKET_PATH))) {
+            Response response;
+            Map<String, String> session;
+            try (Handle handle = client.getHandle()) {
+                HashMap<String, String> clientData = new HashMap<>();
+                clientData.put(
+                        Session.NODE_PID, Long.toString(ProcessHandle.current().pid()));
+                clientData.put(Session.NODE_VERSION, MIMIR_VERSION.get());
+                handle.writeRequest(Request.hello(clientData));
+                response = handle.readResponse();
+                if (Response.STATUS_KO.equals(response.status())) {
+                    throw new IOException("KO: " + response.data());
+                }
+                session = response.session();
+            }
+            try (Handle handle = client.getHandle()) {
+                handle.writeRequest(Request.preseed(
+                        session,
+                        String.join(";", artifacts),
+                        innerLocalRepository.toAbsolutePath().toString(),
+                        Map.of()));
                 response = handle.readResponse();
                 if (Response.STATUS_KO.equals(response.status())) {
                     throw new IOException("KO: " + response.data());
