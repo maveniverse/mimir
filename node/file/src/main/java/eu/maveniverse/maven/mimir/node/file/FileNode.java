@@ -86,7 +86,11 @@ public final class FileNode extends NodeSupport implements SystemNode {
         this.directoryLocker.lockDirectory(basedir, exclusiveAccess);
 
         // at this point, if exclusiveAccess=true we "own" exclusive lock over storage
-        if (cachePurge == FileNodeConfig.CachePurge.ON_BEGIN) {
+        if (cachePurge == FileNodeConfig.CachePurge.OFF) {
+            // normal operation
+            this.basedir = basedir;
+            this.shadowBasedir = null;
+        } else if (cachePurge == FileNodeConfig.CachePurge.ON_BEGIN) {
             // in this mode we move (if exists) our basedir to shadow basedir, and whatever is touched we pull back
             this.basedir = basedir;
             this.shadowBasedir = basedir.getParent().resolve(basedir.getFileName() + "-" + System.nanoTime());
@@ -110,9 +114,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
             Files.createDirectories(this.basedir);
             Files.createDirectories(this.shadowBasedir);
         } else {
-            // normal operation
-            this.basedir = basedir;
-            this.shadowBasedir = null;
+            throw new IllegalArgumentException("Unsupported CachePurge mode: " + cachePurge);
         }
     }
 
@@ -215,7 +217,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
                                 StandardCopyOption.ATOMIC_MOVE,
                                 StandardCopyOption.REPLACE_EXISTING);
                     case ON_END -> FileUtils.copyRecursively(source, destination, p -> true, false);
-                    default -> throw new UnsupportedOperationException("Unsupported purge mode: " + cachePurge);
+                    default -> throw new IllegalArgumentException("Unsupported CachePurge mode: " + cachePurge);
                 }
             }
         }
