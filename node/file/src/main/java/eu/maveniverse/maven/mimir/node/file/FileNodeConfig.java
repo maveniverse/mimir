@@ -21,7 +21,7 @@ public final class FileNodeConfig {
     /**
      * The cache purge mode.
      * Cache purge operates on <em>whole artifacts</em>, over all constituents of a GAV (POM, JAR, ...). A GAV is
-     * either purged from cache or preserved together. Mimir cache does not operate on file level.
+     * either purged from cache or preserved all together. Mimir cache does not operate on file level.
      * Note: to use any purge mode other than {@link #OFF}, the exclusive access to store must be enabled
      * via config as well, see {@link FileNodeConfig#exclusiveAccess()}.
      */
@@ -34,15 +34,16 @@ public final class FileNodeConfig {
          */
         OFF,
         /**
-         * Cache reduction mode that performs reduction on start, when node is started. In this mode the cache is
-         * atomically moved to "shadow", and on every request is pulled from "shadow" back into its place. When
+         * Cache reduction mode that performs reduction on begin, when node is started. In this mode the cache is
+         * atomically moved to "shadow", and on every request entry pulled from "shadow" back into its place. When
          * node is closed, the "shadow" is deleted, with all remaining artifacts, and the file node store will contain
          * only the touched artifacts.
          * <p>
          * Positive side of this mode is that it does not require daemon shutdown to perform purge, but the cost is
-         * that in case of failure, cache may be lost (as cache archival in case of any failure on CI should not happen).
-         * Once the build is done, it is guaranteed that cache contains all the touched artifacts, and daemon can be left
-         * alive as long as needed.
+         * that in case of failure, cache may be lost (cache archival in case of any failure on CI should not happen).
+         * Once the build is done, it is guaranteed that cache contains all the touched artifacts, daemon needs no
+         * special care. Also, this mode uses atomic moves, so overall storage consumption grows only with newly
+         * cached items.
          */
         ON_BEGIN,
         /**
@@ -52,8 +53,8 @@ public final class FileNodeConfig {
          * <p>
          * Positive side of this mode is that it is safer against data loss (cache is unchanged in case of crash or
          * failure), at the cost of explicit daemon shutdown requirement, since purge happens on file node close.
-         * This mode happens only if daemon-less mode is used with file node, or, if daemon is used with file node and
-         * daemon is explicitly shutdown.
+         * Storage wise this mode requires more space, as it uses copy operation and cache entries are duplicated at
+         * one point (cleaned up at close).
          */
         ON_END
     }
