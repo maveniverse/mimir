@@ -34,7 +34,7 @@ public final class FileNodeConfig {
          */
         OFF,
         /**
-         * Cache reduction mode that preforms reduction on start, when node is started. In this mode the cache is
+         * Cache reduction mode that performs reduction on start, when node is started. In this mode the cache is
          * atomically moved to "shadow", and on every request is pulled from "shadow" back into its place. When
          * node is closed, the "shadow" is deleted, with all remaining artifacts, and the file node store will contain
          * only the touched artifacts.
@@ -46,7 +46,7 @@ public final class FileNodeConfig {
          */
         ON_BEGIN,
         /**
-         * Cache reduction mode that preforms reduction on end, when node is stopped. In this mode the cache is
+         * Cache reduction mode that performs reduction on end, when node is stopped. In this mode the cache is
          * left in place, and on every request entry is copied to "shadow" location. When node is closed,
          * the file node store and "shadow" are swapped, and the file node store will contain only the touched artifacts.
          * <p>
