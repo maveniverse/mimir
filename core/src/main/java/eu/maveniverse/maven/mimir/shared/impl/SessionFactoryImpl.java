@@ -68,9 +68,11 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
             }
         }
 
-        LocalNode localNode = createLocalNode(config.localNode(), config)
-                .orElseThrow(
-                        () -> new IllegalStateException("Chosen local node " + config.localNode() + " not configured"));
+        LocalNode localNode = config.localNodeInstance().isPresent()
+                ? config.localNodeInstance().orElseThrow()
+                : createLocalNode(config.localNode(), config)
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Chosen local node " + config.localNode() + " not configured"));
 
         if (!overlays.isEmpty()) {
             localNode = new OverlayingLocalNode(overlays, localNode);

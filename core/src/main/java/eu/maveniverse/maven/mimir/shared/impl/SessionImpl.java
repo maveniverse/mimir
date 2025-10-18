@@ -18,7 +18,6 @@ import eu.maveniverse.maven.shared.core.component.CloseableConfigSupport;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -166,16 +165,8 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
 
     @Override
     protected void doClose() throws IOException {
-        ArrayList<IOException> exceptions = new ArrayList<>();
-        try {
+        if (config.localNodeInstance().isEmpty()) {
             localNode.close();
-        } catch (IOException e) {
-            exceptions.add(e);
-        }
-        if (!exceptions.isEmpty()) {
-            IOException closeException = new IOException("Could not close session");
-            exceptions.forEach(closeException::addSuppressed);
-            throw closeException;
         }
         logger.info("Mimir session closed (RETRIEVED={} CACHED={})", stats.transferSuccess(), stats.storeSuccess());
     }
