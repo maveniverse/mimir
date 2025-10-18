@@ -34,6 +34,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+/**
+ * TODO: this test leaves running daemon instances!
+ */
 public class DaemonNodeFactoryIT {
     /**
      * Locker implementation using {@link ReentrantReadWriteLock} as FS locking is JVM wide.
@@ -135,7 +138,9 @@ public class DaemonNodeFactoryIT {
         DaemonNodeFactory factory1 = new DaemonNodeFactory(locker);
 
         try {
-            Optional<DaemonNode> dno = factory1.createLocalNode(sessionConfig);
+            Optional<DaemonNode> dno = factory1.createLocalNode(sessionConfig.toBuilder()
+                    .setUserProperty("mimir.daemon.autostop", Boolean.TRUE.toString())
+                    .build());
             assertTrue(dno.isPresent());
             try (DaemonNode daemonNode = dno.orElseThrow()) {
                 System.out.println("Session:");

@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.naming.RemoteRepositories;
+import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import eu.maveniverse.maven.shared.core.maven.MavenUtils;
 import java.io.IOException;
@@ -102,6 +103,8 @@ public interface SessionConfig {
 
     String localNode();
 
+    Optional<LocalNode> localNodeInstance();
+
     Set<String> repositories();
 
     default Builder toBuilder() {
@@ -113,6 +116,7 @@ public interface SessionConfig {
                 propertiesPath(),
                 userProperties(),
                 systemProperties(),
+                localNodeInstance().orElse(null),
                 repositorySystemSession().orElse(null));
     }
 
@@ -137,6 +141,7 @@ public interface SessionConfig {
                 mimirSessionConfigPath,
                 Collections.emptyMap(),
                 MavenUtils.toMap(System.getProperties()),
+                null,
                 null);
     }
 
@@ -169,6 +174,7 @@ public interface SessionConfig {
         private Path propertiesPath;
         private Map<String, String> userProperties;
         private Map<String, String> systemProperties;
+        private LocalNode localNodeInstance;
         private RepositorySystemSession repositorySystemSession;
 
         private Builder(
@@ -179,6 +185,7 @@ public interface SessionConfig {
                 Path propertiesPath,
                 Map<String, String> userProperties,
                 Map<String, String> systemProperties,
+                LocalNode localNodeInstance,
                 RepositorySystemSession repositorySystemSession) {
             this.enabled = enabled;
             this.ignoreErrorAtSessionEnd = ignoreErrorAtSessionEnd;
@@ -187,6 +194,7 @@ public interface SessionConfig {
             this.propertiesPath = propertiesPath;
             this.userProperties = new HashMap<>(userProperties);
             this.systemProperties = new HashMap<>(systemProperties);
+            this.localNodeInstance = localNodeInstance;
             this.repositorySystemSession = repositorySystemSession;
         }
 
@@ -236,6 +244,11 @@ public interface SessionConfig {
             return this;
         }
 
+        public Builder localNodeInstance(LocalNode localNodeInstance) {
+            this.localNodeInstance = localNodeInstance;
+            return this;
+        }
+
         public Builder repositorySystemSession(RepositorySystemSession repositorySystemSession) {
             this.repositorySystemSession = repositorySystemSession;
             return this;
@@ -250,6 +263,7 @@ public interface SessionConfig {
                     propertiesPath,
                     userProperties,
                     systemProperties,
+                    localNodeInstance,
                     repositorySystemSession);
         }
 
@@ -269,6 +283,7 @@ public interface SessionConfig {
             private final String keyMapper;
             private final Set<String> overlayNodes;
             private final String localNode;
+            private final LocalNode localNodeInstance;
             private final Set<String> repositories;
 
             private Impl(
@@ -279,6 +294,7 @@ public interface SessionConfig {
                     Path propertiesPath,
                     Map<String, String> userProperties,
                     Map<String, String> systemProperties,
+                    LocalNode localNodeInstance,
                     RepositorySystemSession repositorySystemSession) {
                 this.mimirVersion = requireNonNull(mimirVersion, "mimirVersion");
 
@@ -315,13 +331,14 @@ public interface SessionConfig {
                         : ignoreErrorAtSessionEnd;
 
                 this.localHostHint = effectiveProperties.get(CONF_LOCAL_HOST_HINT);
+                this.localNodeInstance = localNodeInstance;
                 this.repositorySystemSession = repositorySystemSession;
 
                 // session impl (derived from those above)
 
                 String keyMapper = SimpleKeyMapperFactory.NAME;
                 Set<String> overlayNodes = Set.of();
-                String localNode = "daemon";
+                String localNode = localNodeInstance != null ? localNodeInstance.name() : "daemon";
                 Set<String> repositories = Set.of(RemoteRepositories.CENTRAL_REPOSITORY_ID);
 
                 if (effectiveProperties.containsKey("mimir.session.keyMapper")) {
@@ -332,7 +349,7 @@ public interface SessionConfig {
                             .get("mimir.session.overlayNodes")
                             .split(",")));
                 }
-                if (effectiveProperties.containsKey("mimir.session.localNode")) {
+                if (localNodeInstance == null && effectiveProperties.containsKey("mimir.session.localNode")) {
                     localNode = effectiveProperties.get("mimir.session.localNode");
                 }
                 if (effectiveProperties.containsKey("mimir.session.repositories")) {
@@ -410,6 +427,11 @@ public interface SessionConfig {
             @Override
             public String localNode() {
                 return localNode;
+            }
+
+            @Override
+            public Optional<LocalNode> localNodeInstance() {
+                return Optional.ofNullable(localNodeInstance);
             }
 
             @Override

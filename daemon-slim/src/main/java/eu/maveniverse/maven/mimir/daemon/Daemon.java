@@ -389,6 +389,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                 userProperties.put("mimir.session.localNode", systemNode.name());
                 SessionConfig sc = sessionConfig.toBuilder()
                         .userProperties(userProperties)
+                        .localNodeInstance(systemNode)
                         .repositorySystemSession(session)
                         .build();
                 try (eu.maveniverse.maven.mimir.shared.Session mimirSession =
