@@ -62,6 +62,7 @@ public final class FileNodeFactory implements LocalNodeFactory<FileNode>, System
 
         return new FileNode(
                 fileNodeConfig.basedir(),
+                fileNodeConfig.baseLockDir(),
                 fileNodeConfig.mayLink(),
                 fileNodeConfig.exclusiveAccess(),
                 fileNodeConfig.cachePurge(),

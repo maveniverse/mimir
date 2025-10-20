@@ -44,6 +44,7 @@ public class JGroupsNodeTest {
 
         FileNodeConfig configOne = FileNodeConfig.of(
                 one,
+                one,
                 true,
                 Collections.singletonList("SHA-1"),
                 SimpleKeyResolverFactory.NAME,
@@ -51,6 +52,7 @@ public class JGroupsNodeTest {
                 FileNodeConfig.CachePurge.OFF);
         FileNode nodeOne = new FileNode(
                 configOne.basedir(),
+                configOne.baseLockDir(),
                 configOne.mayLink(),
                 configOne.exclusiveAccess(),
                 configOne.cachePurge(),
@@ -60,6 +62,7 @@ public class JGroupsNodeTest {
                 DirectoryLocker.INSTANCE);
         FileNodeConfig configTwo = FileNodeConfig.of(
                 two,
+                two,
                 true,
                 Collections.singletonList("SHA-1"),
                 SimpleKeyResolverFactory.NAME,
@@ -67,6 +70,7 @@ public class JGroupsNodeTest {
                 FileNodeConfig.CachePurge.OFF);
         FileNode nodeTwo = new FileNode(
                 configTwo.basedir(),
+                configTwo.baseLockDir(),
                 configTwo.mayLink(),
                 configTwo.exclusiveAccess(),
                 configTwo.cachePurge(),

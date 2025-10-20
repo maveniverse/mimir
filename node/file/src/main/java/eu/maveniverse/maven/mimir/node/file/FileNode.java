@@ -48,6 +48,7 @@ import org.msgpack.core.MessageUnpacker;
 public final class FileNode extends NodeSupport implements SystemNode {
 
     private final Path basedir;
+    private final Path baseLockDir;
     private final boolean mayLink;
     private final boolean exclusiveAccess;
     private final FileNodeConfig.CachePurge cachePurge;
@@ -60,6 +61,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
 
     public FileNode(
             Path basedir,
+            Path baseLockDir,
             boolean mayLink,
             boolean exclusiveAccess,
             FileNodeConfig.CachePurge cachePurge,
@@ -83,7 +85,9 @@ public final class FileNode extends NodeSupport implements SystemNode {
         }
 
         Files.createDirectories(basedir);
-        this.directoryLocker.lockDirectory(basedir, exclusiveAccess);
+        Files.createDirectories(baseLockDir);
+        this.baseLockDir = baseLockDir;
+        this.directoryLocker.lockDirectory(baseLockDir, exclusiveAccess);
 
         // at this point, if cachePurge != OFF we have exclusiveAccess=true and we "own" exclusive lock over storage
         if (cachePurge == FileNodeConfig.CachePurge.OFF) {
@@ -253,7 +257,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
                 FileUtils.deleteRecursively(backup);
             }
         } finally {
-            directoryLocker.unlockDirectory(basedir);
+            directoryLocker.unlockDirectory(baseLockDir);
         }
     }
 
