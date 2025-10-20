@@ -63,8 +63,7 @@ public final class FileNodeConfig {
         requireNonNull(sessionConfig, "config");
 
         Path basedir = sessionConfig.basedir().resolve("local");
-        Path locks = sessionConfig.basedir().resolve("locks");
-        Path baseLockDir = locks.resolve(NAME);
+        Path baseLockDir = sessionConfig.baseLocksDir().resolve(NAME);
         boolean mayLink = true;
         List<String> checksumAlgorithms = Arrays.asList("SHA-1", "SHA-512");
         String keyResolver = SimpleKeyResolverFactory.NAME;

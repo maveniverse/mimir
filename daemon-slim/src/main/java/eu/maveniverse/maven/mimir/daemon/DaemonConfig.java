@@ -22,8 +22,7 @@ public class DaemonConfig {
     public static DaemonConfig with(SessionConfig sessionConfig) {
         requireNonNull(sessionConfig, "config");
 
-        Path locks = sessionConfig.basedir().resolve("locks");
-        Path daemonLockDir = locks.resolve("daemon");
+        Path daemonLockDir = sessionConfig.baseLocksDir().resolve("daemon");
         Path socketPath = sessionConfig.basedir().resolve(Handle.DEFAULT_SOCKET_PATH);
         String systemNode = "file";
         boolean preSeedItself = false;

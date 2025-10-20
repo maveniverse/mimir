@@ -27,6 +27,7 @@ public class DaemonNodeConfig {
                     .basedir()
                     .resolve(sessionConfig.effectiveProperties().get("mimir.daemon.basedir")));
         }
+        // here we cannot use sessionConfig.baseLocksDir() as we may moved daemon basedir above
         Path locks = daemonBasedir.resolve("locks");
         Path daemonLockDir = locks.resolve("daemon");
         Path daemonStarterLockDir = locks.resolve("starter");

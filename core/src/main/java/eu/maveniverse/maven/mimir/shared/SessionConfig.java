@@ -83,6 +83,8 @@ public interface SessionConfig {
 
     Path basedir();
 
+    Path baseLocksDir();
+
     Path propertiesPath();
 
     Map<String, String> userProperties();
@@ -272,6 +274,7 @@ public interface SessionConfig {
             private final boolean ignoreErrorAtSessionEnd;
             private final String mimirVersion;
             private final Path basedir;
+            private final Path baseLocksDir;
             private final Path propertiesPath;
             private final Map<String, String> userProperties;
             private final Map<String, String> systemProperties;
@@ -301,6 +304,7 @@ public interface SessionConfig {
                 this.basedir = basedir == null
                         ? FileUtils.discoverBaseDirectory("mimir.basedir", ".mimir")
                         : FileUtils.canonicalPath(basedir);
+                this.baseLocksDir = this.basedir.resolve("locks");
                 this.propertiesPath = propertiesPath == null
                         ? this.basedir.resolve("session.properties")
                         : FileUtils.canonicalPath(this.basedir.resolve(propertiesPath));
@@ -380,6 +384,11 @@ public interface SessionConfig {
             @Override
             public Path basedir() {
                 return basedir;
+            }
+
+            @Override
+            public Path baseLocksDir() {
+                return baseLocksDir;
             }
 
             @Override
