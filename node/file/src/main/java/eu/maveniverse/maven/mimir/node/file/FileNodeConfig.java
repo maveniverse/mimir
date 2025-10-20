@@ -63,6 +63,8 @@ public final class FileNodeConfig {
         requireNonNull(sessionConfig, "config");
 
         Path basedir = sessionConfig.basedir().resolve("local");
+        Path locks = sessionConfig.basedir().resolve("locks");
+        Path baseLockDir = locks.resolve(NAME);
         boolean mayLink = true;
         List<String> checksumAlgorithms = Arrays.asList("SHA-1", "SHA-512");
         String keyResolver = SimpleKeyResolverFactory.NAME;
@@ -95,28 +97,26 @@ public final class FileNodeConfig {
             cachePurge = CachePurge.valueOf(sessionConfig.effectiveProperties().get("mimir.file.cachePurge"));
         }
 
-        return new FileNodeConfig(basedir, mayLink, checksumAlgorithms, keyResolver, exclusiveAccess, cachePurge);
+        return new FileNodeConfig(
+                basedir, baseLockDir, mayLink, checksumAlgorithms, keyResolver, exclusiveAccess, cachePurge);
     }
 
     public static FileNodeConfig of(
             Path basedir,
+            Path baseLockDir,
             boolean mayLink,
             List<String> checksumAlgorithms,
             String keyResolver,
             boolean exclusiveAccess,
             CachePurge cachePurge) {
         return new FileNodeConfig(
-                FileUtils.canonicalPath(basedir),
-                mayLink,
-                checksumAlgorithms,
-                keyResolver,
-                exclusiveAccess,
-                cachePurge);
+                basedir, baseLockDir, mayLink, checksumAlgorithms, keyResolver, exclusiveAccess, cachePurge);
     }
 
     public static final String NAME = "file";
 
     private final Path basedir;
+    private final Path baseLockDir;
     private final boolean mayLink;
     private final List<String> checksumAlgorithms;
     private final String keyResolver;
@@ -125,12 +125,14 @@ public final class FileNodeConfig {
 
     private FileNodeConfig(
             Path basedir,
+            Path baseLockDir,
             boolean mayLink,
             List<String> checksumAlgorithms,
             String keyResolver,
             boolean exclusiveAccess,
             CachePurge cachePurge) {
         this.basedir = basedir;
+        this.baseLockDir = baseLockDir;
         this.mayLink = mayLink;
         this.checksumAlgorithms = List.copyOf(checksumAlgorithms);
         this.keyResolver = keyResolver;
@@ -144,6 +146,10 @@ public final class FileNodeConfig {
 
     public Path basedir() {
         return basedir;
+    }
+
+    public Path baseLockDir() {
+        return baseLockDir;
     }
 
     public boolean mayLink() {

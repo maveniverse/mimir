@@ -27,9 +27,9 @@ public class DaemonNodeConfig {
                     .basedir()
                     .resolve(sessionConfig.effectiveProperties().get("mimir.daemon.basedir")));
         }
-
-        Path daemonLockDir = daemonBasedir.resolve("daemon");
-        Path daemonStarterLockDir = daemonBasedir.resolve("daemonStarter");
+        Path locks = daemonBasedir.resolve("locks");
+        Path daemonLockDir = locks.resolve("daemon");
+        Path daemonStarterLockDir = locks.resolve("starter");
         Path socketPath = daemonBasedir.resolve(Handle.DEFAULT_SOCKET_PATH);
         Path daemonJavaHome = FileUtils.canonicalPath(daemonBasedir.resolve(sessionConfig
                 .effectiveProperties()
