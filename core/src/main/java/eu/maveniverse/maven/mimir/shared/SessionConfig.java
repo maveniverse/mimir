@@ -109,6 +109,14 @@ public interface SessionConfig {
 
     Set<String> repositories();
 
+    // components on/off
+
+    boolean resolverConnectorEnabled();
+
+    boolean resolverResolverPostProcessorEnabled();
+
+    boolean resolverTrustedChecksumsSourceEnabled();
+
     default Builder toBuilder() {
         return new Builder(
                 enabled(),
@@ -178,6 +186,9 @@ public interface SessionConfig {
         private Map<String, String> systemProperties;
         private LocalNode localNodeInstance;
         private RepositorySystemSession repositorySystemSession;
+        private boolean resolverConnectorEnabled = true;
+        private boolean resolverResolverPostProcessorEnabled = true;
+        private boolean resolverTrustedChecksumsSourceEnabled = true;
 
         private Builder(
                 Boolean enabled,
@@ -256,6 +267,21 @@ public interface SessionConfig {
             return this;
         }
 
+        public Builder resolverConnectorEnabled(boolean resolverConnectorEnabled) {
+            this.resolverConnectorEnabled = resolverConnectorEnabled;
+            return this;
+        }
+
+        public Builder resolverResolverPostProcessorEnabled(boolean resolverResolverPostProcessorEnabled) {
+            this.resolverResolverPostProcessorEnabled = resolverResolverPostProcessorEnabled;
+            return this;
+        }
+
+        public Builder resolverTrustedChecksumsSourceEnabled(boolean resolverTrustedChecksumsSourceEnabled) {
+            this.resolverTrustedChecksumsSourceEnabled = resolverTrustedChecksumsSourceEnabled;
+            return this;
+        }
+
         public SessionConfig build() {
             return new Impl(
                     enabled,
@@ -266,7 +292,10 @@ public interface SessionConfig {
                     userProperties,
                     systemProperties,
                     localNodeInstance,
-                    repositorySystemSession);
+                    repositorySystemSession,
+                    resolverConnectorEnabled,
+                    resolverResolverPostProcessorEnabled,
+                    resolverTrustedChecksumsSourceEnabled);
         }
 
         private static class Impl implements SessionConfig {
@@ -281,6 +310,10 @@ public interface SessionConfig {
             private final Map<String, String> effectiveProperties;
             private final String localHostHint;
             private final RepositorySystemSession repositorySystemSession;
+
+            private final boolean resolverConnectorEnabled;
+            private final boolean resolverResolverPostProcessorEnabled;
+            private final boolean resolverTrustedChecksumsSourceEnabled;
 
             // session impl config (derived from that above)
             private final String keyMapper;
@@ -298,7 +331,10 @@ public interface SessionConfig {
                     Map<String, String> userProperties,
                     Map<String, String> systemProperties,
                     LocalNode localNodeInstance,
-                    RepositorySystemSession repositorySystemSession) {
+                    RepositorySystemSession repositorySystemSession,
+                    boolean resolverConnectorEnabled,
+                    boolean resolverResolverPostProcessorEnabled,
+                    boolean resolverTrustedChecksumsSourceEnabled) {
                 this.mimirVersion = requireNonNull(mimirVersion, "mimirVersion");
 
                 this.basedir = basedir == null
@@ -337,6 +373,9 @@ public interface SessionConfig {
                 this.localHostHint = effectiveProperties.get(CONF_LOCAL_HOST_HINT);
                 this.localNodeInstance = localNodeInstance;
                 this.repositorySystemSession = repositorySystemSession;
+                this.resolverConnectorEnabled = resolverConnectorEnabled;
+                this.resolverResolverPostProcessorEnabled = resolverResolverPostProcessorEnabled;
+                this.resolverTrustedChecksumsSourceEnabled = resolverTrustedChecksumsSourceEnabled;
 
                 // session impl (derived from those above)
 
@@ -446,6 +485,21 @@ public interface SessionConfig {
             @Override
             public Set<String> repositories() {
                 return repositories;
+            }
+
+            @Override
+            public boolean resolverConnectorEnabled() {
+                return resolverConnectorEnabled;
+            }
+
+            @Override
+            public boolean resolverTrustedChecksumsSourceEnabled() {
+                return resolverTrustedChecksumsSourceEnabled;
+            }
+
+            @Override
+            public boolean resolverResolverPostProcessorEnabled() {
+                return resolverResolverPostProcessorEnabled;
             }
         }
     }

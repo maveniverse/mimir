@@ -10,13 +10,11 @@ package eu.maveniverse.maven.mimir.extension3;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.MimirUtils;
-import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -41,34 +39,36 @@ public class MimirArtifactResolverPostProcessor extends ComponentSupport impleme
 
     @Override
     public void postProcess(RepositorySystemSession session, List<ArtifactResult> artifactResults) {
-        for (ArtifactResult artifactResult : artifactResults) {
-            if (artifactResult.getRepository() instanceof RemoteRepository remoteRepository) {
-                Optional<Session> sessionOptional = MimirUtils.mayGetSession(session);
-                if (sessionOptional.isPresent()) {
-                    Session ms = sessionOptional.orElseThrow();
-                    Artifact artifact = artifactResult.getArtifact();
-                    boolean resolved = artifactResult.isResolved();
-                    if (resolved && ms.repositorySupported(remoteRepository) && ms.artifactSupported(artifact)) {
-                        try {
-                            // store it; if needed
-                            if (!ms.retrievedFromCache(remoteRepository, artifact)
-                                    && !ms.storedToCache(remoteRepository, artifact)
-                                    && ms.locate(remoteRepository, artifact).isEmpty()) {
-                                ms.store(
-                                        remoteRepository,
-                                        artifact,
-                                        artifact.getFile().toPath(),
-                                        Collections.emptyMap(),
-                                        ChecksumAlgorithmHelper.calculate(
-                                                artifact.getFile(),
-                                                checksumAlgorithmFactorySelector.selectList(ms.checksumAlgorithms())));
+        MimirUtils.mayGetSession(session).ifPresent(ms -> {
+            if (ms.config().resolverResolverPostProcessorEnabled()) {
+                for (ArtifactResult artifactResult : artifactResults) {
+                    if (artifactResult.getRepository() instanceof RemoteRepository remoteRepository) {
+                        Artifact artifact = artifactResult.getArtifact();
+                        boolean resolved = artifactResult.isResolved();
+                        if (resolved && ms.repositorySupported(remoteRepository) && ms.artifactSupported(artifact)) {
+                            try {
+                                // store it; if needed
+                                if (!ms.retrievedFromCache(remoteRepository, artifact)
+                                        && !ms.storedToCache(remoteRepository, artifact)
+                                        && ms.locate(remoteRepository, artifact).isEmpty()) {
+                                    logger.debug("Storing artifact {} ({})", artifact, artifact.getFile());
+                                    ms.store(
+                                            remoteRepository,
+                                            artifact,
+                                            artifact.getFile().toPath(),
+                                            Collections.emptyMap(),
+                                            ChecksumAlgorithmHelper.calculate(
+                                                    artifact.getFile(),
+                                                    checksumAlgorithmFactorySelector.selectList(
+                                                            ms.checksumAlgorithms())));
+                                }
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
                             }
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
                         }
                     }
                 }
             }
-        }
+        });
     }
 }

@@ -391,6 +391,8 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                         .userProperties(userProperties)
                         .localNodeInstance(systemNode)
                         .repositorySystemSession(session)
+                        .resolverResolverPostProcessorEnabled(false)
+                        .resolverTrustedChecksumsSourceEnabled(false)
                         .build();
                 try (eu.maveniverse.maven.mimir.shared.Session mimirSession =
                         MimirUtils.lazyInit(session, sessionFactory, sc)) {

@@ -13,7 +13,6 @@ import eu.maveniverse.maven.mimir.shared.MimirUtils;
 import eu.maveniverse.maven.mimir.shared.Session;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -51,11 +50,10 @@ public class MimirRepositoryConnectorFactory implements RepositoryConnectorFacto
     public RepositoryConnector newInstance(RepositorySystemSession session, RemoteRepository repository)
             throws NoRepositoryConnectorException {
         String message = "Mimir is disabled";
-        Optional<Session> sessionOptional = MimirUtils.mayGetSession(session);
-        if (sessionOptional.isPresent()) {
-            Session mimirSession = sessionOptional.orElseThrow();
+        Session ms = MimirUtils.mayGetSession(session).orElse(null);
+        if (ms != null && ms.config().resolverConnectorEnabled()) {
             message = "Unsupported repository: " + repository;
-            if (mimirSession.repositorySupported(repository)) {
+            if (ms.repositorySupported(repository)) {
                 RepositoryConnectorFactory basicRepositoryConnectorFactory = requireNonNull(
                         repositoryConnectorFactories.get("basic").get(), "No basic repository connector factory found");
                 RepositoryConnector repositoryConnector =
@@ -69,7 +67,7 @@ public class MimirRepositoryConnectorFactory implements RepositoryConnectorFacto
                                 "aether.layout.maven2.checksumAlgorithms" + repository.getId(),
                                 "aether.layout.maven2.checksumAlgorithms")));
                 return new MimirRepositoryConnector(
-                        mimirSession,
+                        ms,
                         repository,
                         repositoryConnector,
                         checksumsAlgorithms,
