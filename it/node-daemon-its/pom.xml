@@ -82,6 +82,7 @@
                   <forkCount>1</forkCount>
                   <argLine>-Djava.io.tmpdir=${failsafe.tempdir} -Dreal.java.io.tmpdir=${java.io.tmpdir}</argLine>
                   <systemPropertyVariables>
+                    <daemon.jar.version>${project.version}</daemon.jar.version>
                     <daemon.jar.path>${project.build.directory}/dependency/daemon-slim-daemon.jar</daemon.jar.path>
                   </systemPropertyVariables>
                 </configuration>
