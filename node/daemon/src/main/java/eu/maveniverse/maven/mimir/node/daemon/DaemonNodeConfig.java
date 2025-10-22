@@ -88,7 +88,7 @@ public class DaemonNodeConfig {
         }
         if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.localRepository")) {
             localRepository = FileUtils.canonicalPath(
-                    Path.of(sessionConfig.effectiveProperties().get("mimir.daemon.localRepository")));
+                    daemonBasedir.resolve(sessionConfig.effectiveProperties().get("mimir.daemon.localRepository")));
         }
         return new DaemonNodeConfig(
                 sessionConfig,

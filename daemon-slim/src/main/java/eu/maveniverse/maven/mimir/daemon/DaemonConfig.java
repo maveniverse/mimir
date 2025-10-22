@@ -57,8 +57,9 @@ public class DaemonConfig {
                     sessionConfig, sessionConfig.effectiveProperties().get("mimir.daemon.preSeedArtifacts"), false));
         }
         if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.localRepository")) {
-            localRepository = FileUtils.canonicalPath(
-                    Path.of(sessionConfig.effectiveProperties().get("mimir.daemon.localRepository")));
+            localRepository = FileUtils.canonicalPath(sessionConfig
+                    .basedir()
+                    .resolve(sessionConfig.effectiveProperties().get("mimir.daemon.localRepository")));
         }
         return new DaemonConfig(
                 sessionConfig,
