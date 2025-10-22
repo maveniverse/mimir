@@ -275,8 +275,10 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
 
     protected <T> T withResolver(BiFunction<Runtime, Context, T> resolver) {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
-        try (Context context =
-                runtime.create(ContextOverrides.create().withUserSettings(true).build())) {
+        try (Context context = runtime.create(ContextOverrides.create()
+                .withLocalRepositoryOverride(config.localRepository().orElse(null))
+                .withUserSettings(true)
+                .build())) {
             return resolver.apply(runtime, context);
         }
     }
@@ -372,6 +374,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                         systemNode);
             }
             try {
+
                 if (localRepository != null
                         && !Objects.equals(
                                 session.getLocalRepository()

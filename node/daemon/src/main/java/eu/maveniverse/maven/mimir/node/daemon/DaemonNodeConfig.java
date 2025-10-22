@@ -14,6 +14,7 @@ import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Optional;
 
 public class DaemonNodeConfig {
     public static DaemonNodeConfig with(SessionConfig sessionConfig) {
@@ -46,6 +47,8 @@ public class DaemonNodeConfig {
         String daemonGav = "eu.maveniverse.maven.mimir:daemon-slim:jar:daemon:" + sessionConfig.mimirVersion();
         boolean passOnBasedir = false;
         boolean debug = false;
+
+        Path localRepository = null;
 
         if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.socketPath")) {
             socketPath = FileUtils.canonicalPath(
@@ -83,6 +86,10 @@ public class DaemonNodeConfig {
         if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.debug")) {
             debug = Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.daemon.debug"));
         }
+        if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.localRepository")) {
+            localRepository = FileUtils.canonicalPath(
+                    Path.of(sessionConfig.effectiveProperties().get("mimir.daemon.localRepository")));
+        }
         return new DaemonNodeConfig(
                 sessionConfig,
                 daemonBasedir,
@@ -98,6 +105,7 @@ public class DaemonNodeConfig {
                 daemonLog,
                 daemonGav,
                 passOnBasedir,
+                localRepository,
                 debug);
     }
 
@@ -117,6 +125,7 @@ public class DaemonNodeConfig {
     private final Path daemonLog;
     private final String daemonGav;
     private final boolean passOnBasedir;
+    private final Path localRepository;
     private final boolean debug;
 
     private DaemonNodeConfig(
@@ -134,6 +143,7 @@ public class DaemonNodeConfig {
             Path daemonLog,
             String daemonGav,
             boolean passOnBasedir,
+            Path localRepository,
             boolean debug) {
         this.sessionConfig = requireNonNull(sessionConfig);
         this.daemonBasedir = requireNonNull(daemonBasedir);
@@ -149,6 +159,7 @@ public class DaemonNodeConfig {
         this.daemonLog = requireNonNull(daemonLog);
         this.daemonGav = requireNonNull(daemonGav);
         this.passOnBasedir = passOnBasedir;
+        this.localRepository = localRepository;
         this.debug = debug;
     }
 
@@ -206,6 +217,10 @@ public class DaemonNodeConfig {
 
     public boolean passOnBasedir() {
         return passOnBasedir;
+    }
+
+    public Optional<Path> localRepository() {
+        return Optional.ofNullable(localRepository);
     }
 
     public boolean debug() {

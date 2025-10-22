@@ -9,3 +9,7 @@ To make cache purge work, following is required:
 
 In "exclusive access" the file now "owns" the storage, it is guaranteed only one node is accessing it. And 
 cache purge when enabled, is applied. BOTH are needed, otherwise configuration failure is reported.
+
+NOTE: The scenario in this IT is quite convoluted, and hence, contains expectation that daemon is used
+by single process! This test is here only to, well, test, and in real life you'd not do anything like 
+this.
