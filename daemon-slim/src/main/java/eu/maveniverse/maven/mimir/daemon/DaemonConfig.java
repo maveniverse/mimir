@@ -16,6 +16,7 @@ import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.eclipse.aether.artifact.DefaultArtifact;
 
 public class DaemonConfig {
@@ -32,6 +33,7 @@ public class DaemonConfig {
                 ParseUtils.CENTRAL,
                 new DefaultArtifact("eu.maveniverse.maven.mimir:extension3:" + sessionConfig.mimirVersion())));
         ArrayList<ParseUtils.ArtifactSource> preSeedArtifacts = new ArrayList<>();
+        Path localRepository = null;
 
         if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.socketPath")) {
             socketPath = FileUtils.canonicalPath(sessionConfig
@@ -54,8 +56,20 @@ public class DaemonConfig {
             preSeedArtifacts.addAll(ParseUtils.parseBundleSources(
                     sessionConfig, sessionConfig.effectiveProperties().get("mimir.daemon.preSeedArtifacts"), false));
         }
+        if (sessionConfig.effectiveProperties().containsKey("mimir.daemon.localRepository")) {
+            localRepository = FileUtils.canonicalPath(sessionConfig
+                    .basedir()
+                    .resolve(sessionConfig.effectiveProperties().get("mimir.daemon.localRepository")));
+        }
         return new DaemonConfig(
-                sessionConfig, daemonLockDir, socketPath, systemNode, preSeedItself, itselfArtifacts, preSeedArtifacts);
+                sessionConfig,
+                daemonLockDir,
+                socketPath,
+                systemNode,
+                preSeedItself,
+                itselfArtifacts,
+                preSeedArtifacts,
+                localRepository);
     }
 
     private final SessionConfig sessionConfig;
@@ -65,6 +79,7 @@ public class DaemonConfig {
     private final boolean preSeedItself;
     private final List<ParseUtils.ArtifactSource> itselfArtifacts;
     private final List<ParseUtils.ArtifactSource> preSeedArtifacts;
+    private final Path localRepository;
 
     private DaemonConfig(
             SessionConfig sessionConfig,
@@ -73,7 +88,8 @@ public class DaemonConfig {
             String systemNode,
             boolean preSeedItself,
             List<ParseUtils.ArtifactSource> itselfArtifacts,
-            List<ParseUtils.ArtifactSource> preSeedArtifacts) {
+            List<ParseUtils.ArtifactSource> preSeedArtifacts,
+            Path localRepository) {
         this.sessionConfig = requireNonNull(sessionConfig);
         this.daemonLockDir = requireNonNull(daemonLockDir);
         this.socketPath = requireNonNull(socketPath);
@@ -81,6 +97,7 @@ public class DaemonConfig {
         this.preSeedItself = preSeedItself;
         this.itselfArtifacts = requireNonNull(itselfArtifacts);
         this.preSeedArtifacts = requireNonNull(preSeedArtifacts);
+        this.localRepository = localRepository;
     }
 
     public SessionConfig config() {
@@ -109,5 +126,9 @@ public class DaemonConfig {
 
     public List<ParseUtils.ArtifactSource> preSeedArtifacts() {
         return preSeedArtifacts;
+    }
+
+    public Optional<Path> localRepository() {
+        return Optional.ofNullable(localRepository);
     }
 }

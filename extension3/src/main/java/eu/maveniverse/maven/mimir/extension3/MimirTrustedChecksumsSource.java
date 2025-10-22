@@ -9,7 +9,6 @@ package eu.maveniverse.maven.mimir.extension3;
 
 import eu.maveniverse.maven.mimir.shared.Entry;
 import eu.maveniverse.maven.mimir.shared.MimirUtils;
-import eu.maveniverse.maven.mimir.shared.Session;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collections;
@@ -17,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.aether.RepositorySystemSession;
@@ -35,10 +35,10 @@ public class MimirTrustedChecksumsSource implements TrustedChecksumsSource {
             Artifact artifact,
             ArtifactRepository artifactRepository,
             List<ChecksumAlgorithmFactory> checksumAlgorithmFactories) {
-        if (artifactRepository instanceof RemoteRepository remoteRepository) {
-            Optional<Session> sessionOptional = MimirUtils.mayGetSession(session);
-            if (sessionOptional.isPresent()) {
-                Session ms = sessionOptional.orElseThrow();
+        AtomicReference<Map<String, String>> resultRef = new AtomicReference<>(Collections.emptyMap());
+        MimirUtils.mayGetSession(session).ifPresent(ms -> {
+            if (ms.config().resolverTrustedChecksumsSourceEnabled()
+                    && artifactRepository instanceof RemoteRepository remoteRepository) {
                 if (ms.repositorySupported(remoteRepository) && ms.artifactSupported(artifact)) {
                     try {
                         Optional<Entry> entry = ms.locate(remoteRepository, artifact);
@@ -51,15 +51,15 @@ public class MimirTrustedChecksumsSource implements TrustedChecksumsSource {
                                     result.put(checksumAlgorithmFactory.getName(), checksum);
                                 }
                             }
-                            return result;
+                            resultRef.set(result);
                         }
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
                 }
             }
-        }
-        return Collections.emptyMap();
+        });
+        return resultRef.get();
     }
 
     @Override

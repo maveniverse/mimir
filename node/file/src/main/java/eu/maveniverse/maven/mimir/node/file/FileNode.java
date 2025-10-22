@@ -130,7 +130,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
     @Override
     public Optional<FileEntry> locate(URI key) throws IOException {
         checkClosed();
-        Path path = resolveKey(key);
+        Path path = resolveKey(key, true);
         if (Files.isRegularFile(path)) {
             Map<String, String> data = loadMetadata(path);
             return Optional.of(createEntry(path, splitMetadata(data), splitChecksums(data)));
@@ -143,7 +143,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
     public FileEntry store(URI key, Path file, Map<String, String> md, Map<String, String> checksums)
             throws IOException {
         checkClosed();
-        Path path = resolveKey(key);
+        Path path = resolveKey(key, false);
         HashMap<String, String> metadata = new HashMap<>(md);
         FileTime fileTime = Files.getLastModifiedTime(file);
         ChecksumEnforcer checksumEnforcer;
@@ -176,7 +176,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
     @Override
     public FileEntry store(URI key, Entry entry) throws IOException {
         checkClosed();
-        Path path = resolveKey(key);
+        Path path = resolveKey(key, false);
         if (entry instanceof RemoteEntry remoteEntry) {
             try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
                 remoteEntry.handleContent(inputStream -> {
@@ -204,24 +204,53 @@ public final class FileNode extends NodeSupport implements SystemNode {
         return createEntry(path, entry.metadata(), entry.checksums());
     }
 
-    private Path resolveKey(URI key) throws IOException {
+    private Path resolveKey(URI key, boolean mayHandleCachePurge) throws IOException {
         Key resolved = this.keyResolver.apply(key);
         Path target = this.basedir.resolve(resolved.container()).resolve(resolved.name());
-        if (cachePurge != FileNodeConfig.CachePurge.OFF && !Files.isRegularFile(target)) {
+        if (mayHandleCachePurge && cachePurge != FileNodeConfig.CachePurge.OFF && !Files.isRegularFile(target)) {
             Path shadow = this.shadowBasedir.resolve(resolved.container()).resolve(resolved.name());
-            if (Files.isRegularFile(shadow)) {
-                Path source = shadow.getParent();
-                Path destination = target.getParent();
-                Files.createDirectories(destination);
-                switch (cachePurge) {
-                    case ON_BEGIN ->
-                        Files.move(
-                                source,
-                                destination,
-                                StandardCopyOption.ATOMIC_MOVE,
-                                StandardCopyOption.REPLACE_EXISTING);
-                    case ON_END -> FileUtils.copyRecursively(source, destination, p -> true, false);
-                    default -> throw new IllegalArgumentException("Unsupported CachePurge mode: " + cachePurge);
+            try {
+                if (Files.isRegularFile(shadow)) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Found shadow for key: {}@{}", resolved.container(), resolved.name());
+                    }
+                    Path targetMd = target.getParent().resolve("_" + target.getFileName());
+                    Path shadowMd = shadow.getParent().resolve("_" + shadow.getFileName());
+                    Files.createDirectories(target.getParent());
+                    switch (cachePurge) {
+                        case ON_BEGIN -> {
+                            Files.move(
+                                    shadowMd,
+                                    targetMd,
+                                    StandardCopyOption.ATOMIC_MOVE,
+                                    StandardCopyOption.REPLACE_EXISTING);
+                            Files.move(
+                                    shadow,
+                                    target,
+                                    StandardCopyOption.ATOMIC_MOVE,
+                                    StandardCopyOption.REPLACE_EXISTING);
+                        }
+                        case ON_END -> {
+                            Files.copy(
+                                    shadowMd,
+                                    targetMd,
+                                    StandardCopyOption.REPLACE_EXISTING,
+                                    StandardCopyOption.COPY_ATTRIBUTES);
+                            Files.copy(
+                                    shadow,
+                                    target,
+                                    StandardCopyOption.REPLACE_EXISTING,
+                                    StandardCopyOption.COPY_ATTRIBUTES);
+                        }
+                        default -> throw new IllegalArgumentException("Unsupported CachePurge mode: " + cachePurge);
+                    }
+                }
+            } catch (IOException e) {
+                logger.warn("Unable apply cache-purge to path '{}'", target, e);
+                try {
+                    FileUtils.deleteRecursively(shadow.getParent());
+                } catch (IOException e1) {
+                    logger.warn("Unable to drop shadow '{}'", shadow, e);
                 }
             }
         }

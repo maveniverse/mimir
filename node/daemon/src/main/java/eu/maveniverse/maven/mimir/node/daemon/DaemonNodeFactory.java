@@ -158,6 +158,9 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
             if (cfg.passOnBasedir()) {
                 command.add("-Dmimir.basedir=" + basedir);
             }
+            cfg.localRepository().ifPresent(localRepository -> {
+                command.add("-Dmimir.daemon.localRepository=" + localRepository);
+            });
             command.add("-jar");
             command.add(cfg.daemonJar().toString());
 

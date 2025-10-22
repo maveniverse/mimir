@@ -20,8 +20,8 @@ import java.util.List;
 public final class FileNodeConfig {
     /**
      * The cache purge mode.
-     * Cache purge operates on <em>whole artifacts</em>, over all constituents of a GAV (POM, JAR, ...). A GAV is
-     * either purged from cache or preserved all together. Mimir cache does not operate on file level.
+     * Cache purge operates on <em>single artifact</em>, not over all constituents of a GAV (POM, JAR, ...). A GACEV is
+     * either purged from cache or preserved.
      * Note: to use any purge mode other than {@link #OFF}, the exclusive access to store must be enabled
      * via config as well, see {@link FileNodeConfig#exclusiveAccess()}.
      */
