@@ -23,8 +23,13 @@ import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.xml.parsers.DocumentBuilderFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 /**
  * Class that sets up Mimir for embedded and chroot-ed maven executing tests; IF outer build uses Mimir as well
@@ -228,9 +233,27 @@ public final class MimirInfuser {
      */
     public static boolean isMimirPresentInExtensionsXml(Path extensionXmlPath) throws IOException {
         if (Files.isRegularFile(extensionXmlPath)) {
-            String extensionsXml = Files.readString(extensionXmlPath);
-            return extensionsXml.contains("<groupId>" + MIMIR_EXTENSION_GROUP_ID + "</groupId>")
-                    && extensionsXml.contains("<artifactId>" + MIMIR_EXTENSION_ARTIFACT_ID + "</artifactId>");
+            try (InputStream is = Files.newInputStream(extensionXmlPath)) {
+                Document document = DocumentBuilderFactory.newInstance()
+                        .newDocumentBuilder()
+                        .parse(is);
+                NodeList extensions = document.getElementsByTagName("extension");
+                for (int i = 0; i < extensions.getLength(); i++) {
+                    Element extension = (Element) extensions.item(i);
+                    NodeList g = extension.getElementsByTagName("groupId");
+                    NodeList a = extension.getElementsByTagName("artifactId");
+                    if (g.getLength() > 0
+                            && a.getLength() > 0
+                            && Objects.equals(
+                                    MIMIR_EXTENSION_GROUP_ID, g.item(0).getTextContent())
+                            && Objects.equals(
+                                    MIMIR_EXTENSION_ARTIFACT_ID, a.item(0).getTextContent())) {
+                        return true;
+                    }
+                }
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
         }
         return false;
     }
