@@ -139,11 +139,11 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
                     break;
                 } catch (IOException e) {
                     logger.warn("Could not HELLO with server: {}", e.getMessage());
+                    sessionMap = null;
+                    daemonDataMap = null;
+                    // give some time to server
+                    Thread.sleep(100);
                 }
-                sessionMap = null;
-                daemonDataMap = null;
-                // give some time to server
-                Thread.sleep(100);
             }
             if (sessionMap == null || daemonDataMap == null) {
                 clientHandle.close();
