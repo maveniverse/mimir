@@ -9,6 +9,9 @@ package eu.maveniverse.maven.mimir.node.daemon;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.daemon.protocol.Handle;
+import eu.maveniverse.maven.mimir.daemon.protocol.Request;
+import eu.maveniverse.maven.mimir.daemon.protocol.Response;
 import eu.maveniverse.maven.mimir.daemon.protocol.Session;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
@@ -21,6 +24,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -122,10 +126,37 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
                             .toString());
         }
         try {
-            return Optional.of(new DaemonNode(clientData, cfg, cfg.autostop()));
+            Handle.ClientHandle clientHandle = Handle.clientDomainSocket(cfg.socketPath());
+            Map<String, String> sessionMap = null;
+            Map<String, String> daemonDataMap = null;
+            for (int attempt = 0; attempt < 3; attempt++) {
+                try (Handle handle = clientHandle.getHandle()) {
+                    handle.writeRequest(Request.hello(clientData));
+                    Response helloResponse = handle.readResponse();
+                    sessionMap = helloResponse.session();
+                    daemonDataMap = helloResponse.data();
+                    logger.debug("Hello OK {}", helloResponse.data());
+                    break;
+                } catch (IOException e) {
+                    logger.warn("Could not HELLO with server: {}", e.getMessage());
+                    sessionMap = null;
+                    daemonDataMap = null;
+                    // give some time to server
+                    Thread.sleep(100);
+                }
+            }
+            if (sessionMap == null || daemonDataMap == null) {
+                clientHandle.close();
+                mayDumpDaemonLog(cfg.daemonLog());
+                throw new IOException("Could not connect to daemon");
+            }
+            return Optional.of(new DaemonNode(cfg, clientHandle, sessionMap, daemonDataMap, cfg.autostop()));
         } catch (IOException e) {
             mayDumpDaemonLog(cfg.daemonLog());
             throw e;
+        } catch (InterruptedException e) {
+            mayDumpDaemonLog(cfg.daemonLog());
+            throw new IOException(e);
         }
     }
 
