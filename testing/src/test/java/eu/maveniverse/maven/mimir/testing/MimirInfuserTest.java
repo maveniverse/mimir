@@ -8,7 +8,9 @@
 package eu.maveniverse.maven.mimir.testing;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -123,5 +125,39 @@ public class MimirInfuserTest {
         assertEquals(
                 MimirInfuser.extensionsXml(MIMIR_VERSION),
                 Files.readString(innerProjectBasedir.resolve(".mvn").resolve("extensions.xml")));
+    }
+
+    @Test
+    void isMimirPresentInExtensionsXml(@TempDir(cleanup = CleanupMode.NEVER) Path tmpDir) throws IOException {
+        Path extensionsXml = tmpDir.resolve(".mvn").resolve("extensions.xml");
+        Files.createDirectories(extensionsXml.getParent());
+
+        // not exists
+        assertFalse(MimirInfuser.isMimirPresentInExtensionsXml(extensionsXml));
+
+        // exist and does contain it
+        Files.writeString(extensionsXml, MimirInfuser.extensionsXml(MIMIR_VERSION));
+        assertTrue(MimirInfuser.isMimirPresentInExtensionsXml(extensionsXml));
+
+        // exist but does not contain it
+        Files.writeString(extensionsXml, "<extensions></extensions>");
+        assertFalse(MimirInfuser.isMimirPresentInExtensionsXml(extensionsXml));
+
+        // exist but is commented out
+        Files.writeString(
+                extensionsXml,
+                "<extensions><extension><groupId>" + MimirInfuser.MIMIR_EXTENSION_GROUP_ID
+                        + "</groupId><!-- artifactId>" + MimirInfuser.MIMIR_EXTENSION_ARTIFACT_ID
+                        + "</artifactId--></extension></extensions>");
+        assertFalse(MimirInfuser.isMimirPresentInExtensionsXml(extensionsXml));
+
+        // junk file (maven would belly up as well)
+        Files.writeString(extensionsXml, "junk and not xml");
+        try {
+            assertFalse(MimirInfuser.isMimirPresentInExtensionsXml(extensionsXml));
+            fail("It should fail");
+        } catch (IOException ioe) {
+            // good
+        }
     }
 }
