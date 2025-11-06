@@ -130,8 +130,6 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
             Map<String, String> sessionMap = null;
             Map<String, String> daemonDataMap = null;
             for (int attempt = 0; attempt < 3; attempt++) {
-                // give some time to server
-                Thread.sleep(100);
                 try (Handle handle = clientHandle.getHandle()) {
                     handle.writeRequest(Request.hello(clientData));
                     Response helloResponse = handle.readResponse();
@@ -141,9 +139,11 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
                     break;
                 } catch (IOException e) {
                     logger.warn("Could not HELLO with server: {}", e.getMessage());
-                    sessionMap = null;
-                    daemonDataMap = null;
                 }
+                sessionMap = null;
+                daemonDataMap = null;
+                // give some time to server
+                Thread.sleep(100);
             }
             if (sessionMap == null || daemonDataMap == null) {
                 clientHandle.close();
