@@ -14,7 +14,7 @@
   <parent>
     <groupId>eu.maveniverse.maven.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>44</version>
+    <version>45</version>
   </parent>
 
   <groupId>eu.maveniverse.maven.mimir</groupId>
@@ -73,10 +73,10 @@
     <requireRuntimeMavenVersion.range>[3.9,)</requireRuntimeMavenVersion.range>
 
     <!-- Dependency versions -->
-    <version.maveniverseShared>0.1.8</version.maveniverseShared>
+    <version.maveniverseShared>0.1.9</version.maveniverseShared>
     <version.maven>3.9.11</version.maven>
     <version.resolver>1.9.24</version.resolver>
-    <version.mima>2.4.35</version.mima>
+    <version.mima>2.4.36</version.mima>
     <version.slf4j>1.7.36</version.slf4j>
     <version.okhttp3>5.3.0</version.okhttp3>
     <version.testcontainers>1.21.3</version.testcontainers>
@@ -304,7 +304,7 @@
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-        <version>1.19.0</version>
+        <version>1.20.0</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
