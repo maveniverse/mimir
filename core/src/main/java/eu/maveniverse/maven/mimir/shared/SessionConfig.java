@@ -99,14 +99,61 @@ public interface SessionConfig {
 
     // session impl config
 
+    /**
+     * The key mapper that session should use.
+     * <p>
+     * Configuration key {@code mimir.session.keyMapper}
+     * <p>
+     * By default, is "simple".
+     */
     String keyMapper();
 
+    /**
+     * The overlay nodes.
+     * <p>
+     * Configuration key {@code mimir.session.overlayNodes}
+     * <p>
+     * By default, is empty. One can give here overlay local nodes that will be overlaid onto main local node.
+     */
     Set<String> overlayNodes();
 
+    /**
+     * The local node name, that session should use.
+     * <p>
+     * Configuration key {@code mimir.session.localNode}
+     * <p>
+     * By default, is "daemon". Accepts any string representing node name.
+     */
     String localNode();
 
+    /**
+     * Pre-existing instance, if given. Otherwise, session will create and manage one.
+     */
     Optional<LocalNode> localNodeInstance();
 
+    /**
+     * The repositories that Mimir should cache. Note: Mimir handles ONLY release artifacts, which are immutable. If
+     * your workflow contains mutable release artifacts, do NOT use Mimir.
+     * <p>
+     * Configuration key {@code mimir.session.repositories}
+     * <p>
+     * By default, is "central(directOnly;releaseOnly;httpsOnly)". Hence, Maven Central direct (non-mirrored) will be
+     * cached ONLY. The configuration may contain comma separated list of repository IDs (with modifiers) Mimir should
+     * manage, or {@code *} as "any". In this case, Mimir will handle any release repository it meets. The asterisk
+     * may also have modifiers so {@code *(releaseOnly;httpsOnly)} means any HTTPS repository.
+     * <p>
+     * The modifiers may appear in braces without any whitespace after repository ID or {@code *} and may be:
+     * <ul>
+     *     <li>{@code directOnly} remote repository is not subject of {@code mirrorOf}</li>
+     *     <li>{@code releaseOnly} remote repository has only RELEASE policy enabled (not snapshot or both)</li>
+     *     <li>{@code }httpsOnly} remote repository protocol is HTTPS only (case-insensitive)</li>
+     * </ul>
+     * The modifiers are split with {@code ;} (semicolon). The whole expression is parsed into list of predicates
+     * and joined with logical "or".
+     * <p>
+     * Warning for mirrors: usually in company environments, some public repositories may be redirected with
+     * {@code mirrorOf}.
+     */
     Set<String> repositories();
 
     // components on/off
@@ -382,7 +429,7 @@ public interface SessionConfig {
                 String keyMapper = SimpleKeyMapperFactory.NAME;
                 Set<String> overlayNodes = Set.of();
                 String localNode = localNodeInstance != null ? localNodeInstance.name() : "daemon";
-                Set<String> repositories = Set.of(RemoteRepositories.CENTRAL_REPOSITORY_ID);
+                Set<String> repositories = RemoteRepositories.DEFAULT;
 
                 if (effectiveProperties.containsKey("mimir.session.keyMapper")) {
                     keyMapper = effectiveProperties.get("mimir.session.keyMapper");
