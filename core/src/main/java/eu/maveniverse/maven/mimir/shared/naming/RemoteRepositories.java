@@ -23,7 +23,7 @@ public final class RemoteRepositories {
     public static final String CENTRAL_REPOSITORY_ID = "central";
 
     public static final Set<String> DEFAULT = Set.of(String.format(
-            "%s(%s;%s;%s)",
+            "%s(%s,%s,%s)",
             RemoteRepositories.CENTRAL_REPOSITORY_ID,
             RemoteRepositories.MOD_DIRECT_ONLY,
             RemoteRepositories.MOD_RELEASE_ONLY,

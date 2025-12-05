@@ -137,7 +137,7 @@ public interface SessionConfig {
      * <p>
      * Configuration key {@code mimir.session.repositories}
      * <p>
-     * By default, is "central(directOnly;releaseOnly;httpsOnly)". Hence, Maven Central direct (non-mirrored) will be
+     * By default, is "central(directOnly,releaseOnly,httpsOnly)". Hence, Maven Central direct (non-mirrored) will be
      * cached ONLY. The configuration may contain comma separated list of repository IDs (with modifiers) Mimir should
      * manage, or {@code *} as "any". In this case, Mimir will handle any release repository it meets. The asterisk
      * may also have modifiers so {@code *(releaseOnly;httpsOnly)} means any HTTPS repository.
@@ -146,10 +146,11 @@ public interface SessionConfig {
      * <ul>
      *     <li>{@code directOnly} remote repository is not subject of {@code mirrorOf}</li>
      *     <li>{@code releaseOnly} remote repository has only RELEASE policy enabled (not snapshot or both)</li>
-     *     <li>{@code }httpsOnly} remote repository protocol is HTTPS only (case-insensitive)</li>
+     *     <li>{@code httpsOnly} remote repository protocol is HTTPS only (case-insensitive)</li>
      * </ul>
-     * The modifiers are split with {@code ;} (semicolon). The whole expression is parsed into list of predicates
-     * and joined with logical "or".
+     * The modifiers are split with {@code ,} (comma).
+     * <p>
+     * The whole expression of comma separated repositories are parsed into list of predicates and joined with logical "or".
      * <p>
      * Warning for mirrors: usually in company environments, some public repositories may be redirected with
      * {@code mirrorOf}.
