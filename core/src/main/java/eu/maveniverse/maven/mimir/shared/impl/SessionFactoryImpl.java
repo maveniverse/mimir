@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -77,17 +76,7 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
         if (!overlays.isEmpty()) {
             localNode = new OverlayingLocalNode(overlays, localNode);
         }
-
         Set<String> repositories = config.repositories();
-        Predicate<RemoteRepository> repositoryPredicate;
-        if (repositories.isEmpty()) {
-            throw new IllegalStateException("No repositories to handle");
-        }
-        if (repositories.size() == 1 && repositories.contains(RemoteRepositories.CENTRAL_REPOSITORY_ID)) {
-            repositoryPredicate = RemoteRepositories.centralDirectOnly();
-        } else {
-            repositoryPredicate = RemoteRepositories.httpsReleaseDirectOnlyWithIds(repositories);
-        }
 
         if (logger.isDebugEnabled()) {
             logger.debug("Mimir {} session created", config.mimirVersion());
@@ -102,7 +91,12 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
             logger.debug("  Supported checksums: {}", checksumFactories.keySet());
         }
 
-        return new SessionImpl(config, repositoryPredicate, a -> !a.isSnapshot(), keyMapper, localNode);
+        return new SessionImpl(
+                config,
+                RemoteRepositories.repositoryPredicate(config.repositories()),
+                a -> !a.isSnapshot(),
+                keyMapper,
+                localNode);
     }
 
     private Optional<? extends LocalNode> createLocalNode(String name, SessionConfig cfg) throws IOException {
