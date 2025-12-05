@@ -97,7 +97,7 @@ public class RemoteRepositoriesTest {
     }
 
     @Test
-    void httpsOnly() {
+    void anyHttpsOnly() {
         Predicate<RemoteRepository> predicate =
                 RemoteRepositories.repositoryPredicate(Collections.singletonList("*(httpsOnly)"));
 
@@ -111,15 +111,57 @@ public class RemoteRepositoriesTest {
     }
 
     @Test
-    void directOnlyHttpsOnly() {
+    void anyDirectOnlyHttpsOnly() {
         Predicate<RemoteRepository> predicate =
-                RemoteRepositories.repositoryPredicate(Collections.singletonList("*(directOnly;httpsOnly)"));
+                RemoteRepositories.repositoryPredicate(Collections.singletonList("*(directOnly,httpsOnly)"));
 
         assertTrue(predicate.test(central));
         assertTrue(predicate.test(centralLazy));
         assertFalse(predicate.test(centralBlocked)); // blocked
         assertFalse(predicate.test(centralMirrored)); // mirrored, not direct
         assertFalse(predicate.test(centralSftp)); // sftp
+        assertFalse(predicate.test(snapshots)); // release policy disabled
+        assertTrue(predicate.test(mixed));
+    }
+
+    @Test
+    void byIdCentral() {
+        Predicate<RemoteRepository> predicate =
+                RemoteRepositories.repositoryPredicate(Collections.singletonList("central"));
+
+        assertTrue(predicate.test(central));
+        assertTrue(predicate.test(centralLazy));
+        assertFalse(predicate.test(centralBlocked)); // blocked
+        assertTrue(predicate.test(centralMirrored));
+        assertTrue(predicate.test(centralSftp));
+        assertFalse(predicate.test(snapshots)); // id != central
+        assertFalse(predicate.test(mixed)); // id != central
+    }
+
+    @Test
+    void byIdCentralHttpsOnly() {
+        Predicate<RemoteRepository> predicate =
+                RemoteRepositories.repositoryPredicate(Collections.singletonList("central(httpsOnly)"));
+
+        assertTrue(predicate.test(central));
+        assertTrue(predicate.test(centralLazy));
+        assertFalse(predicate.test(centralBlocked)); // blocked
+        assertTrue(predicate.test(centralMirrored));
+        assertFalse(predicate.test(centralSftp)); // protocol != https
+        assertFalse(predicate.test(snapshots)); // id != central
+        assertFalse(predicate.test(mixed)); // id != central
+    }
+
+    @Test
+    void byIdSnapshots() {
+        Predicate<RemoteRepository> predicate =
+                RemoteRepositories.repositoryPredicate(Collections.singletonList("snapshots"));
+
+        assertFalse(predicate.test(central)); // id != snapshots
+        assertFalse(predicate.test(centralLazy)); // id != snapshots
+        assertFalse(predicate.test(centralBlocked)); // blocked
+        assertFalse(predicate.test(centralMirrored)); // id != snapshots
+        assertFalse(predicate.test(centralSftp)); // id != snapshots
         assertFalse(predicate.test(snapshots)); // release policy disabled
         assertTrue(predicate.test(mixed));
     }
