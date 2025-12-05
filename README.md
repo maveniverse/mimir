@@ -4,7 +4,7 @@
 
 Requirements:
 * Java 17+
-* Maven 3.9+ (tested with 3.9.11 and 4.0.0-rc-4)
+* Maven 3.9+ (tested with 3.9.11 and 4.0.0-rc-5)
 
 Note: this code has a lot of To-Be-Done parts and is intentionally kept simple as possible. For now
 only "central" repository released artifacts are supported, while user can configure others.
