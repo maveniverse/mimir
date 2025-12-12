@@ -24,14 +24,11 @@ import eu.maveniverse.maven.shared.core.fs.DirectoryLocker;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.AbstractMap;
 import java.util.HashMap;
@@ -55,6 +52,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
     private final List<String> checksumAlgorithms;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
     private final DirectoryLocker directoryLocker;
+    private final MetadataMarshaller metadataMarshaller;
 
     private final Path shadowBasedir;
 
@@ -67,7 +65,8 @@ public final class FileNode extends NodeSupport implements SystemNode {
             Function<URI, Key> keyResolver,
             List<String> checksumAlgorithms,
             Map<String, ChecksumAlgorithmFactory> checksumFactories,
-            DirectoryLocker directoryLocker)
+            DirectoryLocker directoryLocker,
+            MetadataMarshaller metadataMarshaller)
             throws IOException {
         super(FileNodeConfig.NAME);
         this.mayLink = mayLink;
@@ -77,6 +76,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
         this.checksumAlgorithms = List.copyOf(checksumAlgorithms);
         this.checksumFactories = Map.copyOf(checksumFactories);
         this.directoryLocker = requireNonNull(directoryLocker);
+        this.metadataMarshaller = requireNonNull(metadataMarshaller);
 
         if (cachePurge != FileNodeConfig.CachePurge.OFF && !exclusiveAccess) {
             throw new IllegalArgumentException(
@@ -213,9 +213,8 @@ public final class FileNode extends NodeSupport implements SystemNode {
                     if (logger.isDebugEnabled()) {
                         logger.debug("Found shadow for key: {}@{}", resolved.container(), resolved.name());
                     }
-                    Path targetMd = target.getParent().resolve("_" + target.getFileName());
-                    Path shadowMd = shadow.getParent().resolve("_" + shadow.getFileName());
-                    Files.createDirectories(target.getParent());
+                    Path targetMd = metadataPath(target, true);
+                    Path shadowMd = metadataPath(shadow, false);
                     switch (cachePurge) {
                         case ON_BEGIN -> {
                             Files.move(
@@ -289,33 +288,24 @@ public final class FileNode extends NodeSupport implements SystemNode {
         }
     }
 
-    private void storeMetadata(Path file, Map<String, String> metadata) throws IOException {
-        Path md = file.getParent().resolve("_" + file.getFileName());
-        try (ObjectOutputStream oos = new ObjectOutputStream(
-                Files.newOutputStream(md, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))) {
-            oos.writeInt(metadata.size());
-            for (Map.Entry<String, String> entry : metadata.entrySet()) {
-                oos.writeUTF(entry.getKey());
-                oos.writeUTF(entry.getValue());
-            }
+    private Path metadataPath(Path cachedFile, boolean forWrite) throws IOException {
+        Path md = cachedFile.getParent().resolve(".mm").resolve(cachedFile.getFileName());
+        if (forWrite) {
+            Files.createDirectories(md.getParent());
         }
+        return md;
     }
 
     private Map<String, String> loadMetadata(Path file) throws IOException {
-        Path md = file.getParent().resolve("_" + file.getFileName());
+        Path md = metadataPath(file, false);
         if (!Files.isRegularFile(md)) {
             recreateMetadata(file);
         }
-        try (ObjectInputStream ois = new ObjectInputStream(Files.newInputStream(md))) {
-            HashMap<String, String> metadata = new HashMap<>();
-            int entries = ois.readInt();
-            for (int i = 0; i < entries; i++) {
-                String key = ois.readUTF();
-                String value = ois.readUTF();
-                metadata.put(key, value);
-            }
-            return metadata;
-        }
+        return metadataMarshaller.load(md);
+    }
+
+    private void storeMetadata(Path file, Map<String, String> metadata) throws IOException {
+        metadataMarshaller.save(metadataPath(file, true), metadata);
     }
 
     private void recreateMetadata(Path file) throws IOException {

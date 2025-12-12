@@ -69,6 +69,7 @@ public final class FileNodeFactory implements LocalNodeFactory<FileNode>, System
                 keyResolver,
                 fileNodeConfig.checksumAlgorithms(),
                 checksumFactories,
-                DirectoryLocker.INSTANCE);
+                DirectoryLocker.INSTANCE,
+                new MetadataMarshaller.PropertiesMetadataMarshaller());
     }
 }
