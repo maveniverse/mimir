@@ -51,7 +51,7 @@ public final class SimpleKeyResolverFactory implements KeyResolverFactory {
      */
     public static String artifactRepositoryPath(Artifact artifact) {
         String name = artifact.getGroupId().replaceAll("\\.", "/") + "/" + artifact.getArtifactId() + "/"
-                + artifact.getVersion() + "/" + artifact.getArtifactId() + "-" + artifact.getVersion();
+                + artifact.getBaseVersion() + "/" + artifact.getArtifactId() + "-" + artifact.getVersion();
         if (artifact.getClassifier() != null && !artifact.getClassifier().trim().isEmpty()) {
             name += "-" + artifact.getClassifier();
         }
