@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.maveniverse.maven.mimir.node.file.FileNode;
 import eu.maveniverse.maven.mimir.node.file.FileNodeConfig;
+import eu.maveniverse.maven.mimir.node.file.MetadataMarshaller;
 import eu.maveniverse.maven.mimir.node.jgroups.JGroupsNode;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
@@ -59,7 +60,8 @@ public class JGroupsNodeTest {
                 new SimpleKeyResolverFactory().createKeyResolver(sessionConfig),
                 List.of(Sha1ChecksumAlgorithmFactory.NAME),
                 Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()),
-                DirectoryLocker.INSTANCE);
+                DirectoryLocker.INSTANCE,
+                new MetadataMarshaller.PropertiesMetadataMarshaller());
         FileNodeConfig configTwo = FileNodeConfig.of(
                 two,
                 two,
@@ -77,7 +79,8 @@ public class JGroupsNodeTest {
                 new SimpleKeyResolverFactory().createKeyResolver(sessionConfig),
                 List.of(Sha1ChecksumAlgorithmFactory.NAME),
                 Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()),
-                DirectoryLocker.INSTANCE);
+                DirectoryLocker.INSTANCE,
+                new MetadataMarshaller.PropertiesMetadataMarshaller());
 
         String testGroup = UUID.randomUUID().toString();
         JChannel channelOne = new JChannel("udp-new.xml")

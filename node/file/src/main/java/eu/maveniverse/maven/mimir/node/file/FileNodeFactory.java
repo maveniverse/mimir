@@ -60,6 +60,8 @@ public final class FileNodeFactory implements LocalNodeFactory<FileNode>, System
             }
         }
 
+        MetadataMarshaller metadataMarshaller = new MetadataMarshaller.PropertiesMetadataMarshaller();
+
         return new FileNode(
                 fileNodeConfig.basedir(),
                 fileNodeConfig.baseLockDir(),
@@ -69,6 +71,7 @@ public final class FileNodeFactory implements LocalNodeFactory<FileNode>, System
                 keyResolver,
                 fileNodeConfig.checksumAlgorithms(),
                 checksumFactories,
-                DirectoryLocker.INSTANCE);
+                DirectoryLocker.INSTANCE,
+                metadataMarshaller);
     }
 }
