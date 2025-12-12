@@ -34,7 +34,7 @@ public interface MetadataMarshaller {
     /**
      * Writes out metadata to file.
      */
-    void save(Path file, Map<String, String> md) throws IOException;
+    void save(Path md, Map<String, String> metadata) throws IOException;
 
     /**
      * Uses standard Java Properties files (with tweaks) to marshal metadata. Produces stable output.
