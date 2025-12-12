@@ -104,15 +104,17 @@ public interface MetadataMarshaller {
 
         @Override
         public void save(Path md, Map<String, String> metadata) throws IOException {
-            try (ObjectOutputStream oos = new ObjectOutputStream(
-                    Files.newOutputStream(md, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))) {
-                oos.writeInt(metadata.size());
-                for (Map.Entry<String, String> entry :
-                        metadata.entrySet().stream().sorted().toList()) {
-                    oos.writeUTF(entry.getKey());
-                    oos.writeUTF(entry.getValue());
+            FileUtils.writeFile(md, p -> {
+                try (ObjectOutputStream oos = new ObjectOutputStream(
+                        Files.newOutputStream(p, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))) {
+                    oos.writeInt(metadata.size());
+                    for (Map.Entry<String, String> entry :
+                            metadata.entrySet().stream().sorted().toList()) {
+                        oos.writeUTF(entry.getKey());
+                        oos.writeUTF(entry.getValue());
+                    }
                 }
-            }
+            });
         }
     }
 }
