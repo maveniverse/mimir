@@ -28,13 +28,15 @@ public final class SimpleKeyResolverFactory implements KeyResolverFactory {
     @Override
     public KeyResolver createKeyResolver(SessionConfig sessionConfig) {
         requireNonNull(sessionConfig);
-        return new SimpleKeyResolver(SimpleKeyResolverFactory::artifactPath);
+        return new SimpleKeyResolver(SimpleKeyResolverFactory::artifactRepositoryPath);
     }
 
     /**
-     * Provides "path" for artifact.
+     * Provides "simple path" for artifact.
+     * <p>
+     * This was Mimir "old" default mapping function until 0.11.0.
      */
-    public static String artifactPath(Artifact artifact) {
+    public static String artifactSimplePath(Artifact artifact) {
         String name = artifact.getGroupId() + "/" + artifact.getArtifactId() + "/" + artifact.getBaseVersion() + "/"
                 + artifact.getArtifactId() + "-" + artifact.getVersion();
         if (artifact.getClassifier() != null && !artifact.getClassifier().trim().isEmpty()) {
@@ -45,11 +47,11 @@ public final class SimpleKeyResolverFactory implements KeyResolverFactory {
     }
 
     /**
-     * Provides "path" for artifact.
+     * Provides "repository path" for artifact.
      */
     public static String artifactRepositoryPath(Artifact artifact) {
         String name = artifact.getGroupId().replaceAll("\\.", "/") + "/" + artifact.getArtifactId() + "/"
-                + artifact.getBaseVersion() + "/" + artifact.getArtifactId() + "-" + artifact.getVersion();
+                + artifact.getVersion() + "/" + artifact.getArtifactId() + "-" + artifact.getVersion();
         if (artifact.getClassifier() != null && !artifact.getClassifier().trim().isEmpty()) {
             name += "-" + artifact.getClassifier();
         }
