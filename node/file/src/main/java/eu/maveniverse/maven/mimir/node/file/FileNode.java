@@ -24,6 +24,8 @@ import eu.maveniverse.maven.shared.core.fs.DirectoryLocker;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
@@ -41,9 +43,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithm;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
-import org.msgpack.core.MessagePack;
-import org.msgpack.core.MessagePacker;
-import org.msgpack.core.MessageUnpacker;
 
 public final class FileNode extends NodeSupport implements SystemNode {
 
@@ -292,12 +291,12 @@ public final class FileNode extends NodeSupport implements SystemNode {
 
     private void storeMetadata(Path file, Map<String, String> metadata) throws IOException {
         Path md = file.getParent().resolve("_" + file.getFileName());
-        try (MessagePacker packer = MessagePack.newDefaultPacker(
+        try (ObjectOutputStream oos = new ObjectOutputStream(
                 Files.newOutputStream(md, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))) {
-            packer.packMapHeader(metadata.size());
+            oos.writeInt(metadata.size());
             for (Map.Entry<String, String> entry : metadata.entrySet()) {
-                packer.packString(entry.getKey());
-                packer.packString(entry.getValue());
+                oos.writeUTF(entry.getKey());
+                oos.writeUTF(entry.getValue());
             }
         }
     }
@@ -307,12 +306,12 @@ public final class FileNode extends NodeSupport implements SystemNode {
         if (!Files.isRegularFile(md)) {
             recreateMetadata(file);
         }
-        try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(Files.newInputStream(md))) {
+        try (ObjectInputStream ois = new ObjectInputStream(Files.newInputStream(md))) {
             HashMap<String, String> metadata = new HashMap<>();
-            int entries = unpacker.unpackMapHeader();
+            int entries = ois.readInt();
             for (int i = 0; i < entries; i++) {
-                String key = unpacker.unpackString();
-                String value = unpacker.unpackString();
+                String key = ois.readUTF();
+                String value = ois.readUTF();
                 metadata.put(key, value);
             }
             return metadata;

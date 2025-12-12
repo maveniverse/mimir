@@ -9,11 +9,14 @@ package eu.maveniverse.maven.mimir.daemon.protocol;
 
 import static java.util.Objects.requireNonNull;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
 import java.nio.channels.ByteChannel;
@@ -25,9 +28,6 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.msgpack.core.MessagePack;
-import org.msgpack.core.MessagePacker;
-import org.msgpack.core.MessageUnpacker;
 
 public class Handle implements Closeable {
     /**
@@ -128,10 +128,10 @@ public class Handle implements Closeable {
     public void writeRequest(Request request) throws IOException {
         requireNonNull(request, "request");
         ByteArrayOutputStream b = new ByteArrayOutputStream();
-        try (MessagePacker p = MessagePack.newDefaultPacker(b)) {
-            p.packString(request.cmd());
-            packMap(p, request.data());
-            packMap(p, request.session());
+        try (ObjectOutputStream oos = new ObjectOutputStream(b)) {
+            oos.writeUTF(request.cmd());
+            writeMap(oos, request.data());
+            writeMap(oos, request.session());
         }
         outputStream.writeInt(b.size());
         outputStream.write(b.toByteArray());
@@ -140,11 +140,11 @@ public class Handle implements Closeable {
 
     public Request readRequest() throws IOException {
         byte[] bytes = inputStream.readNBytes(inputStream.readInt());
-        try (MessageUnpacker u = MessagePack.newDefaultUnpacker(bytes)) {
+        try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
             return ImmutableRequest.builder()
-                    .cmd(u.unpackString())
-                    .data(unpackMap(u))
-                    .session(unpackMap(u))
+                    .cmd(ois.readUTF())
+                    .data(readMap(ois))
+                    .session(readMap(ois))
                     .build();
         }
     }
@@ -152,10 +152,10 @@ public class Handle implements Closeable {
     public void writeResponse(Response response) throws IOException {
         requireNonNull(response, "response");
         ByteArrayOutputStream b = new ByteArrayOutputStream();
-        try (MessagePacker p = MessagePack.newDefaultPacker(b)) {
-            p.packString(response.status());
-            packMap(p, response.data());
-            packMap(p, response.session());
+        try (ObjectOutputStream oos = new ObjectOutputStream(b)) {
+            oos.writeUTF(response.status());
+            writeMap(oos, response.data());
+            writeMap(oos, response.session());
         }
         outputStream.writeInt(b.size());
         outputStream.write(b.toByteArray());
@@ -164,11 +164,11 @@ public class Handle implements Closeable {
 
     public Response readResponse() throws IOException {
         byte[] bytes = inputStream.readNBytes(inputStream.readInt());
-        try (MessageUnpacker u = MessagePack.newDefaultUnpacker(bytes)) {
+        try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
             return ImmutableResponse.builder()
-                    .status(u.unpackString())
-                    .data(unpackMap(u))
-                    .session(unpackMap(u))
+                    .status(ois.readUTF())
+                    .data(readMap(ois))
+                    .session(readMap(ois))
                     .build();
         }
     }
@@ -178,20 +178,20 @@ public class Handle implements Closeable {
         channel.close();
     }
 
-    private void packMap(MessagePacker p, Map<String, String> map) throws IOException {
-        p.packMapHeader(map.size());
+    private void writeMap(ObjectOutputStream oos, Map<String, String> map) throws IOException {
+        oos.writeInt(map.size());
         for (Map.Entry<String, String> entry : map.entrySet()) {
-            p.packString(entry.getKey());
-            p.packString(entry.getValue());
+            oos.writeUTF(entry.getKey());
+            oos.writeUTF(entry.getValue());
         }
     }
 
-    private Map<String, String> unpackMap(MessageUnpacker u) throws IOException {
+    private Map<String, String> readMap(ObjectInputStream ois) throws IOException {
         LinkedHashMap<String, String> metadata = new LinkedHashMap<>();
-        int entries = u.unpackMapHeader();
+        int entries = ois.readInt();
         for (int i = 0; i < entries; i++) {
-            String key = u.unpackString();
-            String value = u.unpackString();
+            String key = ois.readUTF();
+            String value = ois.readUTF();
             metadata.put(key, value);
         }
         return metadata;
