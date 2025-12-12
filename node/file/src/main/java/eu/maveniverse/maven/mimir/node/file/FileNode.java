@@ -215,7 +215,6 @@ public final class FileNode extends NodeSupport implements SystemNode {
                     }
                     Path targetMd = metadataPath(target, true);
                     Path shadowMd = metadataPath(shadow, false);
-                    Files.createDirectories(target.getParent());
                     switch (cachePurge) {
                         case ON_BEGIN -> {
                             Files.move(
