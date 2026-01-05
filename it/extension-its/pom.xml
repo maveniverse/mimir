@@ -22,11 +22,6 @@
 
   <name>${project.groupId}:${project.artifactId}</name>
 
-  <properties>
-    <maven3Version>3.9.12</maven3Version>
-    <maven4Version>4.0.0-rc-5</maven4Version>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>eu.maveniverse.maven.mimir</groupId>
@@ -57,23 +52,6 @@
       <id>run-its</id>
       <build>
         <plugins>
-          <plugin>
-            <groupId>eu.maveniverse.maven.plugins</groupId>
-            <artifactId>toolbox</artifactId>
-            <executions>
-              <execution>
-                <id>prepare-maven-distros</id>
-                <goals>
-                  <goal>gav-copy</goal>
-                </goals>
-                <phase>generate-test-resources</phase>
-                <configuration>
-                  <sourceSpec>resolve(concat(gav(org.apache.maven:apache-maven:zip:bin:${maven3Version}),gav(org.apache.maven:apache-maven:zip:bin:${maven4Version})))</sourceSpec>
-                  <sinkSpec>unpack(${project.build.directory},fixed(dependency))</sinkSpec>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
@@ -113,38 +91,13 @@
                 </configuration>
               </execution>
               <execution>
-                <id>mvn3-its-run</id>
+                <id>mvn-its-run</id>
                 <goals>
                   <goal>run</goal>
                 </goals>
                 <phase>integration-test</phase>
                 <configuration>
-                  <mavenHome>${project.build.directory}/dependency/apache-maven-${maven3Version}</mavenHome>
                   <cloneProjectsTo>${project.build.directory}/mvn3-it</cloneProjectsTo>
-                  <localRepositoryPath>${project.build.directory}/it-repo</localRepositoryPath>
-                  <settingsFile>${project.build.directory}/it-user/.m2/settings.xml</settingsFile>
-                  <mavenOpts>-Duser.home=${project.build.directory}/it-user</mavenOpts>
-                  <properties>
-                    <mimir.daemon.passOnBasedir>true</mimir.daemon.passOnBasedir>
-                  </properties>
-                  <cloneClean>true</cloneClean>
-                  <pomIncludes>
-                    <pomInclude>*/pom.xml</pomInclude>
-                  </pomIncludes>
-                  <preBuildHookScript>setup</preBuildHookScript>
-                  <postBuildHookScript>verify</postBuildHookScript>
-                  <addTestClassPath>false</addTestClassPath>
-                </configuration>
-              </execution>
-              <execution>
-                <id>mvn4-its-run</id>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-                <phase>integration-test</phase>
-                <configuration>
-                  <mavenHome>${project.build.directory}/dependency/apache-maven-${maven4Version}</mavenHome>
-                  <cloneProjectsTo>${project.build.directory}/mvn4-it</cloneProjectsTo>
                   <localRepositoryPath>${project.build.directory}/it-repo</localRepositoryPath>
                   <settingsFile>${project.build.directory}/it-user/.m2/settings.xml</settingsFile>
                   <mavenOpts>-Duser.home=${project.build.directory}/it-user</mavenOpts>
