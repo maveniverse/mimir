@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.mimir.shared;
 
+import eu.maveniverse.maven.mimir.shared.mirror.MirroredRemoteRepository;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -26,6 +27,11 @@ public interface Session extends Closeable {
      * Tells whether session is configured to support given remote repository.
      */
     boolean repositorySupported(RemoteRepository remoteRepository);
+
+    /**
+     * Returns the mirror setup for given remote repository, if applicable.
+     */
+    Optional<MirroredRemoteRepository> repositoryMirror(RemoteRepository remoteRepository);
 
     /**
      * Tells whether session is configured to support given artifact.

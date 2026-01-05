@@ -157,6 +157,11 @@ public interface SessionConfig {
      */
     Set<String> repositories();
 
+    /**
+     * Returns the defined mirrors.
+     */
+    Set<String> mirrors();
+
     // components on/off
 
     boolean resolverConnectorEnabled();
@@ -369,6 +374,7 @@ public interface SessionConfig {
             private final String localNode;
             private final LocalNode localNodeInstance;
             private final Set<String> repositories;
+            private final Set<String> mirrors;
 
             private Impl(
                     Boolean enabled,
@@ -431,6 +437,7 @@ public interface SessionConfig {
                 Set<String> overlayNodes = Set.of();
                 String localNode = localNodeInstance != null ? localNodeInstance.name() : "daemon";
                 Set<String> repositories = RemoteRepositories.DEFAULT;
+                Set<String> mirrors = Set.of();
 
                 if (effectiveProperties.containsKey("mimir.session.keyMapper")) {
                     keyMapper = effectiveProperties.get("mimir.session.keyMapper");
@@ -447,11 +454,16 @@ public interface SessionConfig {
                     String value = effectiveProperties.get("mimir.session.repositories");
                     repositories = Set.copyOf(Arrays.asList(value.split(",")));
                 }
+                if (effectiveProperties.containsKey("mimir.session.mirrors")) {
+                    String value = effectiveProperties.get("mimir.session.mirrors");
+                    mirrors = Set.copyOf(Arrays.asList(value.split(",")));
+                }
 
                 this.keyMapper = keyMapper;
                 this.overlayNodes = overlayNodes;
                 this.localNode = localNode;
                 this.repositories = repositories;
+                this.mirrors = mirrors;
             }
 
             @Override
@@ -533,6 +545,11 @@ public interface SessionConfig {
             @Override
             public Set<String> repositories() {
                 return repositories;
+            }
+
+            @Override
+            public Set<String> mirrors() {
+                return mirrors;
             }
 
             @Override
