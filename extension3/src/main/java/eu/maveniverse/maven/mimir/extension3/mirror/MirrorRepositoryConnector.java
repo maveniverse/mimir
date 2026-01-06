@@ -71,6 +71,9 @@ public class MirrorRepositoryConnector extends CloseableSupport implements Repos
             if (!adRemainder.isEmpty() || !mdRemainder.isEmpty()) {
                 ad = new ArrayList<>(adRemainder);
                 md = new ArrayList<>(mdRemainder);
+
+                ad.forEach(a -> a.setException(null));
+                md.forEach(m -> m.setException(null));
             }
         }
         if (!adRemainder.isEmpty() || !mdRemainder.isEmpty()) {
