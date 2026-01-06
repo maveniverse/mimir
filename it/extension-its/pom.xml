@@ -104,6 +104,9 @@
                   <properties>
                     <mimir.daemon.passOnBasedir>true</mimir.daemon.passOnBasedir>
                   </properties>
+                  <environmentVariables>
+                    <CI />
+                  </environmentVariables>
                   <cloneClean>true</cloneClean>
                   <pomIncludes>
                     <pomInclude>*/pom.xml</pomInclude>
