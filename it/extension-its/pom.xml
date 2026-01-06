@@ -104,6 +104,10 @@
                   <properties>
                     <mimir.daemon.passOnBasedir>true</mimir.daemon.passOnBasedir>
                   </properties>
+                  <environmentVariables>
+                    <CI>false</CI>
+                    <GITHUB_ACTIONS>false</GITHUB_ACTIONS>
+                  </environmentVariables>
                   <cloneClean>true</cloneClean>
                   <pomIncludes>
                     <pomInclude>*/pom.xml</pomInclude>

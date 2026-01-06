@@ -98,13 +98,22 @@ public final class ParseUtils {
     }
 
     /**
-     * Parses a remote repository string in form of {@code "id::url"} into {@link RemoteRepository}.
+     * Parses a remote repository string in form of {@code "id::url"} into {@link RemoteRepository}, but knows what
+     * some "special strings" are, for example {@code "central"} denotes Maven Central repository.
      */
     public static RemoteRepository parseRemoteRepositoryString(SessionConfig sessionConfig, String sourcesString) {
         requireNonNull(sourcesString);
         if (CENTRAL.getId().equals(sourcesString)) {
             return CENTRAL;
         }
+        return parseRemoteRepositorySpec(sessionConfig, sourcesString);
+    }
+
+    /**
+     * Parses a remote repository string in form of {@code "id::url"} into {@link RemoteRepository}.
+     */
+    public static RemoteRepository parseRemoteRepositorySpec(SessionConfig sessionConfig, String sourcesString) {
+        requireNonNull(sourcesString);
         String[] repoParts = sourcesString.split("::");
         if (repoParts.length == 2) {
             // modern id::url
@@ -112,7 +121,7 @@ public final class ParseUtils {
         }
         if (repoParts.length == 3) {
             // legacy id::default::url
-            return new RemoteRepository.Builder(repoParts[0], "default", repoParts[2]).build();
+            return new RemoteRepository.Builder(repoParts[0], repoParts[1], repoParts[2]).build();
         } else {
             throw new IllegalArgumentException(
                     "Invalid remote repository element (must have form of 'id::url'): " + sourcesString);

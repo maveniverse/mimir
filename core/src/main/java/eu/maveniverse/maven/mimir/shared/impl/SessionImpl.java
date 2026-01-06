@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.mimir.shared.Entry;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
+import eu.maveniverse.maven.mimir.shared.mirror.MirroredRemoteRepository;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.shared.core.component.CloseableConfigSupport;
@@ -31,6 +32,7 @@ import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 
 public final class SessionImpl extends CloseableConfigSupport<SessionConfig> implements Session {
     private final Predicate<RemoteRepository> repositoryPredicate;
+    private final Map<String, List<RemoteRepository>> repositoryMirrors;
     private final Predicate<Artifact> artifactPredicate;
     private final BiFunction<RemoteRepository, Artifact, URI> keyMapper;
     private final LocalNode localNode;
@@ -42,11 +44,13 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
     public SessionImpl(
             SessionConfig sessionConfig,
             Predicate<RemoteRepository> repositoryPredicate,
+            Map<String, List<RemoteRepository>> repositoryMirrors,
             Predicate<Artifact> artifactPredicate,
             BiFunction<RemoteRepository, Artifact, URI> keyMapper,
             LocalNode localNode) {
         super(sessionConfig);
         this.repositoryPredicate = requireNonNull(repositoryPredicate);
+        this.repositoryMirrors = requireNonNull(repositoryMirrors);
         this.artifactPredicate = requireNonNull(artifactPredicate);
         this.keyMapper = requireNonNull(keyMapper);
         this.localNode = requireNonNull(localNode);
@@ -67,6 +71,25 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
     public boolean repositorySupported(RemoteRepository repository) {
         checkClosed();
         return repositoryPredicate.test(repository);
+    }
+
+    @Override
+    public Optional<MirroredRemoteRepository> repositoryMirror(RemoteRepository remoteRepository) {
+        List<RemoteRepository> mirrors = repositoryMirrors.get(remoteRepository.getId());
+        if (mirrors != null) {
+            return Optional.of(new MirroredRemoteRepository() {
+                @Override
+                public RemoteRepository remoteRepository() {
+                    return remoteRepository;
+                }
+
+                @Override
+                public List<RemoteRepository> remoteRepositoryMirrors() {
+                    return List.copyOf(mirrors);
+                }
+            });
+        }
+        return Optional.empty();
     }
 
     @Override

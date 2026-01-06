@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.MimirUtils;
 import eu.maveniverse.maven.mimir.shared.Session;
+import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -30,18 +31,21 @@ import org.eclipse.aether.util.ConfigUtils;
  * Factory for now "hard wraps" basic, but it should be made smarter.
  */
 @Named(MimirRepositoryConnectorFactory.NAME)
-public class MimirRepositoryConnectorFactory implements RepositoryConnectorFactory {
+public class MimirRepositoryConnectorFactory extends ComponentSupport implements RepositoryConnectorFactory {
     public static final String NAME = "mimir";
 
-    private final Map<String, Provider<RepositoryConnectorFactory>> repositoryConnectorFactories;
+    private final RepositoryConnectorFactory basicRepositoryConnectorFactory;
+    private final RepositoryConnectorFactory mirrorRepositoryConnectorFactory;
     private final ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector;
 
     @Inject
     public MimirRepositoryConnectorFactory(
             Map<String, Provider<RepositoryConnectorFactory>> repositoryConnectorFactories,
             ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector) {
-        this.repositoryConnectorFactories =
-                requireNonNull(repositoryConnectorFactories, "repositoryConnectorFactories");
+        this.basicRepositoryConnectorFactory = requireNonNull(
+                repositoryConnectorFactories.get("basic").get(), "No basic repository connector factory found");
+        this.mirrorRepositoryConnectorFactory = requireNonNull(
+                repositoryConnectorFactories.get("mirror").get(), "No mirror repository connector factory found");
         this.checksumAlgorithmFactorySelector =
                 requireNonNull(checksumAlgorithmFactorySelector, "checksumAlgorithmFactorySelector");
     }
@@ -54,10 +58,7 @@ public class MimirRepositoryConnectorFactory implements RepositoryConnectorFacto
         if (ms != null && ms.config().resolverConnectorEnabled()) {
             message = "Unsupported repository: " + repository;
             if (ms.repositorySupported(repository)) {
-                RepositoryConnectorFactory basicRepositoryConnectorFactory = requireNonNull(
-                        repositoryConnectorFactories.get("basic").get(), "No basic repository connector factory found");
-                RepositoryConnector repositoryConnector =
-                        basicRepositoryConnectorFactory.newInstance(session, repository);
+                RepositoryConnector repositoryConnector = createConnector(session, repository);
                 List<ChecksumAlgorithmFactory> checksumsAlgorithms = checksumAlgorithmFactorySelector.selectList(
                         ConfigUtils.parseCommaSeparatedUniqueNames(ConfigUtils.getString(
                                 session,
@@ -81,5 +82,17 @@ public class MimirRepositoryConnectorFactory implements RepositoryConnectorFacto
     @Override
     public float getPriority() {
         return 10;
+    }
+
+    /**
+     * Creates {@link RepositoryConnector} instance, will try mirror, and fall back to basic.
+     */
+    private RepositoryConnector createConnector(RepositorySystemSession session, RemoteRepository repository)
+            throws NoRepositoryConnectorException {
+        try {
+            return mirrorRepositoryConnectorFactory.newInstance(session, repository);
+        } catch (NoRepositoryConnectorException e) {
+            return basicRepositoryConnectorFactory.newInstance(session, repository);
+        }
     }
 }

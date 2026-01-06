@@ -13,6 +13,7 @@ import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
 import eu.maveniverse.maven.mimir.shared.impl.node.OverlayingLocalNode;
+import eu.maveniverse.maven.mimir.shared.mirror.Mirrors;
 import eu.maveniverse.maven.mimir.shared.naming.KeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.naming.RemoteRepositories;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
@@ -94,6 +95,7 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
         return new SessionImpl(
                 config,
                 RemoteRepositories.repositoryPredicate(config.repositories()),
+                Mirrors.parseMirrors(config, config.mirrors()),
                 a -> !a.isSnapshot(),
                 keyMapper,
                 localNode);
