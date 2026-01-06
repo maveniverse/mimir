@@ -29,7 +29,8 @@ import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.transfer.NoRepositoryConnectorException;
 
 /**
- * Factory for mirrors.
+ * Factory for mirrors: it creates {@link MirrorRepositoryConnector} if passed in {@link RemoteRepository} is defined
+ * as mirror, otherwise throws {@link NoRepositoryConnectorException}.
  */
 @Named(MirrorRepositoryConnectorFactory.NAME)
 public class MirrorRepositoryConnectorFactory extends ComponentSupport implements RepositoryConnectorFactory {
@@ -50,9 +51,11 @@ public class MirrorRepositoryConnectorFactory extends ComponentSupport implement
     @Override
     public RepositoryConnector newInstance(RepositorySystemSession session, RemoteRepository repository)
             throws NoRepositoryConnectorException {
+        String message = "Mimir is disabled";
         Session ms = MimirUtils.mayGetSession(session).orElse(null);
         if (ms != null && ms.config().resolverConnectorEnabled()) {
             Optional<MirroredRemoteRepository> mrro = ms.repositoryMirror(repository);
+            message = "Not a mirror repository: " + repository;
             if (mrro.isPresent()) {
                 MirroredRemoteRepository mrr = mrro.orElseThrow();
 
@@ -76,7 +79,7 @@ public class MirrorRepositoryConnectorFactory extends ComponentSupport implement
                         new MirrorRemoteRepository(repository, repositoryConnector, mirrorConnectors));
             }
         }
-        return basicRepositoryConnectorFactory.newInstance(session, repository);
+        throw new NoRepositoryConnectorException(repository, message);
     }
 
     @Override
