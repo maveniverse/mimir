@@ -97,7 +97,7 @@
                 </goals>
                 <phase>integration-test</phase>
                 <configuration>
-                  <cloneProjectsTo>${project.build.directory}/mvn3-it</cloneProjectsTo>
+                  <cloneProjectsTo>${project.build.directory}/mvn-it</cloneProjectsTo>
                   <localRepositoryPath>${project.build.directory}/it-repo</localRepositoryPath>
                   <settingsFile>${project.build.directory}/it-user/.m2/settings.xml</settingsFile>
                   <mavenOpts>-Duser.home=${project.build.directory}/it-user</mavenOpts>
