@@ -26,3 +26,5 @@ assert first.contains('Downloading from central: https://maven-central-eu.storag
 assert first.contains('Downloading from central: https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api-no-such-artifact/2.0.17/slf4j-api-no-such-artifact-2.0.17.pom')
 assert first.contains('Downloading from central: https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.12.1-no-such-version/junit-jupiter-api-5.12.1-no-such-version.pom')
 
+// the artifact from local-repo-main is resolved (is in local repo)
+assert new File(basedir, 'first/group/artifact/1.0/artifact-1.0.pom').exists()

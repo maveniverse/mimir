@@ -22,7 +22,26 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>local-release</id>
+            <url>file://local-release-main</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <dependencies>
+        <dependency>
+            <!-- dep present in main repo only, but not in mirror -->
+            <groupId>group</groupId>
+            <artifactId>artifact</artifactId>
+            <version>1.0</version>
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api-no-such-artifact</artifactId>
