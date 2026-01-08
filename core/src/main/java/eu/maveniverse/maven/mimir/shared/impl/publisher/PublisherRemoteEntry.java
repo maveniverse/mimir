@@ -29,6 +29,7 @@ public class PublisherRemoteEntry extends EntrySupport implements RemoteEntry {
 
     @Override
     public void handleContent(IOConsumer consumer) throws IOException {
+        requireNonNull(consumer);
         String schema = handle.getScheme();
         try {
             if ("http".equals(schema)) {

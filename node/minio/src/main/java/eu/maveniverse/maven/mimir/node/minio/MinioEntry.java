@@ -11,7 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.node.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.naming.Key;
-import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
+import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import io.minio.DownloadObjectArgs;
 import io.minio.GetObjectArgs;
@@ -23,7 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-public final class MinioEntry extends EntrySupport implements SystemEntry {
+public final class MinioEntry extends EntrySupport implements LocalEntry {
     private final MinioClient minioClient;
     private final Key key;
 
@@ -34,12 +34,13 @@ public final class MinioEntry extends EntrySupport implements SystemEntry {
     }
 
     @Override
-    public InputStream inputStream() throws IOException {
-        try {
-            return minioClient.getObject(GetObjectArgs.builder()
-                    .bucket(key.container())
-                    .object(key.name())
-                    .build());
+    public void handleContent(IOConsumer consumer) throws IOException {
+        requireNonNull(consumer);
+        try (InputStream is = minioClient.getObject(GetObjectArgs.builder()
+                .bucket(key.container())
+                .object(key.name())
+                .build())) {
+            consumer.accept(is);
         } catch (MinioException e) {
             logger.debug(e.httpTrace());
             throw new IOException("inputStream()", e);

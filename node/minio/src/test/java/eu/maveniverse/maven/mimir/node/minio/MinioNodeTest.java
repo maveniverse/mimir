@@ -8,7 +8,7 @@ import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.naming.KeyMapper;
-import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
+import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import java.nio.charset.StandardCharsets;
@@ -75,15 +75,15 @@ public class MinioNodeTest {
 
                     entry = minioNode.locate(keyMapper.apply(central, junit));
                     assertTrue(entry.isPresent());
-                    SystemEntry systemEntry = entry.orElseThrow();
-                    assertEquals(12, systemEntry.getContentLength());
+                    LocalEntry localEntry = entry.orElseThrow();
+                    assertEquals(12, localEntry.getContentLength());
                     assertEquals(
                             "2ef7bde608ce5404e97d5f042f95f89f1c232871",
-                            systemEntry.checksums().get(Sha1ChecksumAlgorithmFactory.NAME));
+                            localEntry.checksums().get(Sha1ChecksumAlgorithmFactory.NAME));
                     assertEquals(
                             "861844d6704e8573fec34d967e20bcfef3d424cf48be04e6dc08f2bd58c729743371015ead891cc3cf1c9d34b49264b510751b1ff9e537937bc46b5d6ff4ecc8",
-                            systemEntry.checksums().get(Sha512ChecksumAlgorithmFactory.NAME));
-                    System.out.println(systemEntry.metadata());
+                            localEntry.checksums().get(Sha512ChecksumAlgorithmFactory.NAME));
+                    System.out.println(localEntry.metadata());
                 }
             } finally {
                 container.stop();

@@ -21,7 +21,9 @@ import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -131,6 +133,16 @@ public class DaemonNode extends NodeSupport implements LocalNode {
         private DaemonEntry(Map<String, String> metadata, Map<String, String> checksums, String keyString) {
             super(metadata, checksums);
             this.keyString = keyString;
+        }
+
+        @Override
+        public void handleContent(IOConsumer consumer) throws IOException {
+            try (FileUtils.TempFile tempFile = FileUtils.newTempFile()) {
+                transferTo(tempFile.getPath());
+                try (InputStream is = Files.newInputStream(tempFile.getPath())) {
+                    consumer.accept(is);
+                }
+            }
         }
 
         @Override

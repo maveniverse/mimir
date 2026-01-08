@@ -48,6 +48,10 @@
       <groupId>eu.maveniverse.maven.mimir.node</groupId>
       <artifactId>file</artifactId>
     </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mimir.node</groupId>
+      <artifactId>ipfs</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>

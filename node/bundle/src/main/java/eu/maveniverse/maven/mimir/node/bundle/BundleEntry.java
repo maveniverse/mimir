@@ -11,7 +11,6 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.node.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
-import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,12 +18,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-public final class BundleEntry extends EntrySupport implements LocalEntry, SystemEntry {
+public final class BundleEntry extends EntrySupport implements LocalEntry {
     private final Path bundleFsPath;
 
     public BundleEntry(Map<String, String> metadata, Map<String, String> checksums, Path bundleFsPath) {
         super(metadata, checksums);
         this.bundleFsPath = requireNonNull(bundleFsPath, "bundleFsPath");
+    }
+
+    @Override
+    public void handleContent(IOConsumer consumer) throws IOException {
+        requireNonNull(consumer);
+        try (InputStream is = Files.newInputStream(bundleFsPath)) {
+            consumer.accept(is);
+        }
     }
 
     @Override
@@ -34,10 +41,5 @@ public final class BundleEntry extends EntrySupport implements LocalEntry, Syste
             FileUtils.copy(bundleFsPath, f.getPath());
             f.move();
         }
-    }
-
-    @Override
-    public InputStream inputStream() throws IOException {
-        return Files.newInputStream(bundleFsPath);
     }
 }

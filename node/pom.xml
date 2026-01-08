@@ -28,6 +28,7 @@
     <module>daemon</module>
     <module>file</module>
     <module>jgroups</module>
+    <module>ipfs</module>
     <module>minio</module>
   </modules>
 

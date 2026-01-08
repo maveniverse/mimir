@@ -168,11 +168,6 @@ public final class FileNode extends NodeSupport implements SystemNode {
     }
 
     @Override
-    public boolean exclusiveAccess() {
-        return exclusiveAccess;
-    }
-
-    @Override
     public FileEntry store(URI key, Entry entry) throws IOException {
         checkClosed();
         Path path = resolveKey(key, false);

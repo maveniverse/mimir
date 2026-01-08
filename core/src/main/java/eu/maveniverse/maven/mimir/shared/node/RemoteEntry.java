@@ -7,23 +7,8 @@
  */
 package eu.maveniverse.maven.mimir.shared.node;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 /**
- * Remote entry.
+ * Remote entry, cannot use file system as it is "remote" to the caller, but it can accept a consumer that will get
+ * the content as stream.
  */
-public interface RemoteEntry extends Entry {
-    /**
-     * Consumer of remote entry content.
-     */
-    @FunctionalInterface
-    interface IOConsumer {
-        void accept(InputStream stream) throws IOException;
-    }
-
-    /**
-     * Provides remote cache entry content as input stream to consumer.
-     */
-    void handleContent(IOConsumer consumer) throws IOException;
-}
+public interface RemoteEntry extends Entry {}

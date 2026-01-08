@@ -10,8 +10,9 @@ package eu.maveniverse.maven.mimir.shared.impl.node;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.node.Entry;
+import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
+import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
-import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import java.io.IOException;
 import java.net.URI;
@@ -40,15 +41,15 @@ public class CachingSystemNode extends NodeSupport implements SystemNode {
     }
 
     @Override
-    public Optional<? extends Entry> locate(URI key) throws IOException {
-        Optional<? extends Entry> entry = systemNode.locate(key);
+    public Optional<? extends LocalEntry> locate(URI key) throws IOException {
+        Optional<? extends LocalEntry> entry = systemNode.locate(key);
         if (entry.isPresent()) {
             return entry;
         } else {
             for (RemoteNode node : remoteNodes) {
-                entry = node.locate(key);
-                if (entry.isPresent()) {
-                    return Optional.of(systemNode.store(key, entry.orElseThrow()));
+                Optional<? extends RemoteEntry> remoteEntry = node.locate(key);
+                if (remoteEntry.isPresent()) {
+                    return Optional.of(systemNode.store(key, remoteEntry.orElseThrow()));
                 }
             }
         }
@@ -56,13 +57,13 @@ public class CachingSystemNode extends NodeSupport implements SystemNode {
     }
 
     @Override
-    public SystemEntry store(URI key, Path file, Map<String, String> metadata, Map<String, String> checksums)
+    public LocalEntry store(URI key, Path file, Map<String, String> metadata, Map<String, String> checksums)
             throws IOException {
         return systemNode.store(key, file, metadata, checksums);
     }
 
     @Override
-    public SystemEntry store(URI key, Entry entry) throws IOException {
+    public LocalEntry store(URI key, Entry entry) throws IOException {
         return systemNode.store(key, entry);
     }
 

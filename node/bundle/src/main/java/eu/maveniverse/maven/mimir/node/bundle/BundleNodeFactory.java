@@ -14,7 +14,6 @@ import eu.maveniverse.maven.mimir.shared.impl.ParseUtils;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
-import eu.maveniverse.maven.mimir.shared.naming.KeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
@@ -40,13 +39,10 @@ import org.eclipse.sisu.Nullable;
 @Named(BundleNodeConfig.NAME)
 public class BundleNodeFactory extends ComponentSupport implements LocalNodeFactory<BundleNode> {
     private final RepositorySystem repositorySystem;
-    private final Map<String, KeyResolverFactory> keyResolverFactories;
 
     @Inject
-    public BundleNodeFactory(
-            @Nullable RepositorySystem repositorySystem, Map<String, KeyResolverFactory> keyResolverFactories) {
+    public BundleNodeFactory(@Nullable RepositorySystem repositorySystem) {
         this.repositorySystem = repositorySystem;
-        this.keyResolverFactories = requireNonNull(keyResolverFactories, "keyResolverFactories");
     }
 
     @Override
