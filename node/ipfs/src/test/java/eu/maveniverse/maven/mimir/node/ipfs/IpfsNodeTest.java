@@ -20,7 +20,6 @@ public class IpfsNodeTest {
     @Test
     void smoke() throws IOException {
         IPFS ipfs = new IPFS("/ip4/127.0.0.1/tcp/5001");
-
         // publish
         ipfs.files.write(
                 "/repo/maveniverse/pom.xml",
