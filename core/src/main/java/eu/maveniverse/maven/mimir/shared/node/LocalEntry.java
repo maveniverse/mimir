@@ -18,7 +18,7 @@ public interface LocalEntry extends Entry {
     /**
      * Transfers cached entry to given file by best available means and atomically. The file will be overwritten,
      * if existed. It is caller duty to figure out what should happen with existing target file (as this method will
-     * delete it).
+     * overwrite it).
      */
     void transferTo(Path file) throws IOException;
 
