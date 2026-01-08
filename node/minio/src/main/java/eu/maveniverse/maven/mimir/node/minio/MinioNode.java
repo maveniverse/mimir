@@ -101,11 +101,6 @@ public final class MinioNode extends NodeSupport implements SystemNode {
     }
 
     @Override
-    public boolean exclusiveAccess() {
-        return exclusiveAccess;
-    }
-
-    @Override
     public MinioEntry store(URI key, Entry entry) throws IOException {
         checkClosed();
         Key localKey = keyResolver.apply(key);

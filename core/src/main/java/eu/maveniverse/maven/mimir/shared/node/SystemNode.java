@@ -17,13 +17,6 @@ import java.net.URI;
  */
 public interface SystemNode extends LocalNode {
     /**
-     * Returns {@code true} if it is guaranteed that this system node has exclusive access to storage.
-     */
-    default boolean exclusiveAccess() {
-        return false;
-    }
-
-    /**
      * Stores entry and provides new local entry for stored content. If entry already exists, method will fail if
      * checksums are not matching (not "same file").
      */

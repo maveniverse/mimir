@@ -22,7 +22,7 @@ public interface Node extends Closeable {
     String name();
 
     /**
-     * Locates cache entry by key on this node.
+     * Locates entry by key on this node.
      */
     Optional<? extends Entry> locate(URI key) throws IOException;
 }

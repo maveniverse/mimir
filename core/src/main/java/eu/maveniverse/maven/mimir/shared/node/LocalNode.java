@@ -22,6 +22,7 @@ public interface LocalNode extends Node {
     /**
      * Locates local entry by key on this node.
      */
+    @Override
     Optional<? extends LocalEntry> locate(URI key) throws IOException;
 
     /**
