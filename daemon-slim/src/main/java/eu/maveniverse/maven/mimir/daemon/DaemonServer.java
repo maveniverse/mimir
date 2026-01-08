@@ -26,7 +26,7 @@ import eu.maveniverse.maven.mimir.daemon.protocol.Response;
 import eu.maveniverse.maven.mimir.daemon.protocol.Session;
 import eu.maveniverse.maven.mimir.shared.impl.node.CachingSystemNode;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
+import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
 import java.net.URI;
@@ -120,7 +120,7 @@ final class DaemonServer extends ComponentSupport implements Runnable {
                         String pathString = request.requireData(Request.DATA_PATHSTRING);
                         URI key = URI.create(keyString);
                         Path path = Path.of(pathString);
-                        Optional<? extends Entry> entry = cachingSystemNode.locate(key);
+                        Optional<? extends LocalEntry> entry = cachingSystemNode.locate(key);
                         logger.debug(
                                 "{} {} {} -> {}",
                                 request.cmd(),
@@ -128,7 +128,7 @@ final class DaemonServer extends ComponentSupport implements Runnable {
                                 keyString,
                                 pathString);
                         if (entry.isPresent()) {
-                            ((SystemEntry) entry.orElseThrow()).transferTo(path);
+                            entry.orElseThrow().transferTo(path);
                             handle.writeResponse(Response.okData(request, Map.of()));
                         } else {
                             handle.writeResponse(Response.koMessage(request, "Not found"));

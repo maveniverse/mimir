@@ -8,8 +8,8 @@
 package eu.maveniverse.maven.mimir.shared.impl.publisher;
 
 import eu.maveniverse.maven.mimir.shared.impl.Executors;
-import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
-import eu.maveniverse.maven.mimir.shared.node.SystemNode;
+import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
+import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -26,8 +26,8 @@ public class ServerSocketPublisher extends PublisherSupport {
     private final ServerSocket serverSocket;
     private final ExecutorService executor;
 
-    public ServerSocketPublisher(SystemNode systemNode, PublisherConfig publisherConfig) throws IOException {
-        super(systemNode, publisherConfig);
+    public ServerSocketPublisher(LocalNode localNode, PublisherConfig publisherConfig) throws IOException {
+        super(localNode, publisherConfig);
 
         InetSocketAddress inetSocketAddress = new InetSocketAddress(publisherConfig.hostPort());
         this.serverSocket = new ServerSocket(inetSocketAddress.getPort(), 50, inetSocketAddress.getAddress());
@@ -43,7 +43,7 @@ public class ServerSocketPublisher extends PublisherSupport {
                             OutputStream out = socket.getOutputStream();
                             if (buf.length == 36) {
                                 String token = new String(buf, StandardCharsets.UTF_8);
-                                Optional<SystemEntry> entry = publishedEntry(token);
+                                Optional<LocalEntry> entry = publishedEntry(token);
                                 if (entry.isPresent()) {
                                     logger.debug("HIT: {} to {}", token, socket.getRemoteSocketAddress());
                                     try (InputStream is = entry.orElseThrow().inputStream()) {

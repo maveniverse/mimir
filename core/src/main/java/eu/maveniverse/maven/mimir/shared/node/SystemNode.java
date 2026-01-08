@@ -29,12 +29,12 @@ public interface SystemNode extends LocalNode {
      * Stores file as new entry. If entry exists, method will fail if checksums are not same (not "same file").
      */
     @Override
-    SystemEntry store(URI key, Path file, Map<String, String> metadata, Map<String, String> checksums)
+    LocalEntry store(URI key, Path file, Map<String, String> metadata, Map<String, String> checksums)
             throws IOException;
 
     /**
      * Stores entry and provides new local entry for stored content. If entry already exists, method will fail if
      * checksums are not matching (not "same file").
      */
-    SystemEntry store(URI key, Entry entry) throws IOException;
+    LocalEntry store(URI key, Entry entry) throws IOException;
 }

@@ -21,6 +21,7 @@ import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -141,6 +142,11 @@ public class DaemonNode extends NodeSupport implements LocalNode {
                         session, keyString, FileUtils.canonicalPath(file).toString()));
                 handle.readResponse();
             }
+        }
+
+        @Override
+        public InputStream inputStream() throws IOException {
+            throw new IOException("daemon node cannot provide input stream");
         }
     }
 }

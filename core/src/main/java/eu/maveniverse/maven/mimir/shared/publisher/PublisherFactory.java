@@ -8,12 +8,12 @@
 package eu.maveniverse.maven.mimir.shared.publisher;
 
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
-import eu.maveniverse.maven.mimir.shared.node.SystemNode;
+import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.io.IOException;
 
 public interface PublisherFactory {
     /**
      * Creates a publisher for given system node.
      */
-    Publisher createPublisher(SessionConfig sessionConfig, SystemNode systemNode) throws IOException;
+    Publisher createPublisher(SessionConfig sessionConfig, LocalNode localNode) throws IOException;
 }

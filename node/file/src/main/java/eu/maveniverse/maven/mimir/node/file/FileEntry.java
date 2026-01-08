@@ -10,7 +10,7 @@ package eu.maveniverse.maven.mimir.node.file;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.node.EntrySupport;
-import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
+import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,7 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-public final class FileEntry extends EntrySupport implements SystemEntry {
+public final class FileEntry extends EntrySupport implements LocalEntry {
     private final Path path;
     private final boolean mayLink;
 

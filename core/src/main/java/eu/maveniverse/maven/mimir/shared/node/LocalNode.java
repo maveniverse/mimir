@@ -12,12 +12,18 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Local node uses some "local" (local to the system) backing storage and hence, has access to filesystem.
  * This type of node is able to back a session.
  */
 public interface LocalNode extends Node {
+    /**
+     * Locates local entry by key on this node.
+     */
+    Optional<? extends LocalEntry> locate(URI key) throws IOException;
+
     /**
      * Provides list of checksum algorithm names configured to be used by this node.
      */

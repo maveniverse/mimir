@@ -14,8 +14,8 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import eu.maveniverse.maven.mimir.shared.impl.Executors;
-import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
-import eu.maveniverse.maven.mimir.shared.node.SystemNode;
+import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
+import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,8 +31,8 @@ import java.util.function.Function;
 public class HttpServerPublisher extends PublisherSupport {
     private final HttpServer httpServer;
 
-    public HttpServerPublisher(SystemNode systemNode, PublisherConfig publisherConfig) throws IOException {
-        super(systemNode, publisherConfig);
+    public HttpServerPublisher(LocalNode localNode, PublisherConfig publisherConfig) throws IOException {
+        super(localNode, publisherConfig);
         httpServer = HttpServer.create(new InetSocketAddress(publisherConfig.hostPort()), 0);
 
         httpServer.setExecutor(Executors.executorService());
@@ -64,13 +64,13 @@ public class HttpServerPublisher extends PublisherSupport {
     }
 
     private static class TxHandler extends ComponentSupport implements HttpHandler {
-        private final Function<String, Optional<SystemEntry>> entrySupplier;
+        private final Function<String, Optional<LocalEntry>> entrySupplier;
 
         private final DateTimeFormatter rfc7231 = DateTimeFormatter.ofPattern(
                         "EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH)
                 .withZone(ZoneId.of("GMT"));
 
-        public TxHandler(Function<String, Optional<SystemEntry>> entrySupplier) {
+        public TxHandler(Function<String, Optional<LocalEntry>> entrySupplier) {
             this.entrySupplier = requireNonNull(entrySupplier, "entrySupplier");
         }
 
@@ -81,16 +81,16 @@ public class HttpServerPublisher extends PublisherSupport {
                 String path = exchange.getRequestURI().getPath();
                 if ("GET".equals(exchange.getRequestMethod()) && path.length() > ctxPath.length()) {
                     String token = exchange.getRequestURI().getPath().substring(ctxPath.length() + 1);
-                    Optional<SystemEntry> entry = entrySupplier.apply(token);
+                    Optional<LocalEntry> entry = entrySupplier.apply(token);
                     if (entry.isPresent()) {
-                        SystemEntry systemEntry = entry.orElseThrow();
+                        LocalEntry localEntry = entry.orElseThrow();
                         Headers headers = exchange.getResponseHeaders();
-                        headers.add("Last-Modified", rfc7231.format(systemEntry.getContentLastModified()));
+                        headers.add("Last-Modified", rfc7231.format(localEntry.getContentLastModified()));
                         headers.add("Content-Type", "application/octet-stream");
                         logger.debug("HIT {} to {}", token, exchange.getRemoteAddress());
-                        exchange.sendResponseHeaders(200, systemEntry.getContentLength());
+                        exchange.sendResponseHeaders(200, localEntry.getContentLength());
                         try (OutputStream os = exchange.getResponseBody();
-                                InputStream is = systemEntry.inputStream()) {
+                                InputStream is = localEntry.inputStream()) {
                             is.transferTo(os);
                         }
                     } else {

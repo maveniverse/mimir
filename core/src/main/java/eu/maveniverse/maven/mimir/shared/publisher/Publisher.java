@@ -7,7 +7,7 @@
  */
 package eu.maveniverse.maven.mimir.shared.publisher;
 
-import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
+import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
@@ -26,7 +26,7 @@ public interface Publisher extends Closeable {
         /**
          * The entry being published under given handle.
          */
-        SystemEntry publishedEntry();
+        LocalEntry publishedEntry();
     }
 
     /**

@@ -9,7 +9,6 @@ package eu.maveniverse.maven.mimir.shared.impl.node;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.io.IOException;
@@ -38,9 +37,9 @@ public class OverlayingLocalNode extends NodeSupport implements LocalNode {
     }
 
     @Override
-    public Optional<? extends Entry> locate(URI key) throws IOException {
+    public Optional<? extends LocalEntry> locate(URI key) throws IOException {
         for (LocalNode overlay : overlays) {
-            Optional<? extends Entry> localEntry = overlay.locate(key);
+            Optional<? extends LocalEntry> localEntry = overlay.locate(key);
             if (localEntry.isPresent()) {
                 return localEntry;
             }

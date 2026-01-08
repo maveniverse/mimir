@@ -21,7 +21,6 @@ import eu.maveniverse.maven.mimir.shared.naming.Key;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
-import eu.maveniverse.maven.mimir.shared.node.SystemEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import io.minio.CopyObjectArgs;
 import io.minio.CopySource;
@@ -150,24 +149,8 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                     throw new IOException("inputStream()", e);
                 }
             });
-        } else if (entry instanceof SystemEntry systemEntry) {
-            try (InputStream inputStream = systemEntry.inputStream()) {
-                minioClient.putObject(PutObjectArgs.builder()
-                        .bucket(localKey.container())
-                        .object(localKey.name())
-                        .userMetadata(pushMap(mergeEntry(entry)))
-                        .stream(inputStream, contentLength, -1)
-                        .build());
-            } catch (MinioException e) {
-                logger.debug(e.httpTrace());
-                throw new IOException("inputStream()", e);
-            } catch (Exception e) {
-                throw new IOException("inputStream()", e);
-            }
         } else if (entry instanceof LocalEntry localEntry) {
-            Path tempFile = Files.createTempFile(localKey.container(), "minio");
-            localEntry.transferTo(tempFile);
-            try (InputStream inputStream = Files.newInputStream(tempFile)) {
+            try (InputStream inputStream = localEntry.inputStream()) {
                 minioClient.putObject(PutObjectArgs.builder()
                         .bucket(localKey.container())
                         .object(localKey.name())
@@ -179,8 +162,6 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                 throw new IOException("inputStream()", e);
             } catch (Exception e) {
                 throw new IOException("inputStream()", e);
-            } finally {
-                Files.deleteIfExists(tempFile);
             }
         } else {
             throw new UnsupportedOperationException("Unsupported entry type: " + entry.getClass());
