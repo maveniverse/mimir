@@ -11,7 +11,6 @@ import eu.maveniverse.maven.mimir.shared.impl.Executors;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -46,9 +45,7 @@ public class ServerSocketPublisher extends PublisherSupport {
                                 Optional<LocalEntry> entry = publishedEntry(token);
                                 if (entry.isPresent()) {
                                     logger.debug("HIT: {} to {}", token, socket.getRemoteSocketAddress());
-                                    try (InputStream is = entry.orElseThrow().inputStream()) {
-                                        is.transferTo(out);
-                                    }
+                                    entry.orElseThrow().handleContent(is -> is.transferTo(out));
                                 } else {
                                     logger.warn("MISS: {} to {}", token, socket.getRemoteSocketAddress());
                                 }

@@ -9,6 +9,8 @@ package eu.maveniverse.maven.mimir.shared.node;
 
 import static java.util.Objects.requireNonNull;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.Map;
 
@@ -52,4 +54,17 @@ public interface Entry {
         requireNonNull(contentLastModified, "Content last modified cannot be null");
         metadata.put(Entry.CONTENT_LAST_MODIFIED, Long.toString(contentLastModified.toEpochMilli()));
     }
+
+    /**
+     * Consumer of remote entry content.
+     */
+    @FunctionalInterface
+    interface IOConsumer {
+        void accept(InputStream stream) throws IOException;
+    }
+
+    /**
+     * Provides entry content as input stream to consumer.
+     */
+    void handleContent(IOConsumer consumer) throws IOException;
 }

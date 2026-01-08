@@ -18,7 +18,6 @@ import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -89,9 +88,8 @@ public class HttpServerPublisher extends PublisherSupport {
                         headers.add("Content-Type", "application/octet-stream");
                         logger.debug("HIT {} to {}", token, exchange.getRemoteAddress());
                         exchange.sendResponseHeaders(200, localEntry.getContentLength());
-                        try (OutputStream os = exchange.getResponseBody();
-                                InputStream is = localEntry.inputStream()) {
-                            is.transferTo(os);
+                        try (OutputStream os = exchange.getResponseBody()) {
+                            localEntry.handleContent(is -> is.transferTo(os));
                         }
                     } else {
                         logger.info("MISS {} to {}", token, exchange.getRemoteAddress());

@@ -27,16 +27,19 @@ public final class BundleEntry extends EntrySupport implements LocalEntry {
     }
 
     @Override
+    public void handleContent(IOConsumer consumer) throws IOException {
+        requireNonNull(consumer);
+        try (InputStream is = Files.newInputStream(bundleFsPath)) {
+            consumer.accept(is);
+        }
+    }
+
+    @Override
     public void transferTo(Path file) throws IOException {
         Files.deleteIfExists(file);
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(file)) {
             FileUtils.copy(bundleFsPath, f.getPath());
             f.move();
         }
-    }
-
-    @Override
-    public InputStream inputStream() throws IOException {
-        return Files.newInputStream(bundleFsPath);
     }
 }

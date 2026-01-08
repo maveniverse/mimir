@@ -34,12 +34,13 @@ public final class MinioEntry extends EntrySupport implements LocalEntry {
     }
 
     @Override
-    public InputStream inputStream() throws IOException {
-        try {
-            return minioClient.getObject(GetObjectArgs.builder()
-                    .bucket(key.container())
-                    .object(key.name())
-                    .build());
+    public void handleContent(IOConsumer consumer) throws IOException {
+        requireNonNull(consumer);
+        try (InputStream is = minioClient.getObject(GetObjectArgs.builder()
+                .bucket(key.container())
+                .object(key.name())
+                .build())) {
+            consumer.accept(is);
         } catch (MinioException e) {
             logger.debug(e.httpTrace());
             throw new IOException("inputStream()", e);

@@ -29,8 +29,11 @@ public final class FileEntry extends EntrySupport implements LocalEntry {
     }
 
     @Override
-    public InputStream inputStream() throws IOException {
-        return Files.newInputStream(path);
+    public void handleContent(IOConsumer consumer) throws IOException {
+        requireNonNull(consumer);
+        try (InputStream is = Files.newInputStream(path)) {
+            consumer.accept(is);
+        }
     }
 
     @Override

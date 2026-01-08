@@ -23,6 +23,7 @@ import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -135,6 +136,16 @@ public class DaemonNode extends NodeSupport implements LocalNode {
         }
 
         @Override
+        public void handleContent(IOConsumer consumer) throws IOException {
+            try (FileUtils.TempFile tempFile = FileUtils.newTempFile()) {
+                transferTo(tempFile.getPath());
+                try (InputStream is = Files.newInputStream(tempFile.getPath())) {
+                    consumer.accept(is);
+                }
+            }
+        }
+
+        @Override
         public void transferTo(Path file) throws IOException {
             logger.debug("TRANSFER '{}'->'{}'", keyString, file);
             try (Handle handle = clientHandle.getHandle()) {
@@ -142,11 +153,6 @@ public class DaemonNode extends NodeSupport implements LocalNode {
                         session, keyString, FileUtils.canonicalPath(file).toString()));
                 handle.readResponse();
             }
-        }
-
-        @Override
-        public InputStream inputStream() throws IOException {
-            throw new IOException("daemon node cannot provide input stream");
         }
     }
 }

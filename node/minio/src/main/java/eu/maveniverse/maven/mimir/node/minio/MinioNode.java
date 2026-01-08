@@ -145,19 +145,21 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                 }
             });
         } else if (entry instanceof LocalEntry localEntry) {
-            try (InputStream inputStream = localEntry.inputStream()) {
-                minioClient.putObject(PutObjectArgs.builder()
-                        .bucket(localKey.container())
-                        .object(localKey.name())
-                        .userMetadata(pushMap(mergeEntry(entry)))
-                        .stream(inputStream, contentLength, -1)
-                        .build());
-            } catch (MinioException e) {
-                logger.debug(e.httpTrace());
-                throw new IOException("inputStream()", e);
-            } catch (Exception e) {
-                throw new IOException("inputStream()", e);
-            }
+            localEntry.handleContent(inputStream -> {
+                try {
+                    minioClient.putObject(PutObjectArgs.builder()
+                            .bucket(localKey.container())
+                            .object(localKey.name())
+                            .userMetadata(pushMap(mergeEntry(entry)))
+                            .stream(inputStream, contentLength, -1)
+                            .build());
+                } catch (MinioException e) {
+                    logger.debug(e.httpTrace());
+                    throw new IOException("inputStream()", e);
+                } catch (Exception e) {
+                    throw new IOException("inputStream()", e);
+                }
+            });
         } else {
             throw new UnsupportedOperationException("Unsupported entry type: " + entry.getClass());
         }

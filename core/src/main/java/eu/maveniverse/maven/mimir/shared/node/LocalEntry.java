@@ -8,7 +8,6 @@
 package eu.maveniverse.maven.mimir.shared.node;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 
 /**
@@ -21,9 +20,4 @@ public interface LocalEntry extends Entry {
      * overwrite it).
      */
     void transferTo(Path file) throws IOException;
-
-    /**
-     * Provides entry content as stream.
-     */
-    InputStream inputStream() throws IOException;
 }
