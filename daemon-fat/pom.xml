@@ -32,6 +32,10 @@
       <groupId>eu.maveniverse.maven.mimir.node</groupId>
       <artifactId>jgroups</artifactId>
     </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mimir.node</groupId>
+      <artifactId>minio</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
