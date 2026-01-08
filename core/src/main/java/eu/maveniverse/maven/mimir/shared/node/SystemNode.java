@@ -9,8 +9,6 @@ package eu.maveniverse.maven.mimir.shared.node;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
-import java.util.Map;
 
 /**
  * System node is a special local node that can also cache various {@link Entry} items, and provides system entry,
@@ -24,13 +22,6 @@ public interface SystemNode extends LocalNode {
     default boolean exclusiveAccess() {
         return false;
     }
-
-    /**
-     * Stores file as new entry. If entry exists, method will fail if checksums are not same (not "same file").
-     */
-    @Override
-    LocalEntry store(URI key, Path file, Map<String, String> metadata, Map<String, String> checksums)
-            throws IOException;
 
     /**
      * Stores entry and provides new local entry for stored content. If entry already exists, method will fail if
