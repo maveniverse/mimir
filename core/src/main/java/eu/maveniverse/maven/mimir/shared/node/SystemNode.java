@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.net.URI;
 
 /**
- * System node is a special local node that can also cache various {@link Entry} items, and provides system entry,
+ * System node is a special local node that can also cache various {@link Entry} items, and returns local entry,
  * that makes publishing cache possible as well. On one workstation there is usually one system node, that is also
  * published.
  */

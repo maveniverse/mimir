@@ -11,7 +11,8 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Remote entry.
+ * Remote entry, cannot use file system as it is "remote" to the caller, but it can accept a consumer that will get
+ * the content as stream.
  */
 public interface RemoteEntry extends Entry {
     /**
