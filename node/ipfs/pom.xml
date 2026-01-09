@@ -32,6 +32,11 @@
       <artifactId>java-ipfs-http-client</artifactId>
       <version>1.4.4</version>
     </dependency>
+    <dependency>
+      <groupId>com.github.libp2p</groupId>
+      <artifactId>jvm-libp2p</artifactId>
+      <version>1.2.2</version>
+    </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -99,6 +104,16 @@
       </snapshots>
       <id>jitpack.io</id>
       <url>https://jitpack.io</url>
+    </repository>
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>consensys</id>
+      <url>https://artifacts.consensys.net/public/maven/maven</url>
     </repository>
   </repositories>
 </project>
