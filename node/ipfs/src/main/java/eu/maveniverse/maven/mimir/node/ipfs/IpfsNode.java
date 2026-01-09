@@ -17,9 +17,6 @@ import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import io.ipfs.api.IPFS;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.repository.RemoteRepository;
-
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -54,7 +51,6 @@ public class IpfsNode extends RemoteNodeSupport implements SystemNode, RemoteNod
             return Optional.empty();
         }
         return Optional.empty();
-        ipfs.files.write()
     }
 
     @Override
