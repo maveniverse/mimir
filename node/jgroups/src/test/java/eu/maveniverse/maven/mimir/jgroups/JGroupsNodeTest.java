@@ -8,7 +8,6 @@ import eu.maveniverse.maven.mimir.node.file.FileNodeConfig;
 import eu.maveniverse.maven.mimir.node.file.MetadataMarshaller;
 import eu.maveniverse.maven.mimir.node.jgroups.JGroupsNode;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
-import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.impl.publisher.ServerSocketPublisherFactory;
 import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.shared.core.fs.DirectoryLocker;
@@ -44,39 +43,25 @@ public class JGroupsNodeTest {
         Files.writeString(contentPath, content);
 
         FileNodeConfig configOne = FileNodeConfig.of(
-                one,
-                one,
-                true,
-                Collections.singletonList("SHA-1"),
-                SimpleKeyResolverFactory.NAME,
-                false,
-                FileNodeConfig.CachePurge.OFF);
+                one, one, true, Collections.singletonList("SHA-1"), false, FileNodeConfig.CachePurge.OFF);
         FileNode nodeOne = new FileNode(
                 configOne.basedir(),
                 configOne.baseLockDir(),
                 configOne.mayLink(),
                 configOne.exclusiveAccess(),
                 configOne.cachePurge(),
-                new SimpleKeyResolverFactory().createKeyResolver(sessionConfig),
                 List.of(Sha1ChecksumAlgorithmFactory.NAME),
                 Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()),
                 DirectoryLocker.INSTANCE,
                 new MetadataMarshaller.PropertiesMetadataMarshaller());
         FileNodeConfig configTwo = FileNodeConfig.of(
-                two,
-                two,
-                true,
-                Collections.singletonList("SHA-1"),
-                SimpleKeyResolverFactory.NAME,
-                false,
-                FileNodeConfig.CachePurge.OFF);
+                two, two, true, Collections.singletonList("SHA-1"), false, FileNodeConfig.CachePurge.OFF);
         FileNode nodeTwo = new FileNode(
                 configTwo.basedir(),
                 configTwo.baseLockDir(),
                 configTwo.mayLink(),
                 configTwo.exclusiveAccess(),
                 configTwo.cachePurge(),
-                new SimpleKeyResolverFactory().createKeyResolver(sessionConfig),
                 List.of(Sha1ChecksumAlgorithmFactory.NAME),
                 Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()),
                 DirectoryLocker.INSTANCE,

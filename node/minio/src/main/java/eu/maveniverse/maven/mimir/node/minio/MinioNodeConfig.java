@@ -11,7 +11,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
-import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import java.util.Arrays;
 import java.util.List;
 
@@ -23,7 +22,6 @@ public class MinioNodeConfig {
         String accessKey = "minioadmin";
         String secretKey = "minioadmin";
         List<String> checksumAlgorithms = Arrays.asList("SHA-1", "SHA-512");
-        String keyResolver = SimpleKeyResolverFactory.NAME;
         boolean exclusiveAccess = false;
         boolean cachePurge = false;
 
@@ -44,9 +42,6 @@ public class MinioNodeConfig {
                     .filter(s -> !s.trim().isEmpty())
                     .collect(toList());
         }
-        if (sessionConfig.effectiveProperties().containsKey("mimir.minio.keyResolver")) {
-            keyResolver = sessionConfig.effectiveProperties().get("mimir.minio.keyResolver");
-        }
         if (sessionConfig.effectiveProperties().containsKey("mimir.minio.exclusiveAccess")) {
             exclusiveAccess =
                     Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.minio.exclusiveAccess"));
@@ -55,8 +50,7 @@ public class MinioNodeConfig {
             cachePurge =
                     Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.minio.cachePurge"));
         }
-        return new MinioNodeConfig(
-                endpoint, accessKey, secretKey, checksumAlgorithms, keyResolver, exclusiveAccess, cachePurge);
+        return new MinioNodeConfig(endpoint, accessKey, secretKey, checksumAlgorithms, exclusiveAccess, cachePurge);
     }
 
     public static final String NAME = "minio";
@@ -65,7 +59,6 @@ public class MinioNodeConfig {
     private final String accessKey;
     private final String secretKey;
     private final List<String> checksumAlgorithms;
-    private final String keyResolver;
     private final boolean exclusiveAccess;
     private final boolean cachePurge;
 
@@ -74,14 +67,12 @@ public class MinioNodeConfig {
             String accessKey,
             String secretKey,
             List<String> checksumAlgorithms,
-            String keyResolver,
             boolean exclusiveAccess,
             boolean cachePurge) {
         this.endpoint = endpoint;
         this.accessKey = accessKey;
         this.secretKey = secretKey;
         this.checksumAlgorithms = checksumAlgorithms;
-        this.keyResolver = keyResolver;
         this.exclusiveAccess = exclusiveAccess;
         this.cachePurge = cachePurge;
     }
@@ -100,10 +91,6 @@ public class MinioNodeConfig {
 
     public List<String> checksumAlgorithms() {
         return checksumAlgorithms;
-    }
-
-    public String keyResolver() {
-        return keyResolver;
     }
 
     public boolean exclusiveAccess() {

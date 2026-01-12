@@ -9,7 +9,9 @@ package eu.maveniverse.maven.mimir.node.bundle;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.naming.Key;
+import eu.maveniverse.maven.mimir.shared.impl.naming.Artifacts;
+import eu.maveniverse.maven.mimir.shared.naming.Keys;
+import eu.maveniverse.maven.mimir.shared.naming.UriDecoders;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import java.io.Closeable;
 import java.io.IOException;
@@ -21,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 
 /**
  * Wrapper around one single bundle, being able to match own origin (container) and serve entries.
@@ -31,20 +32,22 @@ public final class Bundle implements Closeable {
     private final String name;
     private final FileSystem fileSystem;
     private final Path root;
-    private final Function<URI, Key> keyResolver;
 
-    public Bundle(String container, String name, FileSystem fileSystem, Function<URI, Key> keyResolver) {
+    public Bundle(String container, String name, FileSystem fileSystem) {
         this.container = requireNonNull(container);
         this.name = requireNonNull(name);
         this.fileSystem = requireNonNull(fileSystem);
         this.root = fileSystem.getPath("/");
-        this.keyResolver = requireNonNull(keyResolver);
     }
 
-    public Optional<BundleEntry> locate(URI key) throws IOException {
-        Key resolved = keyResolver.apply(key);
-        if (Objects.equals(container, resolved.container())) {
-            Path path = root.resolve(resolved.name());
+    public Optional<BundleEntry> locate(URI uri) throws IOException {
+        Keys.Key key = UriDecoders.apply(uri);
+        Keys.FileKey fileKey = key instanceof Keys.FileKey ? (Keys.FileKey) key : null;
+        if (fileKey == null && key instanceof Keys.ArtifactKey artifactKey) {
+            fileKey = Keys.toFileKey(artifactKey, Artifacts::artifactRepositoryPath);
+        }
+        if (fileKey != null && Objects.equals(container, fileKey.container())) {
+            Path path = root.resolve(fileKey.path());
             if (Files.isRegularFile(path)) {
                 Map<String, String> metadata = loadMetadata(path);
                 Map<String, String> checksums = loadChecksums(path);

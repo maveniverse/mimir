@@ -1,14 +1,18 @@
-package eu.maveniverse.maven.mimir.shared.impl.naming;
+package eu.maveniverse.maven.mimir.shared.naming;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+import eu.maveniverse.maven.mimir.shared.impl.naming.Artifacts;
+import java.net.URI;
+import java.util.function.BiFunction;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.junit.jupiter.api.Test;
 
-public class SimpleKeyMapperFactoryTest {
+public class URIEncodersTest {
     private final Artifact irrelevant = new DefaultArtifact("irrelevant:irrelevant:1.0");
     private final RemoteRepository central1 = new RemoteRepository.Builder(
                     "central", "default", "https://repo.maven.apache.org/maven2/")
@@ -33,8 +37,8 @@ public class SimpleKeyMapperFactoryTest {
             .build();
 
     @Test
-    void smoke() {
-        SimpleKeyMapperFactory.SimpleKeyMapper simpleKeyMapperFactory = new SimpleKeyMapperFactory.SimpleKeyMapper();
+    void artifact() {
+        BiFunction<RemoteRepository, Artifact, URI> simpleKeyMapperFactory = UriEncoders::artifactKeyBuilder;
 
         assertEquals(
                 "mimir:artifact:central:irrelevant:irrelevant:jar:1.0",
@@ -52,5 +56,19 @@ public class SimpleKeyMapperFactoryTest {
         assertEquals(
                 "mimir:artifact:anyrepo-33bc8f95c99bce8984cd0cd31b6f40ca49b4bb6a:irrelevant:irrelevant:jar:1.0",
                 simpleKeyMapperFactory.apply(anyrepo, irrelevant).toASCIIString());
+    }
+
+    @Test
+    void artifactToFileKeyConversion() {
+        URI uri = UriEncoders.artifactKeyBuilder(central1, new DefaultArtifact("org.apache.maven:maven-core:3.9.12"));
+        assertEquals("mimir:artifact:central:org.apache.maven:maven-core:jar:3.9.12", uri.toASCIIString());
+        Keys.Key key = UriDecoders.apply(uri);
+        assertInstanceOf(Keys.ArtifactKey.class, key);
+        Keys.ArtifactKey akey = (Keys.ArtifactKey) key;
+        assertEquals("central", akey.container());
+        assertEquals(new DefaultArtifact("org.apache.maven:maven-core:jar:3.9.12"), akey.artifact());
+        Keys.FileKey fkey = Keys.toFileKey(akey, Artifacts::artifactRepositoryPath);
+        assertEquals("central", fkey.container());
+        assertEquals("org/apache/maven/maven-core/3.9.12/maven-core-3.9.12.jar", fkey.path());
     }
 }

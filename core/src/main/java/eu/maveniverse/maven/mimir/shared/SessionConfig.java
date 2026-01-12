@@ -9,7 +9,6 @@ package eu.maveniverse.maven.mimir.shared;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
 import eu.maveniverse.maven.mimir.shared.naming.RemoteRepositories;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
@@ -98,15 +97,6 @@ public interface SessionConfig {
     Optional<RepositorySystemSession> repositorySystemSession();
 
     // session impl config
-
-    /**
-     * The key mapper that session should use.
-     * <p>
-     * Configuration key {@code mimir.session.keyMapper}
-     * <p>
-     * By default, is "simple".
-     */
-    String keyMapper();
 
     /**
      * The overlay nodes.
@@ -369,7 +359,6 @@ public interface SessionConfig {
             private final boolean resolverTrustedChecksumsSourceEnabled;
 
             // session impl config (derived from that above)
-            private final String keyMapper;
             private final Set<String> overlayNodes;
             private final String localNode;
             private final LocalNode localNodeInstance;
@@ -433,15 +422,11 @@ public interface SessionConfig {
 
                 // session impl (derived from those above)
 
-                String keyMapper = SimpleKeyMapperFactory.NAME;
                 Set<String> overlayNodes = Set.of();
                 String localNode = localNodeInstance != null ? localNodeInstance.name() : "daemon";
                 Set<String> repositories = RemoteRepositories.DEFAULT;
                 Set<String> mirrors = Set.of();
 
-                if (effectiveProperties.containsKey("mimir.session.keyMapper")) {
-                    keyMapper = effectiveProperties.get("mimir.session.keyMapper");
-                }
                 if (effectiveProperties.containsKey("mimir.session.overlayNodes")) {
                     overlayNodes = Set.copyOf(Arrays.asList(effectiveProperties
                             .get("mimir.session.overlayNodes")
@@ -459,7 +444,6 @@ public interface SessionConfig {
                     mirrors = Set.copyOf(Arrays.asList(value.split(",")));
                 }
 
-                this.keyMapper = keyMapper;
                 this.overlayNodes = overlayNodes;
                 this.localNode = localNode;
                 this.repositories = repositories;
@@ -521,11 +505,6 @@ public interface SessionConfig {
             }
 
             // session impl
-
-            @Override
-            public String keyMapper() {
-                return keyMapper;
-            }
 
             @Override
             public Set<String> overlayNodes() {

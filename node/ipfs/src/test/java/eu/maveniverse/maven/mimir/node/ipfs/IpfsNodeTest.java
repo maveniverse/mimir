@@ -2,11 +2,13 @@ package eu.maveniverse.maven.mimir.node.ipfs;
 
 import io.ipfs.api.IPFS;
 import io.ipfs.api.NamedStreamable;
+import io.ipfs.multibase.Multibase;
 import io.ipfs.multihash.Multihash;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -20,6 +22,33 @@ public class IpfsNodeTest {
     @Test
     void smoke() throws IOException {
         IPFS ipfs = new IPFS("/ip4/127.0.0.1/tcp/5001");
+
+        log.info("{}", ipfs.pubsub.ls());
+        log.info("{}", ipfs.pubsub.peers());
+        Thread subt = new Thread(() -> {
+            try {
+                ipfs.pubsub.sub(
+                        "test-topic",
+                        m -> {
+                            log.info("{}", m);
+                            log.info("data={}", new String(Multibase.decode((String) m.get("data"))));
+                            log.info("seqno={}", Multibase.decode((String) m.get("seqno")));
+                            log.info(
+                                    "topicIDs={}",
+                                    ((List<String>) m.get("topicIDs"))
+                                            .stream()
+                                                    .map(s -> new String(Multibase.decode(s)))
+                                                    .toList());
+                        },
+                        Throwable::printStackTrace);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        subt.start();
+
+        ipfs.pubsub.pub("test-topic", "test");
+
         // publish
         ipfs.files.write(
                 "/repo/maveniverse/pom.xml",

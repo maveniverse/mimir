@@ -7,9 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
-import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
-import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
-import eu.maveniverse.maven.mimir.shared.naming.KeyMapper;
+import eu.maveniverse.maven.mimir.shared.naming.UriEncoders;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -32,21 +30,17 @@ public class FileNodeTest {
     private final RemoteRepository central =
             new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
     private final Artifact junit = new DefaultArtifact("junit:junit:3.13.2");
-    private final KeyMapper keyMapper = new SimpleKeyMapperFactory()
-            .createKeyMapper(SessionConfig.defaults().build());
 
     @Test
     void smoke(@TempDir Path basedir, @TempDir Path workdir) throws Exception {
         SessionConfig sessionConfig = SessionConfig.defaults().basedir(basedir).build();
-        try (FileNode fileNode = new FileNodeFactory(
-                        Map.of(SimpleKeyResolverFactory.NAME, new SimpleKeyResolverFactory()),
-                        Map.of(
-                                Sha1ChecksumAlgorithmFactory.NAME,
-                                new Sha1ChecksumAlgorithmFactory(),
-                                Sha512ChecksumAlgorithmFactory.NAME,
-                                new Sha512ChecksumAlgorithmFactory()))
+        try (FileNode fileNode = new FileNodeFactory(Map.of(
+                        Sha1ChecksumAlgorithmFactory.NAME,
+                        new Sha1ChecksumAlgorithmFactory(),
+                        Sha512ChecksumAlgorithmFactory.NAME,
+                        new Sha512ChecksumAlgorithmFactory()))
                 .createSystemNode(sessionConfig)) {
-            Optional<FileEntry> entry = fileNode.locate(keyMapper.apply(central, junit));
+            Optional<FileEntry> entry = fileNode.locate(UriEncoders.artifactKeyBuilder(central, junit));
             assertFalse(entry.isPresent());
 
             byte[] data = "Hello World!".getBytes(StandardCharsets.UTF_8);
@@ -54,9 +48,9 @@ public class FileNodeTest {
             Files.write(temp, data, StandardOpenOption.TRUNCATE_EXISTING);
             Map<String, String> checksums = ChecksumAlgorithmHelper.calculate(
                     data, Arrays.asList(new Sha1ChecksumAlgorithmFactory(), new Sha512ChecksumAlgorithmFactory()));
-            fileNode.store(keyMapper.apply(central, junit), temp, Map.of(), checksums);
+            fileNode.store(UriEncoders.artifactKeyBuilder(central, junit), temp, Map.of(), checksums);
 
-            entry = fileNode.locate(keyMapper.apply(central, junit));
+            entry = fileNode.locate(UriEncoders.artifactKeyBuilder(central, junit));
             assertTrue(entry.isPresent());
             LocalEntry localEntry = entry.orElseThrow();
             assertEquals(12, localEntry.getContentLength());
@@ -80,15 +74,13 @@ public class FileNodeTest {
                 .basedir(basedir)
                 .setUserProperty("mimir.file.mayLink", "false")
                 .build();
-        try (FileNode fileNode = new FileNodeFactory(
-                        Map.of(SimpleKeyResolverFactory.NAME, new SimpleKeyResolverFactory()),
-                        Map.of(
-                                Sha1ChecksumAlgorithmFactory.NAME,
-                                new Sha1ChecksumAlgorithmFactory(),
-                                Sha512ChecksumAlgorithmFactory.NAME,
-                                new Sha512ChecksumAlgorithmFactory()))
+        try (FileNode fileNode = new FileNodeFactory(Map.of(
+                        Sha1ChecksumAlgorithmFactory.NAME,
+                        new Sha1ChecksumAlgorithmFactory(),
+                        Sha512ChecksumAlgorithmFactory.NAME,
+                        new Sha512ChecksumAlgorithmFactory()))
                 .createSystemNode(sessionConfig)) {
-            Optional<FileEntry> entry = fileNode.locate(keyMapper.apply(central, junit));
+            Optional<FileEntry> entry = fileNode.locate(UriEncoders.artifactKeyBuilder(central, junit));
             assertFalse(entry.isPresent());
 
             byte[] data = "Hello World!".getBytes(StandardCharsets.UTF_8);
@@ -96,9 +88,9 @@ public class FileNodeTest {
             Files.write(temp, data, StandardOpenOption.TRUNCATE_EXISTING);
             Map<String, String> checksums = ChecksumAlgorithmHelper.calculate(
                     data, Arrays.asList(new Sha1ChecksumAlgorithmFactory(), new Sha512ChecksumAlgorithmFactory()));
-            fileNode.store(keyMapper.apply(central, junit), temp, Map.of(), checksums);
+            fileNode.store(UriEncoders.artifactKeyBuilder(central, junit), temp, Map.of(), checksums);
 
-            entry = fileNode.locate(keyMapper.apply(central, junit));
+            entry = fileNode.locate(UriEncoders.artifactKeyBuilder(central, junit));
             assertTrue(entry.isPresent());
             LocalEntry localEntry = entry.orElseThrow();
             assertEquals(12, localEntry.getContentLength());
@@ -122,13 +114,11 @@ public class FileNodeTest {
                 .basedir(basedir)
                 .setUserProperty("mimir.file.exclusiveAccess", "false")
                 .build();
-        FileNodeFactory fileNodeFactory = new FileNodeFactory(
-                Map.of(SimpleKeyResolverFactory.NAME, new SimpleKeyResolverFactory()),
-                Map.of(
-                        Sha1ChecksumAlgorithmFactory.NAME,
-                        new Sha1ChecksumAlgorithmFactory(),
-                        Sha512ChecksumAlgorithmFactory.NAME,
-                        new Sha512ChecksumAlgorithmFactory()));
+        FileNodeFactory fileNodeFactory = new FileNodeFactory(Map.of(
+                Sha1ChecksumAlgorithmFactory.NAME,
+                new Sha1ChecksumAlgorithmFactory(),
+                Sha512ChecksumAlgorithmFactory.NAME,
+                new Sha512ChecksumAlgorithmFactory()));
         try (FileNode fileNode1 = fileNodeFactory.createSystemNode(sessionConfig);
                 FileNode fileNode2 = fileNodeFactory.createSystemNode(sessionConfig)) {
             // should be ok
@@ -141,13 +131,11 @@ public class FileNodeTest {
                 .basedir(basedir)
                 .setUserProperty("mimir.file.exclusiveAccess", "true")
                 .build();
-        FileNodeFactory fileNodeFactory = new FileNodeFactory(
-                Map.of(SimpleKeyResolverFactory.NAME, new SimpleKeyResolverFactory()),
-                Map.of(
-                        Sha1ChecksumAlgorithmFactory.NAME,
-                        new Sha1ChecksumAlgorithmFactory(),
-                        Sha512ChecksumAlgorithmFactory.NAME,
-                        new Sha512ChecksumAlgorithmFactory()));
+        FileNodeFactory fileNodeFactory = new FileNodeFactory(Map.of(
+                Sha1ChecksumAlgorithmFactory.NAME,
+                new Sha1ChecksumAlgorithmFactory(),
+                Sha512ChecksumAlgorithmFactory.NAME,
+                new Sha512ChecksumAlgorithmFactory()));
         try (FileNode fileNode = fileNodeFactory.createSystemNode(sessionConfig)) {
             assertThrows(IOException.class, () -> fileNodeFactory.createSystemNode(sessionConfig));
         }

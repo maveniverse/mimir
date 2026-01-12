@@ -13,6 +13,7 @@ import eu.maveniverse.maven.mimir.shared.Entry;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.mirror.MirroredRemoteRepository;
+import eu.maveniverse.maven.mimir.shared.naming.UriEncoders;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.shared.core.component.CloseableConfigSupport;
@@ -24,7 +25,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -34,7 +34,6 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
     private final Predicate<RemoteRepository> repositoryPredicate;
     private final Map<String, List<RemoteRepository>> repositoryMirrors;
     private final Predicate<Artifact> artifactPredicate;
-    private final BiFunction<RemoteRepository, Artifact, URI> keyMapper;
     private final LocalNode localNode;
     private final Stats stats;
 
@@ -46,13 +45,11 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
             Predicate<RemoteRepository> repositoryPredicate,
             Map<String, List<RemoteRepository>> repositoryMirrors,
             Predicate<Artifact> artifactPredicate,
-            BiFunction<RemoteRepository, Artifact, URI> keyMapper,
             LocalNode localNode) {
         super(sessionConfig);
         this.repositoryPredicate = requireNonNull(repositoryPredicate);
         this.repositoryMirrors = requireNonNull(repositoryMirrors);
         this.artifactPredicate = requireNonNull(artifactPredicate);
-        this.keyMapper = requireNonNull(keyMapper);
         this.localNode = requireNonNull(localNode);
         this.stats = new Stats();
 
@@ -110,7 +107,7 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
         requireNonNull(remoteRepository, "remoteRepository");
         requireNonNull(artifact, "artifact");
         if (repositoryPredicate.test(remoteRepository) && artifactPredicate.test(artifact)) {
-            URI key = keyMapper.apply(remoteRepository, artifact);
+            URI key = UriEncoders.artifactKeyBuilder(remoteRepository, artifact);
             Optional<? extends eu.maveniverse.maven.mimir.shared.node.Entry> result = localNode.locate(key);
             if (result.isPresent()) {
                 LocalEntry entry = (LocalEntry) result.orElseThrow();
@@ -158,7 +155,7 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
         requireNonNull(file, "file");
         requireNonNull(checksums, "checksums");
         if (repositoryPredicate.test(remoteRepository) && artifactPredicate.test(artifact)) {
-            URI key = keyMapper.apply(remoteRepository, artifact);
+            URI key = UriEncoders.artifactKeyBuilder(remoteRepository, artifact);
             stats.doStore(Optional.of(localNode.store(key, file, metadata, checksums)));
             storedToCache
                     .computeIfAbsent(remoteRepository, k -> ConcurrentHashMap.newKeySet())

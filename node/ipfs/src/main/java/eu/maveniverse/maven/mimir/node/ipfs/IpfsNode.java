@@ -9,6 +9,8 @@ package eu.maveniverse.maven.mimir.node.ipfs;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.node.ipfs.lookup.ChecksumIndex;
+import eu.maveniverse.maven.mimir.node.ipfs.lookup.ChecksumLookup;
 import eu.maveniverse.maven.mimir.shared.impl.node.RemoteNodeSupport;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
@@ -25,11 +27,16 @@ import java.util.Optional;
 public class IpfsNode extends RemoteNodeSupport implements SystemNode, RemoteNode {
     private final String multiaddr;
     private final IPFS ipfs;
+    private final ChecksumLookup checksumLookup;
+    private final ChecksumIndex checksumIndex;
 
     public IpfsNode(String multiaddr) {
         super(IpfsNodeConfig.NAME, 5000);
         this.multiaddr = requireNonNull(multiaddr);
         this.ipfs = new IPFS(multiaddr);
+
+        this.checksumLookup = null;
+        this.checksumIndex = null;
     }
 
     @Override
@@ -39,6 +46,10 @@ public class IpfsNode extends RemoteNodeSupport implements SystemNode, RemoteNod
 
     @Override
     public Optional<IpfsEntry> locate(URI key) throws IOException {
+        Optional<String> checksum = checksumLookup.lookup(key);
+        if (checksum.isEmpty()) {
+            return Optional.empty();
+        }
         return Optional.empty();
     }
 
