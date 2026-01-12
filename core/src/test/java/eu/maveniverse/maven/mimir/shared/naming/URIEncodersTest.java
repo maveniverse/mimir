@@ -2,12 +2,10 @@ package eu.maveniverse.maven.mimir.shared.naming;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.net.URI;
-import java.util.function.BiFunction;
 
 import eu.maveniverse.maven.mimir.shared.impl.naming.Artifacts;
+import java.net.URI;
+import java.util.function.BiFunction;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
