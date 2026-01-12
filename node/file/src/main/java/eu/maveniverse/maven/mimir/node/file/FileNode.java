@@ -14,8 +14,10 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumEnforcer;
 import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumInputStream;
+import eu.maveniverse.maven.mimir.shared.impl.naming.Artifacts;
 import eu.maveniverse.maven.mimir.shared.impl.node.NodeSupport;
-import eu.maveniverse.maven.mimir.shared.naming.Key;
+import eu.maveniverse.maven.mimir.shared.naming.Keys;
+import eu.maveniverse.maven.mimir.shared.naming.UriDecoders;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
@@ -36,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithm;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
@@ -48,7 +49,6 @@ public final class FileNode extends NodeSupport implements SystemNode {
     private final boolean mayLink;
     private final boolean exclusiveAccess;
     private final FileNodeConfig.CachePurge cachePurge;
-    private final Function<URI, Key> keyResolver;
     private final List<String> checksumAlgorithms;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
     private final DirectoryLocker directoryLocker;
@@ -62,7 +62,6 @@ public final class FileNode extends NodeSupport implements SystemNode {
             boolean mayLink,
             boolean exclusiveAccess,
             FileNodeConfig.CachePurge cachePurge,
-            Function<URI, Key> keyResolver,
             List<String> checksumAlgorithms,
             Map<String, ChecksumAlgorithmFactory> checksumFactories,
             DirectoryLocker directoryLocker,
@@ -72,7 +71,6 @@ public final class FileNode extends NodeSupport implements SystemNode {
         this.mayLink = mayLink;
         this.exclusiveAccess = exclusiveAccess;
         this.cachePurge = cachePurge;
-        this.keyResolver = requireNonNull(keyResolver, "keyResolver");
         this.checksumAlgorithms = List.copyOf(checksumAlgorithms);
         this.checksumFactories = Map.copyOf(checksumFactories);
         this.directoryLocker = requireNonNull(directoryLocker);
@@ -129,20 +127,22 @@ public final class FileNode extends NodeSupport implements SystemNode {
     @Override
     public Optional<FileEntry> locate(URI key) throws IOException {
         checkClosed();
-        Path path = resolveKey(key, true);
-        if (Files.isRegularFile(path)) {
-            Map<String, String> data = loadMetadata(path);
-            return Optional.of(createEntry(path, splitMetadata(data), splitChecksums(data)));
-        } else {
-            return Optional.empty();
+        Optional<Path> pathOptional = resolveKey(key, true);
+        if (pathOptional.isPresent()) {
+            Path path = pathOptional.orElseThrow();
+            if (Files.isRegularFile(path)) {
+                Map<String, String> data = loadMetadata(path);
+                return Optional.of(createEntry(path, splitMetadata(data), splitChecksums(data)));
+            }
         }
+        return Optional.empty();
     }
 
     @Override
     public FileEntry store(URI key, Path file, Map<String, String> md, Map<String, String> checksums)
             throws IOException {
         checkClosed();
-        Path path = resolveKey(key, false);
+        Path path = resolveKey(key, false).orElseThrow(() -> new IllegalArgumentException("Unsupported URI"));
         HashMap<String, String> metadata = new HashMap<>(md);
         FileTime fileTime = Files.getLastModifiedTime(file);
         ChecksumEnforcer checksumEnforcer;
@@ -170,7 +170,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
     @Override
     public FileEntry store(URI key, Entry entry) throws IOException {
         checkClosed();
-        Path path = resolveKey(key, false);
+        Path path = resolveKey(key, false).orElseThrow(() -> new IllegalArgumentException("Unsupported URI"));
         if (entry instanceof RemoteEntry remoteEntry) {
             try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
                 remoteEntry.handleContent(inputStream -> {
@@ -198,56 +198,64 @@ public final class FileNode extends NodeSupport implements SystemNode {
         return createEntry(path, entry.metadata(), entry.checksums());
     }
 
-    private Path resolveKey(URI key, boolean mayHandleCachePurge) throws IOException {
-        Key resolved = this.keyResolver.apply(key);
-        Path target = this.basedir.resolve(resolved.container()).resolve(resolved.name());
-        if (mayHandleCachePurge && cachePurge != FileNodeConfig.CachePurge.OFF && !Files.isRegularFile(target)) {
-            Path shadow = this.shadowBasedir.resolve(resolved.container()).resolve(resolved.name());
-            try {
-                if (Files.isRegularFile(shadow)) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Found shadow for key: {}@{}", resolved.container(), resolved.name());
-                    }
-                    Path targetMd = metadataPath(target, true);
-                    Path shadowMd = metadataPath(shadow, false);
-                    switch (cachePurge) {
-                        case ON_BEGIN -> {
-                            Files.move(
-                                    shadowMd,
-                                    targetMd,
-                                    StandardCopyOption.ATOMIC_MOVE,
-                                    StandardCopyOption.REPLACE_EXISTING);
-                            Files.move(
-                                    shadow,
-                                    target,
-                                    StandardCopyOption.ATOMIC_MOVE,
-                                    StandardCopyOption.REPLACE_EXISTING);
-                        }
-                        case ON_END -> {
-                            Files.copy(
-                                    shadowMd,
-                                    targetMd,
-                                    StandardCopyOption.REPLACE_EXISTING,
-                                    StandardCopyOption.COPY_ATTRIBUTES);
-                            Files.copy(
-                                    shadow,
-                                    target,
-                                    StandardCopyOption.REPLACE_EXISTING,
-                                    StandardCopyOption.COPY_ATTRIBUTES);
-                        }
-                        default -> throw new IllegalArgumentException("Unsupported CachePurge mode: " + cachePurge);
-                    }
-                }
-            } catch (IOException e) {
-                logger.warn("Unable apply cache-purge to path '{}'", target, e);
+    private Optional<Path> resolveKey(URI uri, boolean mayHandleCachePurge) {
+        Keys.Key key = UriDecoders.apply(uri);
+        Keys.FileKey fileKey = key instanceof Keys.FileKey ? (Keys.FileKey) key : null;
+        if (fileKey == null && key instanceof Keys.ArtifactKey artifactKey) {
+            fileKey = Keys.toFileKey(artifactKey, Artifacts::artifactRepositoryPath);
+        }
+        if (fileKey != null) {
+            Path target = this.basedir.resolve(fileKey.container()).resolve(fileKey.path());
+            if (mayHandleCachePurge && cachePurge != FileNodeConfig.CachePurge.OFF && !Files.isRegularFile(target)) {
+                Path shadow = this.shadowBasedir.resolve(fileKey.container()).resolve(fileKey.path());
                 try {
-                    FileUtils.deleteRecursively(shadow.getParent());
-                } catch (IOException e1) {
-                    logger.warn("Unable to drop shadow '{}'", shadow, e);
+                    if (Files.isRegularFile(shadow)) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("Found shadow for key: {}@{}", fileKey.container(), fileKey.path());
+                        }
+                        Path targetMd = metadataPath(target, true);
+                        Path shadowMd = metadataPath(shadow, false);
+                        switch (cachePurge) {
+                            case ON_BEGIN -> {
+                                Files.move(
+                                        shadowMd,
+                                        targetMd,
+                                        StandardCopyOption.ATOMIC_MOVE,
+                                        StandardCopyOption.REPLACE_EXISTING);
+                                Files.move(
+                                        shadow,
+                                        target,
+                                        StandardCopyOption.ATOMIC_MOVE,
+                                        StandardCopyOption.REPLACE_EXISTING);
+                            }
+                            case ON_END -> {
+                                Files.copy(
+                                        shadowMd,
+                                        targetMd,
+                                        StandardCopyOption.REPLACE_EXISTING,
+                                        StandardCopyOption.COPY_ATTRIBUTES);
+                                Files.copy(
+                                        shadow,
+                                        target,
+                                        StandardCopyOption.REPLACE_EXISTING,
+                                        StandardCopyOption.COPY_ATTRIBUTES);
+                            }
+                            default -> throw new IllegalArgumentException("Unsupported CachePurge mode: " + cachePurge);
+                        }
+                    }
+                } catch (IOException e) {
+                    logger.warn("Unable apply cache-purge to path '{}'", target, e);
+                    try {
+                        FileUtils.deleteRecursively(shadow.getParent());
+                    } catch (IOException e1) {
+                        logger.warn("Unable to drop shadow '{}'", shadow, e);
+                    }
                 }
             }
+            return Optional.of(target);
+        } else {
+            return Optional.empty();
         }
-        return target;
     }
 
     private FileEntry createEntry(Path file, Map<String, String> metadata, Map<String, String> checksums)

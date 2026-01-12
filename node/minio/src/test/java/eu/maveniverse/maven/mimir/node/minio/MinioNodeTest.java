@@ -5,9 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
-import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
-import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
-import eu.maveniverse.maven.mimir.shared.naming.KeyMapper;
+import eu.maveniverse.maven.mimir.shared.naming.UriEncoders;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
@@ -36,8 +34,6 @@ public class MinioNodeTest {
             .setSnapshotPolicy(new RepositoryPolicy(false, "", ""))
             .build();
     private final Artifact junit = new DefaultArtifact("junit:junit:3.13.2");
-    private final KeyMapper keyMapper = new SimpleKeyMapperFactory()
-            .createKeyMapper(SessionConfig.defaults().build());
 
     @Test
     void smoke() throws Exception {
@@ -54,15 +50,13 @@ public class MinioNodeTest {
                         .setUserProperty("mimir.minio.accessKey", container.getUserName())
                         .setUserProperty("mimir.minio.secretKey", container.getPassword())
                         .build();
-                try (MinioNode minioNode = new MinioNodeFactory(
-                                Map.of(SimpleKeyResolverFactory.NAME, new SimpleKeyResolverFactory()),
-                                Map.of(
-                                        Sha1ChecksumAlgorithmFactory.NAME,
-                                        new Sha1ChecksumAlgorithmFactory(),
-                                        Sha512ChecksumAlgorithmFactory.NAME,
-                                        new Sha512ChecksumAlgorithmFactory()))
+                try (MinioNode minioNode = new MinioNodeFactory(Map.of(
+                                Sha1ChecksumAlgorithmFactory.NAME,
+                                new Sha1ChecksumAlgorithmFactory(),
+                                Sha512ChecksumAlgorithmFactory.NAME,
+                                new Sha512ChecksumAlgorithmFactory()))
                         .createSystemNode(sessionConfig)) {
-                    Optional<MinioEntry> entry = minioNode.locate(keyMapper.apply(central, junit));
+                    Optional<MinioEntry> entry = minioNode.locate(UriEncoders.artifactKeyBuilder(central, junit));
                     assertFalse(entry.isPresent());
 
                     byte[] data = "Hello World!".getBytes(StandardCharsets.UTF_8);
@@ -71,9 +65,9 @@ public class MinioNodeTest {
                     Map<String, String> checksums = ChecksumAlgorithmHelper.calculate(
                             data,
                             Arrays.asList(new Sha1ChecksumAlgorithmFactory(), new Sha512ChecksumAlgorithmFactory()));
-                    minioNode.store(keyMapper.apply(central, junit), temp, Map.of(), checksums);
+                    minioNode.store(UriEncoders.artifactKeyBuilder(central, junit), temp, Map.of(), checksums);
 
-                    entry = minioNode.locate(keyMapper.apply(central, junit));
+                    entry = minioNode.locate(UriEncoders.artifactKeyBuilder(central, junit));
                     assertTrue(entry.isPresent());
                     LocalEntry localEntry = entry.orElseThrow();
                     assertEquals(12, localEntry.getContentLength());

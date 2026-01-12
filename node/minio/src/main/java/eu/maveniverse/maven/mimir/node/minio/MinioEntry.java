@@ -10,7 +10,7 @@ package eu.maveniverse.maven.mimir.node.minio;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.node.EntrySupport;
-import eu.maveniverse.maven.mimir.shared.naming.Key;
+import eu.maveniverse.maven.mimir.shared.naming.Keys;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import io.minio.DownloadObjectArgs;
@@ -25,9 +25,9 @@ import java.util.Map;
 
 public final class MinioEntry extends EntrySupport implements LocalEntry {
     private final MinioClient minioClient;
-    private final Key key;
+    private final Keys.FileKey key;
 
-    MinioEntry(Map<String, String> metadata, Map<String, String> checksums, MinioClient minioClient, Key key) {
+    MinioEntry(Map<String, String> metadata, Map<String, String> checksums, MinioClient minioClient, Keys.FileKey key) {
         super(metadata, checksums);
         this.minioClient = requireNonNull(minioClient, "minioClient");
         this.key = requireNonNull(key, "key");
@@ -38,7 +38,7 @@ public final class MinioEntry extends EntrySupport implements LocalEntry {
         requireNonNull(consumer);
         try (InputStream is = minioClient.getObject(GetObjectArgs.builder()
                 .bucket(key.container())
-                .object(key.name())
+                .object(key.path())
                 .build())) {
             consumer.accept(is);
         } catch (MinioException e) {
@@ -55,7 +55,7 @@ public final class MinioEntry extends EntrySupport implements LocalEntry {
         try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(file)) {
             minioClient.downloadObject(DownloadObjectArgs.builder()
                     .bucket(key.container())
-                    .object(key.name())
+                    .object(key.path())
                     .filename(f.getPath().toString())
                     .build());
             f.move();

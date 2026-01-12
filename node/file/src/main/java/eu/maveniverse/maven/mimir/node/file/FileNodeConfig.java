@@ -11,7 +11,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
-import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -66,7 +65,6 @@ public final class FileNodeConfig {
         Path baseLockDir = sessionConfig.baseLocksDir().resolve(NAME);
         boolean mayLink = true;
         List<String> checksumAlgorithms = Arrays.asList("SHA-1", "SHA-512");
-        String keyResolver = SimpleKeyResolverFactory.NAME;
         boolean exclusiveAccess = false;
         CachePurge cachePurge = CachePurge.OFF;
 
@@ -85,9 +83,6 @@ public final class FileNodeConfig {
                     .filter(s -> !s.trim().isEmpty())
                     .collect(toList());
         }
-        if (sessionConfig.effectiveProperties().containsKey("mimir.file.keyResolver")) {
-            keyResolver = sessionConfig.effectiveProperties().get("mimir.file.keyResolver");
-        }
         if (sessionConfig.effectiveProperties().containsKey("mimir.file.exclusiveAccess")) {
             exclusiveAccess =
                     Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.file.exclusiveAccess"));
@@ -96,8 +91,7 @@ public final class FileNodeConfig {
             cachePurge = CachePurge.valueOf(sessionConfig.effectiveProperties().get("mimir.file.cachePurge"));
         }
 
-        return new FileNodeConfig(
-                basedir, baseLockDir, mayLink, checksumAlgorithms, keyResolver, exclusiveAccess, cachePurge);
+        return new FileNodeConfig(basedir, baseLockDir, mayLink, checksumAlgorithms, exclusiveAccess, cachePurge);
     }
 
     public static FileNodeConfig of(
@@ -105,11 +99,9 @@ public final class FileNodeConfig {
             Path baseLockDir,
             boolean mayLink,
             List<String> checksumAlgorithms,
-            String keyResolver,
             boolean exclusiveAccess,
             CachePurge cachePurge) {
-        return new FileNodeConfig(
-                basedir, baseLockDir, mayLink, checksumAlgorithms, keyResolver, exclusiveAccess, cachePurge);
+        return new FileNodeConfig(basedir, baseLockDir, mayLink, checksumAlgorithms, exclusiveAccess, cachePurge);
     }
 
     public static final String NAME = "file";
@@ -118,7 +110,6 @@ public final class FileNodeConfig {
     private final Path baseLockDir;
     private final boolean mayLink;
     private final List<String> checksumAlgorithms;
-    private final String keyResolver;
     private final boolean exclusiveAccess;
     private final CachePurge cachePurge;
 
@@ -127,14 +118,12 @@ public final class FileNodeConfig {
             Path baseLockDir,
             boolean mayLink,
             List<String> checksumAlgorithms,
-            String keyResolver,
             boolean exclusiveAccess,
             CachePurge cachePurge) {
         this.basedir = basedir;
         this.baseLockDir = baseLockDir;
         this.mayLink = mayLink;
         this.checksumAlgorithms = List.copyOf(checksumAlgorithms);
-        this.keyResolver = keyResolver;
         this.exclusiveAccess = exclusiveAccess;
         this.cachePurge = cachePurge;
         if (!exclusiveAccess && cachePurge != CachePurge.OFF) {
@@ -157,10 +146,6 @@ public final class FileNodeConfig {
 
     public List<String> checksumAlgorithms() {
         return checksumAlgorithms;
-    }
-
-    public String keyResolver() {
-        return keyResolver;
     }
 
     public boolean exclusiveAccess() {

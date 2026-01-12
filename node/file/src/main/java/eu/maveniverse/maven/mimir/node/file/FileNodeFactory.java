@@ -10,8 +10,6 @@ package eu.maveniverse.maven.mimir.node.file;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
-import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
-import eu.maveniverse.maven.mimir.shared.naming.KeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
 import eu.maveniverse.maven.shared.core.fs.DirectoryLocker;
@@ -26,14 +24,10 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 @Singleton
 @Named(FileNodeConfig.NAME)
 public final class FileNodeFactory implements LocalNodeFactory<FileNode>, SystemNodeFactory<FileNode> {
-    private final Map<String, KeyResolverFactory> keyResolverFactories;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
     @Inject
-    public FileNodeFactory(
-            Map<String, KeyResolverFactory> keyResolverFactories,
-            Map<String, ChecksumAlgorithmFactory> checksumFactories) {
-        this.keyResolverFactories = requireNonNull(keyResolverFactories, "keyResolverFactories");
+    public FileNodeFactory(Map<String, ChecksumAlgorithmFactory> checksumFactories) {
         this.checksumFactories = requireNonNull(checksumFactories, "checksumFactories");
     }
 
@@ -46,11 +40,6 @@ public final class FileNodeFactory implements LocalNodeFactory<FileNode>, System
     public FileNode createSystemNode(SessionConfig sessionConfig) throws IOException {
         requireNonNull(sessionConfig, "config");
         FileNodeConfig fileNodeConfig = FileNodeConfig.with(sessionConfig);
-        KeyResolverFactory keyResolverFactory = keyResolverFactories.get(fileNodeConfig.keyResolver());
-        if (keyResolverFactory == null) {
-            throw new IllegalArgumentException("Unknown keyResolver: " + fileNodeConfig.keyResolver());
-        }
-        KeyResolver keyResolver = requireNonNull(keyResolverFactory.createKeyResolver(sessionConfig), "keyResolver");
 
         // verify checksum config
         for (String alg : fileNodeConfig.checksumAlgorithms()) {
@@ -66,7 +55,6 @@ public final class FileNodeFactory implements LocalNodeFactory<FileNode>, System
                 fileNodeConfig.mayLink(),
                 fileNodeConfig.exclusiveAccess(),
                 fileNodeConfig.cachePurge(),
-                keyResolver,
                 fileNodeConfig.checksumAlgorithms(),
                 checksumFactories,
                 DirectoryLocker.INSTANCE,

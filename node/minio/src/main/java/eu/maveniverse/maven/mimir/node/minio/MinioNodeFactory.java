@@ -10,8 +10,6 @@ package eu.maveniverse.maven.mimir.node.minio;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
-import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
-import eu.maveniverse.maven.mimir.shared.naming.KeyResolverFactory;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.mimir.shared.node.SystemNodeFactory;
 import io.minio.MinioClient;
@@ -26,14 +24,10 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 @Singleton
 @Named(MinioNodeConfig.NAME)
 public class MinioNodeFactory implements LocalNodeFactory<MinioNode>, SystemNodeFactory<MinioNode> {
-    private final Map<String, KeyResolverFactory> keyResolverFactories;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
 
     @Inject
-    public MinioNodeFactory(
-            Map<String, KeyResolverFactory> keyResolverFactories,
-            Map<String, ChecksumAlgorithmFactory> checksumFactories) {
-        this.keyResolverFactories = requireNonNull(keyResolverFactories, "keyResolverFactories");
+    public MinioNodeFactory(Map<String, ChecksumAlgorithmFactory> checksumFactories) {
         this.checksumFactories = requireNonNull(checksumFactories, "checksumFactories");
     }
 
@@ -45,11 +39,6 @@ public class MinioNodeFactory implements LocalNodeFactory<MinioNode>, SystemNode
     @Override
     public MinioNode createSystemNode(SessionConfig sessionConfig) throws IOException {
         MinioNodeConfig minioNodeConfig = MinioNodeConfig.with(sessionConfig);
-        KeyResolverFactory keyResolverFactory = keyResolverFactories.get(minioNodeConfig.keyResolver());
-        if (keyResolverFactory == null) {
-            throw new IllegalArgumentException("Unknown keyResolver: " + minioNodeConfig.keyResolver());
-        }
-        KeyResolver keyResolver = requireNonNull(keyResolverFactory.createKeyResolver(sessionConfig), "keyResolver");
 
         // verify checksums
         for (String alg : minioNodeConfig.checksumAlgorithms()) {
@@ -64,7 +53,6 @@ public class MinioNodeFactory implements LocalNodeFactory<MinioNode>, SystemNode
                 minioClient,
                 minioNodeConfig.exclusiveAccess(),
                 minioNodeConfig.cachePurge(),
-                keyResolver,
                 minioNodeConfig.checksumAlgorithms(),
                 checksumFactories);
     }

@@ -11,9 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.impl.ParseUtils;
-import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyMapperFactory;
-import eu.maveniverse.maven.mimir.shared.impl.naming.SimpleKeyResolverFactory;
-import eu.maveniverse.maven.mimir.shared.naming.KeyResolver;
+import eu.maveniverse.maven.mimir.shared.naming.UriEncoders;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
@@ -52,9 +50,6 @@ public class BundleNodeFactory extends ComponentSupport implements LocalNodeFact
         if (repositorySystem != null
                 && sessionConfig.repositorySystemSession().isPresent()
                 && !bundleNodeConfig.bundleSources().isEmpty()) {
-            // TODO: for now fixed
-            KeyResolver keyResolver =
-                    new SimpleKeyResolverFactory.SimpleKeyResolver(SimpleKeyResolverFactory::artifactRepositoryPath);
             ArrayList<Bundle> bundles = new ArrayList<>();
             for (ParseUtils.ArtifactSource artifactSource : bundleNodeConfig.bundleSources()) {
                 RemoteRepository remoteRepository = artifactSource.remoteRepository();
@@ -73,13 +68,12 @@ public class BundleNodeFactory extends ComponentSupport implements LocalNodeFact
                     }
                 }
                 bundles.add(new Bundle(
-                        SimpleKeyMapperFactory.container(remoteRepository),
+                        UriEncoders.container(remoteRepository),
                         ArtifactIdUtils.toId(artifact),
                         FileSystems.newFileSystem(
                                 URI.create("jar:" + artifact.getFile().toPath().toUri()),
                                 Map.of("create", "false"),
-                                null),
-                        keyResolver));
+                                null)));
             }
             if (!bundles.isEmpty()) {
                 return Optional.of(new BundleNode(bundles));
