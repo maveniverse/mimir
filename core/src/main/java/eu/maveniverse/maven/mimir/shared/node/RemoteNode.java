@@ -24,5 +24,5 @@ public interface RemoteNode extends Node {
      * Locates remote entry by key on this node.
      */
     @Override
-    Optional<? extends RemoteEntry> locate(URI key) throws IOException;
+    Optional<? extends RemoteEntry> locate(URI uri) throws IOException;
 }

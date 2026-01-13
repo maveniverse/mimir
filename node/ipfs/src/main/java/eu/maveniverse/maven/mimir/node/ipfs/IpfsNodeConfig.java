@@ -8,9 +8,12 @@
 package eu.maveniverse.maven.mimir.node.ipfs;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toList;
 
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 public class IpfsNodeConfig {
     public static IpfsNodeConfig with(SessionConfig sessionConfig) throws IOException {
@@ -19,6 +22,7 @@ public class IpfsNodeConfig {
         boolean enabled = false;
         boolean publisherEnabled = true;
         String multiaddr = "/ip4/127.0.0.1/tcp/5001";
+        List<String> checksumAlgorithms = Arrays.asList("SHA-1", "SHA-512");
 
         if (sessionConfig.effectiveProperties().containsKey("mimir.ipfs.enabled")) {
             enabled = Boolean.parseBoolean(sessionConfig.effectiveProperties().get("mimir.ipfs.enabled"));
@@ -30,7 +34,15 @@ public class IpfsNodeConfig {
         if (sessionConfig.effectiveProperties().containsKey("mimir.ipfs.multiaddr")) {
             multiaddr = sessionConfig.effectiveProperties().get("mimir.ipfs.multiaddr");
         }
-        return new IpfsNodeConfig(enabled, publisherEnabled, multiaddr);
+        if (sessionConfig.effectiveProperties().containsKey("mimir.ipfs.checksumAlgorithms")) {
+            checksumAlgorithms = Arrays.stream(sessionConfig
+                            .effectiveProperties()
+                            .get("mimir.ipfs.checksumAlgorithms")
+                            .split(","))
+                    .filter(s -> !s.trim().isEmpty())
+                    .collect(toList());
+        }
+        return new IpfsNodeConfig(enabled, publisherEnabled, multiaddr, checksumAlgorithms);
     }
 
     public static final String NAME = "ipfs";
@@ -38,11 +50,14 @@ public class IpfsNodeConfig {
     private final boolean enabled;
     private final boolean publisherEnabled;
     private final String multiaddr;
+    private final List<String> checksumAlgorithms;
 
-    private IpfsNodeConfig(boolean enabled, boolean publisherEnabled, String multiaddr) {
+    private IpfsNodeConfig(
+            boolean enabled, boolean publisherEnabled, String multiaddr, List<String> checksumAlgorithms) {
         this.enabled = enabled;
         this.publisherEnabled = publisherEnabled;
         this.multiaddr = multiaddr;
+        this.checksumAlgorithms = checksumAlgorithms;
     }
 
     public boolean enabled() {
@@ -55,5 +70,9 @@ public class IpfsNodeConfig {
 
     public String multiaddr() {
         return multiaddr;
+    }
+
+    public List<String> checksumAlgorithms() {
+        return checksumAlgorithms;
     }
 }
