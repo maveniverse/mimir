@@ -23,7 +23,7 @@ public interface LocalNode extends Node {
      * Locates local entry by key on this node.
      */
     @Override
-    Optional<? extends LocalEntry> locate(URI key) throws IOException;
+    Optional<? extends LocalEntry> locate(URI uri) throws IOException;
 
     /**
      * Provides list of checksum algorithm names configured to be used by this node.
