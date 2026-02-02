@@ -24,5 +24,5 @@ public interface Node extends Closeable {
     /**
      * Locates entry by key on this node.
      */
-    Optional<? extends Entry> locate(URI key) throws IOException;
+    Optional<? extends Entry> locate(URI uri) throws IOException;
 }

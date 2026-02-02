@@ -13,13 +13,23 @@ import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNodeFactory;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
 @Singleton
 @Named(IpfsNodeConfig.NAME)
 public class IpfsNodeFactory extends ComponentSupport implements RemoteNodeFactory<IpfsNode> {
+    private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
+
+    @Inject
+    public IpfsNodeFactory(Map<String, ChecksumAlgorithmFactory> checksumFactories) {
+        this.checksumFactories = requireNonNull(checksumFactories, "checksumFactories");
+    }
+
     @Override
     public Optional<IpfsNode> createRemoteNode(SessionConfig sessionConfig) throws IOException {
         requireNonNull(sessionConfig, "config");
@@ -30,7 +40,7 @@ public class IpfsNodeFactory extends ComponentSupport implements RemoteNodeFacto
                 logger.info("IPFS is disabled");
                 return Optional.empty();
             }
-            return Optional.of(new IpfsNode(cfg.multiaddr()));
+            return Optional.of(new IpfsNode(cfg.multiaddr(), cfg.checksumAlgorithms(), checksumFactories));
         } catch (Exception e) {
             throw new IOException("Failed to create JChannel", e);
         }
