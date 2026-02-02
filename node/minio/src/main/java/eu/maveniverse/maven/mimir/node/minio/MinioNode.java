@@ -16,7 +16,6 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumEnforcer;
 import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumInputStream;
-import eu.maveniverse.maven.mimir.shared.impl.naming.Artifacts;
 import eu.maveniverse.maven.mimir.shared.impl.node.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.naming.Keys;
 import eu.maveniverse.maven.mimir.shared.naming.UriDecoders;
@@ -230,12 +229,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
     }
 
     private Optional<Keys.FileKey> resolveKey(URI uri) {
-        Keys.Key key = UriDecoders.apply(uri);
-        Keys.FileKey fileKey = key instanceof Keys.FileKey ? (Keys.FileKey) key : null;
-        if (fileKey == null && key instanceof Keys.ArtifactKey artifactKey) {
-            fileKey = Keys.toFileKey(artifactKey, Artifacts::artifactRepositoryPath);
-        }
-        return Optional.ofNullable(fileKey);
+        return Keys.mayMapToFileKey(UriDecoders.apply(uri));
     }
 
     private void purgeCaches() {

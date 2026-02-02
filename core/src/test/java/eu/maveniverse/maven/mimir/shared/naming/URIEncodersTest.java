@@ -2,9 +2,11 @@ package eu.maveniverse.maven.mimir.shared.naming;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.maveniverse.maven.mimir.shared.impl.naming.Artifacts;
 import java.net.URI;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
@@ -67,8 +69,27 @@ public class URIEncodersTest {
         Keys.ArtifactKey akey = (Keys.ArtifactKey) key;
         assertEquals("central", akey.container());
         assertEquals(new DefaultArtifact("org.apache.maven:maven-core:jar:3.9.12"), akey.artifact());
-        Keys.FileKey fkey = Keys.toFileKey(akey, Artifacts::artifactRepositoryPath);
-        assertEquals("central", fkey.container());
-        assertEquals("org/apache/maven/maven-core/3.9.12/maven-core-3.9.12.jar", fkey.path());
+        Optional<Keys.FileKey> fkey = Keys.mayMapToFileKey(akey);
+        assertTrue(fkey.isPresent());
+        assertEquals("central", fkey.orElseThrow().container());
+        assertEquals(
+                "org/apache/maven/maven-core/3.9.12/maven-core-3.9.12.jar",
+                fkey.orElseThrow().path());
+    }
+
+    @Test
+    void fileToFileKeyConversion() {
+        URI uri = UriEncoders.fileKeyBuilder("central", "org/apache/maven/maven-core/3.9.12/maven-core-3.9.12.jar");
+        assertEquals(
+                "mimir:file:central:org/apache/maven/maven-core/3.9.12/maven-core-3.9.12.jar", uri.toASCIIString());
+        Keys.Key key = UriDecoders.apply(uri);
+        assertInstanceOf(Keys.FileKey.class, key);
+        Optional<Keys.FileKey> fkey = Keys.mayMapToFileKey(key);
+        assertTrue(fkey.isPresent());
+        assertSame(key, fkey.orElseThrow());
+        assertEquals("central", fkey.orElseThrow().container());
+        assertEquals(
+                "org/apache/maven/maven-core/3.9.12/maven-core-3.9.12.jar",
+                fkey.orElseThrow().path());
     }
 }

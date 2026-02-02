@@ -14,7 +14,6 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumEnforcer;
 import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumInputStream;
-import eu.maveniverse.maven.mimir.shared.impl.naming.Artifacts;
 import eu.maveniverse.maven.mimir.shared.impl.node.NodeSupport;
 import eu.maveniverse.maven.mimir.shared.naming.Keys;
 import eu.maveniverse.maven.mimir.shared.naming.UriDecoders;
@@ -199,12 +198,9 @@ public final class FileNode extends NodeSupport implements SystemNode {
     }
 
     private Optional<Path> resolveKey(URI uri, boolean mayHandleCachePurge) {
-        Keys.Key key = UriDecoders.apply(uri);
-        Keys.FileKey fileKey = key instanceof Keys.FileKey ? (Keys.FileKey) key : null;
-        if (fileKey == null && key instanceof Keys.ArtifactKey artifactKey) {
-            fileKey = Keys.toFileKey(artifactKey, Artifacts::artifactRepositoryPath);
-        }
-        if (fileKey != null) {
+        Optional<Keys.FileKey> fk = Keys.mayMapToFileKey(UriDecoders.apply(uri));
+        if (fk.isPresent()) {
+            Keys.FileKey fileKey = fk.orElseThrow();
             Path target = this.basedir.resolve(fileKey.container()).resolve(fileKey.path());
             if (mayHandleCachePurge && cachePurge != FileNodeConfig.CachePurge.OFF && !Files.isRegularFile(target)) {
                 Path shadow = this.shadowBasedir.resolve(fileKey.container()).resolve(fileKey.path());

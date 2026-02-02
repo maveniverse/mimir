@@ -9,7 +9,6 @@ package eu.maveniverse.maven.mimir.node.bundle;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.impl.naming.Artifacts;
 import eu.maveniverse.maven.mimir.shared.naming.Keys;
 import eu.maveniverse.maven.mimir.shared.naming.UriDecoders;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
@@ -41,17 +40,16 @@ public final class Bundle implements Closeable {
     }
 
     public Optional<BundleEntry> locate(URI uri) throws IOException {
-        Keys.Key key = UriDecoders.apply(uri);
-        Keys.FileKey fileKey = key instanceof Keys.FileKey ? (Keys.FileKey) key : null;
-        if (fileKey == null && key instanceof Keys.ArtifactKey artifactKey) {
-            fileKey = Keys.toFileKey(artifactKey, Artifacts::artifactRepositoryPath);
-        }
-        if (fileKey != null && Objects.equals(container, fileKey.container())) {
-            Path path = root.resolve(fileKey.path());
-            if (Files.isRegularFile(path)) {
-                Map<String, String> metadata = loadMetadata(path);
-                Map<String, String> checksums = loadChecksums(path);
-                return Optional.of(new BundleEntry(metadata, checksums, path));
+        Optional<Keys.FileKey> fk = Keys.mayMapToFileKey(UriDecoders.apply(uri));
+        if (fk.isPresent()) {
+            Keys.FileKey fileKey = fk.orElseThrow();
+            if (Objects.equals(container, fileKey.container())) {
+                Path path = root.resolve(fileKey.path());
+                if (Files.isRegularFile(path)) {
+                    Map<String, String> metadata = loadMetadata(path);
+                    Map<String, String> checksums = loadChecksums(path);
+                    return Optional.of(new BundleEntry(metadata, checksums, path));
+                }
             }
         }
         return Optional.empty();
