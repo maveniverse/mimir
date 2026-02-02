@@ -14,21 +14,17 @@ import eu.maveniverse.maven.mimir.node.ipfs.lookup.ChecksumLookup;
 import eu.maveniverse.maven.mimir.shared.impl.node.RemoteNodeSupport;
 import eu.maveniverse.maven.mimir.shared.naming.Keys;
 import eu.maveniverse.maven.mimir.shared.naming.UriDecoders;
-import eu.maveniverse.maven.mimir.shared.node.Entry;
-import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteNode;
-import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import io.ipfs.api.IPFS;
 import io.ipfs.multihash.Multihash;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 
-public class IpfsNode extends RemoteNodeSupport implements SystemNode, RemoteNode {
+public class IpfsNode extends RemoteNodeSupport implements RemoteNode {
     private final String multiaddr;
     private final List<String> checksumAlgorithms;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
@@ -51,13 +47,22 @@ public class IpfsNode extends RemoteNodeSupport implements SystemNode, RemoteNod
     }
 
     @Override
-    public List<String> checksumAlgorithms() {
-        return checksumAlgorithms;
-    }
-
-    @Override
     public Optional<IpfsEntry> locate(URI uri) throws IOException {
         Keys.Key key = UriDecoders.apply(uri);
+        // We accept ArtifactKey or CasKey
+        // IF artifact key we do GAV -> SHA1 -> CID
+        // If CasKey and is sha1, we do SHA1 -> CID
+        // If CasKey and is ipfs, we take it as CID
+        Keys.CasKey sha1 = null;
+        Keys.CasKey cid = null;
+        if (key instanceof Keys.ArtifactKey artifactKey) {
+            sha1 = null; // lookup
+        }
+        if (sha1 != null) {
+            cid = null;
+        }
+
+        // gav -> sha1 -> cid
         if (key instanceof Keys.CasKey casKey) {
             if ("ipfs".equals(casKey.type())) {
                 Multihash multihash = Multihash.decode(casKey.address());
@@ -65,17 +70,6 @@ public class IpfsNode extends RemoteNodeSupport implements SystemNode, RemoteNod
             }
         }
         return Optional.empty();
-    }
-
-    @Override
-    public LocalEntry store(URI key, Path file, Map<String, String> metadata, Map<String, String> checksums)
-            throws IOException {
-        return null;
-    }
-
-    @Override
-    public LocalEntry store(URI key, Entry entry) throws IOException {
-        return null;
     }
 
     @Override

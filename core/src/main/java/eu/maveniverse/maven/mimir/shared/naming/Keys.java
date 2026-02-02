@@ -9,7 +9,9 @@ package eu.maveniverse.maven.mimir.shared.naming;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.impl.naming.Artifacts;
 import java.net.URI;
+import java.util.Optional;
 import java.util.function.Function;
 import org.eclipse.aether.artifact.Artifact;
 
@@ -19,23 +21,11 @@ import org.eclipse.aether.artifact.Artifact;
 public final class Keys {
     private Keys() {}
 
-    public enum KeyType {
-        FILE,
-        ARTIFACT,
-        CAS
-    }
-
     public abstract static class Key {
-        protected final KeyType keyType;
         protected final URI uri;
 
-        protected Key(KeyType keyType, URI uri) {
-            this.keyType = requireNonNull(keyType);
+        protected Key(URI uri) {
             this.uri = requireNonNull(uri);
-        }
-
-        public KeyType keyType() {
-            return keyType;
         }
 
         public URI toUri() {
@@ -69,7 +59,7 @@ public final class Keys {
         private final String path;
 
         public FileKey(URI uri, String container, String path) {
-            super(KeyType.FILE, uri);
+            super(uri);
             this.container = requireNonNull(container);
             this.path = requireNonNull(path);
         }
@@ -88,7 +78,7 @@ public final class Keys {
         private final Artifact artifact;
 
         public ArtifactKey(URI uri, String container, Artifact artifact) {
-            super(KeyType.ARTIFACT, uri);
+            super(uri);
             this.container = requireNonNull(container);
             this.artifact = requireNonNull(artifact);
         }
@@ -107,7 +97,7 @@ public final class Keys {
         private final String address;
 
         public CasKey(URI uri, String type, String address) {
-            super(KeyType.CAS, uri);
+            super(uri);
             this.type = requireNonNull(type);
             this.address = requireNonNull(address);
         }
@@ -121,7 +111,17 @@ public final class Keys {
         }
     }
 
-    public static FileKey toFileKey(ArtifactKey artifactKey, Function<Artifact, String> layout) {
+    public static Optional<FileKey> mayMapToFileKey(Keys.Key key) {
+        if (key instanceof FileKey fk) {
+            return Optional.of(fk);
+        }
+        if (key instanceof ArtifactKey ak) {
+            return Optional.of(convertToFileKey(ak, Artifacts::artifactRepositoryPath));
+        }
+        return Optional.empty();
+    }
+
+    private static FileKey convertToFileKey(ArtifactKey artifactKey, Function<Artifact, String> layout) {
         requireNonNull(artifactKey);
         requireNonNull(layout);
         String path = layout.apply(artifactKey.artifact());
