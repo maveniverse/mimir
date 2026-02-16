@@ -42,7 +42,7 @@
         <plugin>
           <groupId>eu.maveniverse.maven.plugins</groupId>
           <artifactId>toolbox</artifactId>
-          <version>0.15.1</version>
+          <version>0.15.2</version>
         </plugin>
       </plugins>
     </pluginManagement>
