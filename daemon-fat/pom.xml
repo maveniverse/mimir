@@ -79,7 +79,9 @@
                     <exclude>META-INF/DEPENDENCIES</exclude>
                     <exclude>META-INF/NOTICE</exclude>
                     <exclude>META-INF/NOTICE.txt</exclude>
+                    <exclude>META-INF/**/OSGI-INF/*</exclude>
                     <exclude>META-INF/*.kotlin_module</exclude>
+                    <exclude>META-INF/kotlin-project-structure-metadata.json</exclude>
                     <exclude>META-INF/*.DSA</exclude>
                     <exclude>META-INF/*.SF</exclude>
                     <exclude>**/module-info.class</exclude>

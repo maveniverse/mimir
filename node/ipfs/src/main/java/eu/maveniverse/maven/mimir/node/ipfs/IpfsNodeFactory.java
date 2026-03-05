@@ -42,7 +42,7 @@ public class IpfsNodeFactory extends ComponentSupport implements RemoteNodeFacto
             }
             return Optional.of(new IpfsNode(cfg.multiaddr(), cfg.checksumAlgorithms(), checksumFactories));
         } catch (Exception e) {
-            throw new IOException("Failed to create JChannel", e);
+            throw new IOException("Failed to create IpfsNode", e);
         }
     }
 }
