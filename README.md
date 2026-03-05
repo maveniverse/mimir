@@ -29,7 +29,7 @@ Concept:
 
 ## To use it
 
-With Maven 3 create project-wide, or with Maven 4-rc-3+ create user-wide `~/.m2/extensions.xml` like this:
+With Maven 3 create project-wide, or with Maven 4-rc-5+ create user-wide `~/.m2/extensions.xml` like this:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <extensions>
@@ -40,13 +40,16 @@ With Maven 3 create project-wide, or with Maven 4-rc-3+ create user-wide `~/.m2/
     </extension>
 </extensions>
 ```
-IF you have docker, tailscale (or just non-trivial networking setup), help JGroups to select your LAN interface: create `~/.mimir/daemon.properties` file like this:
+IF you have docker, Tailscale (or just non-trivial networking setup), help Mimir components (like JGroups and publishers are) 
+to select your LAN interface: create `~/.mimir/daemon.properties` file with following content:
 ```properties
-mimir.jgroups.interface=match-address\:192.168.1.*
+mimir.localHostHint=match-address\:192.168.1.*
 ```
 (use yor LAN IP address).
 
 To make Mimir stop you nagging to auto-update, set `mimir.checkupdates` in `~/.mimir/session.properties`.
+
+More on [site documentation](https://maveniverse.eu/docs/mimir/how-to-use-it/).
 
 And just build with Maven...
 
