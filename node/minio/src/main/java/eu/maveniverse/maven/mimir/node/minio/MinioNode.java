@@ -24,11 +24,12 @@ import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import eu.maveniverse.maven.mimir.shared.node.SystemNode;
 import io.minio.CopyObjectArgs;
-import io.minio.CopySource;
 import io.minio.Directive;
+import io.minio.Http;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
+import io.minio.SourceObject;
 import io.minio.StatObjectArgs;
 import io.minio.StatObjectResponse;
 import io.minio.errors.ErrorResponseException;
@@ -86,7 +87,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                         .bucket(localKey.container())
                         .object(localKey.path())
                         .build());
-                Map<String, String> userMetadata = popMap(stat.userMetadata());
+                Map<String, String> userMetadata = popMap(toMap(stat.userMetadata()));
                 return Optional.of(new MinioEntry(
                         splitMetadata(userMetadata), splitChecksums(userMetadata), minioClient, localKey));
             } catch (ErrorResponseException e) {
@@ -99,6 +100,12 @@ public final class MinioNode extends NodeSupport implements SystemNode {
             }
         }
         return Optional.empty();
+    }
+
+    private Map<String, String> toMap(Http.Headers headers) {
+        Map<String, String> result = new HashMap<>();
+        headers.forEach(e -> result.put(e.getKey(), e.getValue()));
+        return result;
     }
 
     @Override
@@ -120,7 +127,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                             checksumEnforcer = new ChecksumEnforcer(entry.checksums()))) {
                         minioClient.putObject(
                                 PutObjectArgs.builder().bucket(localKey.container()).object(localKey.path()).stream(
-                                                enforced, contentLength, -1)
+                                                enforced, contentLength, null)
                                         .build());
                     } catch (ChecksumEnforcer.ChecksumEnforcerException e) {
                         minioClient.removeObject(RemoveObjectArgs.builder()
@@ -133,7 +140,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                             .bucket(localKey.container())
                             .object(localKey.path())
                             .userMetadata(pushMap(mergeEntry(entry.metadata(), checksumEnforcer.getChecksums())))
-                            .source(CopySource.builder()
+                            .source(SourceObject.builder()
                                     .bucket(localKey.container())
                                     .object(localKey.path())
                                     .build())
@@ -152,7 +159,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                             .bucket(localKey.container())
                             .object(localKey.path())
                             .userMetadata(pushMap(mergeEntry(entry)))
-                            .stream(inputStream, contentLength, -1)
+                            .stream(inputStream, contentLength, null)
                             .build());
                 } catch (MinioException e) {
                     logger.debug(e.httpTrace());
@@ -188,7 +195,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                     checksumEnforcer = new ChecksumEnforcer(checksums))) {
                 minioClient.putObject(
                         PutObjectArgs.builder().bucket(localKey.container()).object(localKey.path()).stream(
-                                        enforced, contentLength, -1)
+                                        enforced, contentLength, null)
                                 .build());
             } catch (ChecksumEnforcer.ChecksumEnforcerException e) {
                 minioClient.removeObject(RemoveObjectArgs.builder()
@@ -202,7 +209,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                     .object(localKey.path())
                     .metadataDirective(Directive.REPLACE)
                     .userMetadata(pushMap(mergeEntry(metadata, checksumEnforcer.getChecksums())))
-                    .source(CopySource.builder()
+                    .source(SourceObject.builder()
                             .bucket(localKey.container())
                             .object(localKey.path())
                             .build())
