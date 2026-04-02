@@ -60,6 +60,12 @@ public interface Session extends Closeable {
             throws IOException;
 
     /**
+     * May stores entry under given cache key, if it did not originate from cache. Returns {@code true} if stored.
+     */
+    boolean mayStore(RemoteRepository remoteRepository, Artifact artifact, Path file, Map<String, String> metadata)
+            throws IOException;
+
+    /**
      * Returns {@code true} if given artifact from given remote repository was retrieved from cache using this session.
      */
     boolean retrievedFromCache(RemoteRepository remoteRepository, Artifact artifact);

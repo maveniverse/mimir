@@ -28,6 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactorySelector;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmHelper;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 
 public final class SessionImpl extends CloseableConfigSupport<SessionConfig> implements Session {
@@ -35,8 +37,9 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
     private final Map<String, List<RemoteRepository>> repositoryMirrors;
     private final Predicate<Artifact> artifactPredicate;
     private final LocalNode localNode;
-    private final Stats stats;
+    private final ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector;
 
+    private final Stats stats;
     private final ConcurrentHashMap<RemoteRepository, Set<String>> retrievedFromCache;
     private final ConcurrentHashMap<RemoteRepository, Set<String>> storedToCache;
 
@@ -45,14 +48,16 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
             Predicate<RemoteRepository> repositoryPredicate,
             Map<String, List<RemoteRepository>> repositoryMirrors,
             Predicate<Artifact> artifactPredicate,
-            LocalNode localNode) {
+            LocalNode localNode,
+            ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector) {
         super(sessionConfig);
         this.repositoryPredicate = requireNonNull(repositoryPredicate);
         this.repositoryMirrors = requireNonNull(repositoryMirrors);
         this.artifactPredicate = requireNonNull(artifactPredicate);
         this.localNode = requireNonNull(localNode);
-        this.stats = new Stats();
+        this.checksumAlgorithmFactorySelector = requireNonNull(checksumAlgorithmFactorySelector);
 
+        this.stats = new Stats();
         this.retrievedFromCache = new ConcurrentHashMap<>();
         this.storedToCache = new ConcurrentHashMap<>();
 
@@ -153,6 +158,7 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
         requireNonNull(remoteRepository, "remoteRepository");
         requireNonNull(artifact, "artifact");
         requireNonNull(file, "file");
+        requireNonNull(metadata, "metadata");
         requireNonNull(checksums, "checksums");
         if (repositoryPredicate.test(remoteRepository) && artifactPredicate.test(artifact)) {
             URI key = UriEncoders.artifactKeyBuilder(remoteRepository, artifact);
@@ -163,6 +169,34 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
         } else {
             stats.doStore(Optional.empty());
         }
+    }
+
+    @Override
+    public boolean mayStore(
+            RemoteRepository remoteRepository, Artifact artifact, Path file, Map<String, String> metadata)
+            throws IOException {
+        checkClosed();
+        requireNonNull(remoteRepository, "remoteRepository");
+        requireNonNull(artifact, "artifact");
+        requireNonNull(file, "file");
+        requireNonNull(metadata, "metadata");
+        if (repositorySupported(remoteRepository)
+                && artifactSupported(artifact)
+                && !retrievedFromCache(remoteRepository, artifact)
+                && !storedToCache(remoteRepository, artifact)
+                && localNode
+                        .locate(UriEncoders.artifactKeyBuilder(remoteRepository, artifact))
+                        .isEmpty()) {
+            store(
+                    remoteRepository,
+                    artifact,
+                    file,
+                    metadata,
+                    ChecksumAlgorithmHelper.calculate(
+                            artifact.getFile(), checksumAlgorithmFactorySelector.selectList(checksumAlgorithms())));
+            return true;
+        }
+        return false;
     }
 
     @Override

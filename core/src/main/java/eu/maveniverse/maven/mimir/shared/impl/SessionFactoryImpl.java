@@ -27,19 +27,23 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactorySelector;
 
 @Singleton
 @Named
 public final class SessionFactoryImpl extends ComponentSupport implements SessionFactory {
     private final Map<String, LocalNodeFactory<?>> localNodeFactories;
     private final Map<String, ChecksumAlgorithmFactory> checksumFactories;
+    private final ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector;
 
     @Inject
     public SessionFactoryImpl(
             Map<String, LocalNodeFactory<?>> localNodeFactories,
-            Map<String, ChecksumAlgorithmFactory> checksumFactories) {
+            Map<String, ChecksumAlgorithmFactory> checksumFactories,
+            ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector) {
         this.localNodeFactories = requireNonNull(localNodeFactories, "localNodeFactories");
         this.checksumFactories = requireNonNull(checksumFactories, "checksumFactories");
+        this.checksumAlgorithmFactorySelector = requireNonNull(checksumAlgorithmFactorySelector);
     }
 
     @Override
@@ -81,7 +85,8 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
                 RemoteRepositories.repositoryPredicate(config.repositories()),
                 Mirrors.parseMirrors(config, config.mirrors()),
                 a -> !a.isSnapshot(),
-                localNode);
+                localNode,
+                checksumAlgorithmFactorySelector);
     }
 
     private Optional<? extends LocalNode> createLocalNode(String name, SessionConfig cfg) throws IOException {
