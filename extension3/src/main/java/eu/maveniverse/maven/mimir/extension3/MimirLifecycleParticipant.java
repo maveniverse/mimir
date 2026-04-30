@@ -11,10 +11,12 @@ import eu.maveniverse.maven.mimir.node.daemon.DaemonNodeConfig;
 import eu.maveniverse.maven.mimir.shared.MimirUtils;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
+import eu.maveniverse.maven.mimir.shared.TransferLog;
 import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -87,6 +89,13 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                     }
                 }
             });
+            MimirUtils.mayGetTransferLog(session.getRepositorySession()).ifPresent(log -> {
+                try {
+                    log.close();
+                } catch (IOException e) {
+                    logger.warn("Error closing Mimir transfer log; ignoring", e);
+                }
+            });
         } catch (Exception e) {
             throw new MavenExecutionException("Error closing Mimir session", e);
         }
@@ -110,6 +119,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                     }
 
                     MimirUtils.lazyInit(session.getRepositorySession(), sessionFactory, sessionConfig);
+                    mayInitTransferLog(session, repoSession, sessionConfig);
                 } else {
                     logger.info("Mimir {} is disabled", sessionConfig.mimirVersion());
                 }
@@ -120,6 +130,28 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
                     throw new MavenExecutionException("Error enabling Mimir", e);
                 }
             }
+        }
+    }
+
+    private void mayInitTransferLog(
+            MavenSession session, RepositorySystemSession repoSession, SessionConfig sessionConfig) {
+        if (!sessionConfig.transferLogEnabled()) {
+            return;
+        }
+        try {
+            Path globalPath = sessionConfig.transferLogPath();
+            Path projectPath = sessionConfig
+                    .transferLogProjectPath()
+                    .map(p -> Path.of(session.getRequest().getBaseDirectory()).resolve(p))
+                    .orElse(null);
+            TransferLog log = new TransferLog(globalPath, projectPath, sessionConfig.transferLogFormat());
+            MimirUtils.setTransferLog(repoSession, log);
+            logger.info("Mimir transfer log: {}", globalPath);
+            if (projectPath != null) {
+                logger.info("Mimir transfer log (project): {}", projectPath);
+            }
+        } catch (IOException e) {
+            logger.warn("Failed to initialize Mimir transfer log; artifact logging will be skipped", e);
         }
     }
 

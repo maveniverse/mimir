@@ -152,6 +152,45 @@ public interface SessionConfig {
      */
     Set<String> mirrors();
 
+    // transfer log config
+
+    /**
+     * Enables artifact transfer logging. Defaults to {@code false}.
+     * <p>
+     * Configuration key {@code mimir.transferLog.enabled}
+     */
+    String CONF_TRANSFER_LOG_ENABLED = CONF_PREFIX + "transferLog.enabled";
+
+    /**
+     * Path to the global transfer log file. Defaults to {@code mimir-transfer-log.csv} under {@link #basedir()}.
+     * <p>
+     * Configuration key {@code mimir.transferLog.path}
+     */
+    String CONF_TRANSFER_LOG_PATH = CONF_PREFIX + "transferLog.path";
+
+    /**
+     * Optional path to a per-project transfer log file. Relative paths are resolved against the Maven execution
+     * root directory. When unset, no second log file is written.
+     * <p>
+     * Configuration key {@code mimir.transferLog.projectPath}
+     */
+    String CONF_TRANSFER_LOG_PROJECT_PATH = CONF_PREFIX + "transferLog.projectPath";
+
+    /**
+     * Transfer log output format. Accepted values: {@code csv} (default) or {@code jsonl}.
+     * <p>
+     * Configuration key {@code mimir.transferLog.format}
+     */
+    String CONF_TRANSFER_LOG_FORMAT = CONF_PREFIX + "transferLog.format";
+
+    boolean transferLogEnabled();
+
+    Path transferLogPath();
+
+    Optional<String> transferLogProjectPath();
+
+    String transferLogFormat();
+
     // components on/off
 
     boolean resolverConnectorEnabled();
@@ -358,6 +397,12 @@ public interface SessionConfig {
             private final boolean resolverResolverPostProcessorEnabled;
             private final boolean resolverTrustedChecksumsSourceEnabled;
 
+            // transfer log config (derived from effectiveProperties)
+            private final boolean transferLogEnabled;
+            private final Path transferLogPath;
+            private final String transferLogProjectPath;
+            private final String transferLogFormat;
+
             // session impl config (derived from that above)
             private final Set<String> overlayNodes;
             private final String localNode;
@@ -419,6 +464,18 @@ public interface SessionConfig {
                 this.resolverConnectorEnabled = resolverConnectorEnabled;
                 this.resolverResolverPostProcessorEnabled = resolverResolverPostProcessorEnabled;
                 this.resolverTrustedChecksumsSourceEnabled = resolverTrustedChecksumsSourceEnabled;
+
+                // transfer log (derived from those above)
+
+                this.transferLogEnabled = Boolean.parseBoolean(
+                        effectiveProperties.getOrDefault(CONF_TRANSFER_LOG_ENABLED, Boolean.FALSE.toString()));
+                String tlPath = effectiveProperties.get(CONF_TRANSFER_LOG_PATH);
+                this.transferLogPath =
+                        tlPath != null ? this.basedir.resolve(tlPath) : this.basedir.resolve("mimir-transfer-log.csv");
+                this.transferLogProjectPath = effectiveProperties.get(CONF_TRANSFER_LOG_PROJECT_PATH);
+                this.transferLogFormat = effectiveProperties
+                        .getOrDefault(CONF_TRANSFER_LOG_FORMAT, "csv")
+                        .toLowerCase();
 
                 // session impl (derived from those above)
 
@@ -529,6 +586,26 @@ public interface SessionConfig {
             @Override
             public Set<String> mirrors() {
                 return mirrors;
+            }
+
+            @Override
+            public boolean transferLogEnabled() {
+                return transferLogEnabled;
+            }
+
+            @Override
+            public Path transferLogPath() {
+                return transferLogPath;
+            }
+
+            @Override
+            public Optional<String> transferLogProjectPath() {
+                return Optional.ofNullable(transferLogProjectPath);
+            }
+
+            @Override
+            public String transferLogFormat() {
+                return transferLogFormat;
             }
 
             @Override

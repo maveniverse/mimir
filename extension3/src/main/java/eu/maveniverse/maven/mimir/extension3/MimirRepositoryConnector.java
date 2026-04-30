@@ -11,11 +11,13 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Entry;
 import eu.maveniverse.maven.mimir.shared.Session;
+import eu.maveniverse.maven.mimir.shared.TransferLog;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,13 +48,15 @@ public class MimirRepositoryConnector extends ComponentSupport implements Reposi
     private final RepositoryConnector delegate;
     private final List<ChecksumAlgorithmFactory> resolverChecksumAlgorithmFactories;
     private final Map<String, ChecksumAlgorithmFactory> allChecksumAlgorithmFactoryMap;
+    private final TransferLog transferLog; // @Nullable
 
     public MimirRepositoryConnector(
             Session mimirSession,
             RemoteRepository remoteRepository,
             RepositoryConnector delegate,
             List<ChecksumAlgorithmFactory> resolverChecksumAlgorithmFactories,
-            Map<String, ChecksumAlgorithmFactory> allChecksumAlgorithmFactoryMap) {
+            Map<String, ChecksumAlgorithmFactory> allChecksumAlgorithmFactoryMap,
+            TransferLog transferLog) {
         this.mimirSession = requireNonNull(mimirSession, "mimirSession");
         this.remoteRepository = requireNonNull(remoteRepository, "remoteRepository");
         this.delegate = requireNonNull(delegate, "delegate");
@@ -60,6 +64,7 @@ public class MimirRepositoryConnector extends ComponentSupport implements Reposi
                 requireNonNull(resolverChecksumAlgorithmFactories, "resolverChecksumAlgorithmFactories");
         this.allChecksumAlgorithmFactoryMap =
                 requireNonNull(allChecksumAlgorithmFactoryMap, "allChecksumAlgorithmFactoryMap");
+        this.transferLog = transferLog;
     }
 
     @Override
@@ -69,6 +74,7 @@ public class MimirRepositoryConnector extends ComponentSupport implements Reposi
         // 1st round: provide whatever we have cached
         List<ArtifactDownload> ads = new ArrayList<>();
         HashMap<Artifact, PotentiallyCached> keys = new HashMap<>();
+        List<Map.Entry<Artifact, String>> toLog = transferLog != null ? new ArrayList<>() : null;
         if (artifactDownloads != null && !artifactDownloads.isEmpty()) {
             for (ArtifactDownload artifactDownload : artifactDownloads) {
                 if (artifactDownload.isExistenceCheck()
@@ -82,6 +88,10 @@ public class MimirRepositoryConnector extends ComponentSupport implements Reposi
                             logger.debug("Fetched {} from Mimir cache", artifactDownload.getArtifact());
                             Path artifactFile = artifactDownload.getFile().toPath();
                             ce.transferTo(artifactFile);
+                            if (toLog != null) {
+                                toLog.add(new AbstractMap.SimpleImmutableEntry<>(
+                                        artifactDownload.getArtifact(), TransferLog.STATUS_CACHE));
+                            }
                             String checksum = null;
                             for (ChecksumAlgorithmFactory checksumAlgorithmFactory :
                                     resolverChecksumAlgorithmFactories) {
@@ -155,6 +165,23 @@ public class MimirRepositoryConnector extends ComponentSupport implements Reposi
                         artifactDownload.setException(
                                 new ArtifactTransferException(artifactDownload.getArtifact(), remoteRepository, e));
                     }
+                }
+                if (toLog != null && !artifactDownload.isExistenceCheck()) {
+                    toLog.add(new AbstractMap.SimpleImmutableEntry<>(
+                            artifactDownload.getArtifact(),
+                            artifactDownload.getException() != null
+                                    ? TransferLog.STATUS_FAILED
+                                    : TransferLog.STATUS_REMOTE));
+                }
+            }
+        }
+
+        if (toLog != null) {
+            for (Map.Entry<Artifact, String> entry : toLog) {
+                try {
+                    transferLog.record(remoteRepository, entry.getKey(), entry.getValue());
+                } catch (IOException e) {
+                    logger.warn("Failed to write transfer log entry for {}", entry.getKey(), e);
                 }
             }
         }
