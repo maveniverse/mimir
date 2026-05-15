@@ -381,7 +381,7 @@ public interface SessionConfig {
                 this.mimirVersion = requireNonNull(mimirVersion, "mimirVersion");
 
                 this.basedir = basedir == null
-                        ? FileUtils.discoverBaseDirectory("mimir.basedir", ".mimir")
+                        ? FileUtils.discoverCanonicalDirectoryFromSystemProperty("mimir.basedir", ".mimir")
                         : FileUtils.canonicalPath(basedir);
                 this.baseLocksDir = this.basedir.resolve("locks");
                 this.propertiesPath = propertiesPath == null

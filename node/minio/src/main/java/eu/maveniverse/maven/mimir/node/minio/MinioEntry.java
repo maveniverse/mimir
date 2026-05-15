@@ -52,7 +52,7 @@ public final class MinioEntry extends EntrySupport implements LocalEntry {
     @Override
     public void transferTo(Path file) throws IOException {
         Files.deleteIfExists(file);
-        try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(file)) {
+        try (FileUtils.CollocatedTempFile f = FileUtils.newCollocatedTempFile(file)) {
             minioClient.downloadObject(DownloadObjectArgs.builder()
                     .bucket(key.container())
                     .object(key.path())
