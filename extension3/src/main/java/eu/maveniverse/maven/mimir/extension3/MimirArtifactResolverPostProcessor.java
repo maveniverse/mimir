@@ -63,7 +63,9 @@ public class MimirArtifactResolverPostProcessor extends ComponentSupport impleme
                     Artifact artifact = artifactResult.getArtifact();
                     boolean resolved = artifactResult.isResolved();
                     String status = resolved
-                            ? (localArtifactResult != null ? ResolvingLog.STATUS_CACHE : ResolvingLog.STATUS_REMOTE)
+                            ? (localArtifactResult != null && localArtifactResult.isAvailable()
+                                    ? ResolvingLog.STATUS_CACHE
+                                    : ResolvingLog.STATUS_REMOTE)
                             : ResolvingLog.STATUS_FAILED;
                     String context = artifactRequest.getRequestContext();
                     String scope = "(model)";

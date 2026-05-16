@@ -101,7 +101,7 @@ mimir.resolvingLog.path=/path/to/my-resolving-log.csv
 
 The default format is CSV with a header row:
 
-```
+```csv
 timestamp,groupId,artifactId,version,classifier,extension,repositoryId,repositoryUrl,artifactUrl,status,context,scope
 2026-05-16T14:46:29.899608696Z,org.slf4j,slf4j-api,2.0.17,,pom,central,https://repo.maven.apache.org/maven2,https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.pom,cache,project,(model)
 2026-05-16T14:46:29.940286004Z,org.slf4j,slf4j-parent,2.0.17,,pom,central,https://repo.maven.apache.org/maven2,https://repo.maven.apache.org/maven2/org/slf4j/slf4j-parent/2.0.17/slf4j-parent-2.0.17.pom,cache,project,(model)
@@ -112,7 +112,7 @@ timestamp,groupId,artifactId,version,classifier,extension,repositoryId,repositor
 To use JSON Lines instead:
 
 ```properties
-mimir.transferLog.format=jsonl
+mimir.resolverLog.format=jsonl
 ```
 
 ```json

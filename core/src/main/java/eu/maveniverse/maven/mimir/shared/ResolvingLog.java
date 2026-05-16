@@ -181,6 +181,12 @@ public final class ResolvingLog implements Closeable {
 
     private static String escapeJson(String value) {
         if (value == null || value.isEmpty()) return "";
-        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+        return value.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\b", "\\b")
+                .replace("\f", "\\f")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 }
