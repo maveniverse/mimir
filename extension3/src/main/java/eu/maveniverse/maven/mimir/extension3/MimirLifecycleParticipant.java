@@ -15,6 +15,7 @@ import eu.maveniverse.maven.shared.core.fs.FileUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -97,6 +98,7 @@ public class MimirLifecycleParticipant extends AbstractMavenLifecycleParticipant
             try {
                 RepositorySystemSession repoSession = session.getRepositorySession();
                 SessionConfig sessionConfig = SessionConfig.defaults()
+                        .projectDir(FileUtils.normalizePath(Path.of(session.getExecutionRootDirectory())))
                         .userProperties(repoSession.getUserProperties())
                         .systemProperties(repoSession.getSystemProperties())
                         .repositorySystemSession(repoSession)

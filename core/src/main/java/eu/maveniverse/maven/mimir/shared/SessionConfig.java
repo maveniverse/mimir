@@ -82,6 +82,8 @@ public interface SessionConfig {
 
     Path basedir();
 
+    Optional<Path> projectDir();
+
     Path baseLocksDir();
 
     Path propertiesPath();
@@ -152,12 +154,56 @@ public interface SessionConfig {
      */
     Set<String> mirrors();
 
+    /**
+     * Enables artifact resolution logging. Defaults to {@code false}.
+     * <p>
+     * Configuration key {@code mimir.resolvingLog.enabled}
+     */
+    String CONF_RESOLVING_LOG_ENABLED = CONF_PREFIX + "resolvingLog.enabled";
+
+    /**
+     * Path to the global resolution log file. Defaults to {@code mimir-resolving-log.csv} under {@link #basedir()}.
+     * <p>
+     * Configuration key {@code mimir.resolvingLog.path}
+     */
+    String CONF_RESOLVING_LOG_PATH = CONF_PREFIX + "resolvingLog.path";
+
+    /**
+     * Optional path to the project resolution log file. When set, is resolved against {@link #projectDir()}, if applicable.
+     * When unset, no second log file is written.
+     * <p>
+     * Configuration key {@code mimir.resolvingLog.projectPath}
+     */
+    String CONF_RESOLVING_LOG_PROJECT_PATH = CONF_PREFIX + "resolvingLog.projectPath";
+
+    /**
+     * Resolution log output format. Accepted values: {@code csv} (default) or {@code jsonl}.
+     * <p>
+     * Configuration key {@code mimir.resolvingLog.format}
+     */
+    String CONF_RESOLVING_LOG_FORMAT = CONF_PREFIX + "resolvingLog.format";
+
+    Optional<Path> resolvingLogPath();
+
+    Optional<Path> resolvingLogProjectPath();
+
+    String resolvingLogFormat();
+
     // components on/off
 
+    /**
+     * Whether Mimir is active or not (Mimir connector).
+     */
     boolean resolverConnectorEnabled();
 
-    boolean resolverResolverPostProcessorEnabled();
+    /**
+     * Whether Mimir should "vacuum" from local repository those entries, that are not available in caches.
+     */
+    boolean resolverLocalRepositoryVacuuming();
 
+    /**
+     * Whether Mimir should act as provider of trusted checksums.
+     */
     boolean resolverTrustedChecksumsSourceEnabled();
 
     default Builder toBuilder() {
@@ -166,6 +212,7 @@ public interface SessionConfig {
                 ignoreErrorAtSessionEnd(),
                 mimirVersion(),
                 basedir(),
+                projectDir().orElse(null),
                 propertiesPath(),
                 userProperties(),
                 systemProperties(),
@@ -191,6 +238,7 @@ public interface SessionConfig {
                 MavenUtils.discoverArtifactVersion(
                         SessionConfig.class.getClassLoader(), "eu.maveniverse.maven.mimir", "core", UNKNOWN_VERSION),
                 mimirBasedir,
+                null,
                 mimirSessionConfigPath,
                 Collections.emptyMap(),
                 MavenUtils.toMap(System.getProperties()),
@@ -224,13 +272,14 @@ public interface SessionConfig {
         private Boolean ignoreErrorAtSessionEnd;
         private final String mimirVersion;
         private Path basedir;
+        private Path projectDir;
         private Path propertiesPath;
         private Map<String, String> userProperties;
         private Map<String, String> systemProperties;
         private LocalNode localNodeInstance;
         private RepositorySystemSession repositorySystemSession;
         private boolean resolverConnectorEnabled = true;
-        private boolean resolverResolverPostProcessorEnabled = true;
+        private boolean resolverLocalRepositoryVacuuming = true;
         private boolean resolverTrustedChecksumsSourceEnabled = true;
 
         private Builder(
@@ -238,6 +287,7 @@ public interface SessionConfig {
                 Boolean ignoreErrorAtSessionEnd,
                 String mimirVersion,
                 Path basedir,
+                Path projectDir,
                 Path propertiesPath,
                 Map<String, String> userProperties,
                 Map<String, String> systemProperties,
@@ -247,6 +297,7 @@ public interface SessionConfig {
             this.ignoreErrorAtSessionEnd = ignoreErrorAtSessionEnd;
             this.mimirVersion = requireNonNull(mimirVersion);
             this.basedir = basedir;
+            this.projectDir = projectDir;
             this.propertiesPath = propertiesPath;
             this.userProperties = new HashMap<>(userProperties);
             this.systemProperties = new HashMap<>(systemProperties);
@@ -266,6 +317,11 @@ public interface SessionConfig {
 
         public Builder basedir(Path basedir) {
             this.basedir = FileUtils.canonicalPath(basedir);
+            return this;
+        }
+
+        public Builder projectDir(Path projectDir) {
+            this.projectDir = FileUtils.canonicalPath(projectDir);
             return this;
         }
 
@@ -315,8 +371,8 @@ public interface SessionConfig {
             return this;
         }
 
-        public Builder resolverResolverPostProcessorEnabled(boolean resolverResolverPostProcessorEnabled) {
-            this.resolverResolverPostProcessorEnabled = resolverResolverPostProcessorEnabled;
+        public Builder resolverLocalRepositoryVacuuming(boolean resolverLocalRepositoryVacuuming) {
+            this.resolverLocalRepositoryVacuuming = resolverLocalRepositoryVacuuming;
             return this;
         }
 
@@ -331,13 +387,14 @@ public interface SessionConfig {
                     ignoreErrorAtSessionEnd,
                     mimirVersion,
                     basedir,
+                    projectDir,
                     propertiesPath,
                     userProperties,
                     systemProperties,
                     localNodeInstance,
                     repositorySystemSession,
                     resolverConnectorEnabled,
-                    resolverResolverPostProcessorEnabled,
+                    resolverLocalRepositoryVacuuming,
                     resolverTrustedChecksumsSourceEnabled);
         }
 
@@ -346,6 +403,7 @@ public interface SessionConfig {
             private final boolean ignoreErrorAtSessionEnd;
             private final String mimirVersion;
             private final Path basedir;
+            private final Path projectDir;
             private final Path baseLocksDir;
             private final Path propertiesPath;
             private final Map<String, String> userProperties;
@@ -355,8 +413,13 @@ public interface SessionConfig {
             private final RepositorySystemSession repositorySystemSession;
 
             private final boolean resolverConnectorEnabled;
-            private final boolean resolverResolverPostProcessorEnabled;
+            private final boolean resolverLocalRepositoryVacuuming;
             private final boolean resolverTrustedChecksumsSourceEnabled;
+
+            // resolving log config (derived from effectiveProperties)
+            private final Path resolvingLogPath;
+            private final Path resolvingLogProjectPath;
+            private final String resolvingLogFormat;
 
             // session impl config (derived from that above)
             private final Set<String> overlayNodes;
@@ -370,19 +433,21 @@ public interface SessionConfig {
                     Boolean ignoreErrorAtSessionEnd,
                     String mimirVersion,
                     Path basedir,
+                    Path projectDir,
                     Path propertiesPath,
                     Map<String, String> userProperties,
                     Map<String, String> systemProperties,
                     LocalNode localNodeInstance,
                     RepositorySystemSession repositorySystemSession,
                     boolean resolverConnectorEnabled,
-                    boolean resolverResolverPostProcessorEnabled,
+                    boolean resolverLocalRepositoryVacuuming,
                     boolean resolverTrustedChecksumsSourceEnabled) {
                 this.mimirVersion = requireNonNull(mimirVersion, "mimirVersion");
 
                 this.basedir = basedir == null
                         ? FileUtils.discoverCanonicalDirectoryFromSystemProperty("mimir.basedir", ".mimir")
                         : FileUtils.canonicalPath(basedir);
+                this.projectDir = projectDir != null ? FileUtils.canonicalPath(projectDir) : null;
                 this.baseLocksDir = this.basedir.resolve("locks");
                 this.propertiesPath = propertiesPath == null
                         ? this.basedir.resolve("session.properties")
@@ -417,8 +482,29 @@ public interface SessionConfig {
                 this.localNodeInstance = localNodeInstance;
                 this.repositorySystemSession = repositorySystemSession;
                 this.resolverConnectorEnabled = resolverConnectorEnabled;
-                this.resolverResolverPostProcessorEnabled = resolverResolverPostProcessorEnabled;
+                this.resolverLocalRepositoryVacuuming = resolverLocalRepositoryVacuuming;
                 this.resolverTrustedChecksumsSourceEnabled = resolverTrustedChecksumsSourceEnabled;
+
+                // transfer log (derived from those above)
+
+                boolean resolvingLogEnabled = Boolean.parseBoolean(
+                        effectiveProperties.getOrDefault(CONF_RESOLVING_LOG_ENABLED, Boolean.FALSE.toString()));
+                if (resolvingLogEnabled) {
+                    this.resolvingLogPath = this.basedir.resolve(
+                            effectiveProperties.getOrDefault(CONF_RESOLVING_LOG_PATH, "mimir-resolving-log.csv"));
+                    if (this.projectDir != null && effectiveProperties.containsKey(CONF_RESOLVING_LOG_PROJECT_PATH)) {
+                        this.resolvingLogProjectPath =
+                                projectDir.resolve(effectiveProperties.get(CONF_RESOLVING_LOG_PROJECT_PATH));
+                    } else {
+                        this.resolvingLogProjectPath = null;
+                    }
+                } else {
+                    this.resolvingLogPath = null;
+                    this.resolvingLogProjectPath = null;
+                }
+                this.resolvingLogFormat = effectiveProperties
+                        .getOrDefault(CONF_RESOLVING_LOG_FORMAT, "csv")
+                        .toLowerCase();
 
                 // session impl (derived from those above)
 
@@ -467,6 +553,11 @@ public interface SessionConfig {
             @Override
             public Path basedir() {
                 return basedir;
+            }
+
+            @Override
+            public Optional<Path> projectDir() {
+                return Optional.ofNullable(projectDir);
             }
 
             @Override
@@ -532,6 +623,21 @@ public interface SessionConfig {
             }
 
             @Override
+            public Optional<Path> resolvingLogPath() {
+                return Optional.ofNullable(resolvingLogPath);
+            }
+
+            @Override
+            public Optional<Path> resolvingLogProjectPath() {
+                return Optional.ofNullable(resolvingLogProjectPath);
+            }
+
+            @Override
+            public String resolvingLogFormat() {
+                return resolvingLogFormat;
+            }
+
+            @Override
             public boolean resolverConnectorEnabled() {
                 return resolverConnectorEnabled;
             }
@@ -542,8 +648,8 @@ public interface SessionConfig {
             }
 
             @Override
-            public boolean resolverResolverPostProcessorEnabled() {
-                return resolverResolverPostProcessorEnabled;
+            public boolean resolverLocalRepositoryVacuuming() {
+                return resolverLocalRepositoryVacuuming;
             }
         }
     }

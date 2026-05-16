@@ -9,6 +9,7 @@ package eu.maveniverse.maven.mimir.shared.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.ResolvingLog;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
@@ -19,6 +20,7 @@ import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
@@ -80,13 +82,25 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
             logger.debug("  Supported checksums: {}", checksumFactories.keySet());
         }
 
+        ResolvingLog resolvingLog = null;
+        if (config.resolvingLogPath().isPresent()) {
+            Path globalPath = config.resolvingLogPath().orElseThrow();
+            Path projectPath = config.resolvingLogProjectPath().orElse(null);
+            resolvingLog = new ResolvingLog(globalPath, projectPath, config.resolvingLogFormat());
+            logger.info("Mimir resolving log: {}", globalPath);
+            if (projectPath != null) {
+                logger.info("Mimir resolving log (project): {}", projectPath);
+            }
+        }
+
         return new SessionImpl(
                 config,
                 RemoteRepositories.repositoryPredicate(config.repositories()),
                 Mirrors.parseMirrors(config, config.mirrors()),
                 a -> !a.isSnapshot(),
                 localNode,
-                checksumAlgorithmFactorySelector);
+                checksumAlgorithmFactorySelector,
+                resolvingLog);
     }
 
     private Optional<? extends LocalNode> createLocalNode(String name, SessionConfig cfg) throws IOException {
