@@ -11,7 +11,6 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.MimirUtils;
 import eu.maveniverse.maven.mimir.shared.Session;
-import eu.maveniverse.maven.mimir.shared.TransferLog;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.util.List;
 import java.util.Map;
@@ -68,15 +67,13 @@ public class MimirRepositoryConnectorFactory extends ComponentSupport implements
                                 "aether.checksums.algorithms",
                                 "aether.layout.maven2.checksumAlgorithms" + repository.getId(),
                                 "aether.layout.maven2.checksumAlgorithms")));
-                TransferLog transferLog = MimirUtils.mayGetTransferLog(session).orElse(null);
                 return new MimirRepositoryConnector(
                         ms,
                         repository,
                         repositoryConnector,
                         checksumsAlgorithms,
                         checksumAlgorithmFactorySelector.getChecksumAlgorithmFactories().stream()
-                                .collect(Collectors.toMap(ChecksumAlgorithmFactory::getName, f -> f)),
-                        transferLog);
+                                .collect(Collectors.toMap(ChecksumAlgorithmFactory::getName, f -> f)));
             }
         }
         throw new NoRepositoryConnectorException(repository, message);

@@ -49,16 +49,4 @@ public final class MimirUtils {
         requireNonNull(repositorySystemSession, "repositorySystemSession");
         return Optional.ofNullable((Session) repositorySystemSession.getData().get(Session.class.getName()));
     }
-
-    public static void setTransferLog(RepositorySystemSession repositorySystemSession, TransferLog log) {
-        requireNonNull(repositorySystemSession, "repositorySystemSession");
-        requireNonNull(log, "log");
-        repositorySystemSession.getData().set(TransferLog.class.getName(), log);
-    }
-
-    public static Optional<TransferLog> mayGetTransferLog(RepositorySystemSession repositorySystemSession) {
-        requireNonNull(repositorySystemSession, "repositorySystemSession");
-        return Optional.ofNullable(
-                (TransferLog) repositorySystemSession.getData().get(TransferLog.class.getName()));
-    }
 }

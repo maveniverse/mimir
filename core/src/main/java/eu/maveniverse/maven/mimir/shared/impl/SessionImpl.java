@@ -9,6 +9,7 @@ package eu.maveniverse.maven.mimir.shared.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.AuditLog;
 import eu.maveniverse.maven.mimir.shared.Entry;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
@@ -39,6 +40,8 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
     private final LocalNode localNode;
     private final ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector;
 
+    private final AuditLog auditLog;
+
     private final Stats stats;
     private final ConcurrentHashMap<RemoteRepository, Set<String>> retrievedFromCache;
     private final ConcurrentHashMap<RemoteRepository, Set<String>> storedToCache;
@@ -49,13 +52,17 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
             Map<String, List<RemoteRepository>> repositoryMirrors,
             Predicate<Artifact> artifactPredicate,
             LocalNode localNode,
-            ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector) {
+            ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector,
+            AuditLog auditLog) {
         super(sessionConfig);
         this.repositoryPredicate = requireNonNull(repositoryPredicate);
         this.repositoryMirrors = requireNonNull(repositoryMirrors);
         this.artifactPredicate = requireNonNull(artifactPredicate);
         this.localNode = requireNonNull(localNode);
         this.checksumAlgorithmFactorySelector = requireNonNull(checksumAlgorithmFactorySelector);
+
+        // nullable
+        this.auditLog = auditLog;
 
         this.stats = new Stats();
         this.retrievedFromCache = new ConcurrentHashMap<>();
@@ -104,6 +111,10 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
     public List<String> checksumAlgorithms() throws IOException {
         checkClosed();
         return localNode.checksumAlgorithms();
+    }
+
+    public Optional<AuditLog> auditLog() {
+        return Optional.ofNullable(auditLog);
     }
 
     @Override
@@ -221,6 +232,9 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
     protected void doClose() throws IOException {
         if (config.localNodeInstance().isEmpty()) {
             localNode.close();
+        }
+        if (auditLog != null) {
+            auditLog.close();
         }
         logger.info("Mimir session closed (RETRIEVED={} CACHED={})", stats.transferSuccess(), stats.storeSuccess());
     }

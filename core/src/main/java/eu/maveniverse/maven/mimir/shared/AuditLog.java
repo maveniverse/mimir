@@ -13,31 +13,33 @@ import eu.maveniverse.maven.mimir.shared.impl.naming.Artifacts;
 import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.repository.ArtifactRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 
 /**
- * Appends one record per artifact download to one or two log files (global and optional per-project).
+ * Appends one record per artifact resolution to one or two log files (global and optional per-project).
  * Thread-safe. Supported formats: {@code csv} and {@code jsonl}.
  */
-public final class TransferLog implements Closeable {
-    public static final String STATUS_CACHE = "cache";
-    public static final String STATUS_REMOTE = "remote";
+public final class AuditLog implements Closeable {
+    public static final String STATUS_RESOLVED = "resolved";
     public static final String STATUS_FAILED = "failed";
 
     private static final String CSV_HEADER =
-            "timestamp,groupId,artifactId,version,classifier,extension,repositoryId,repositoryUrl,artifactUrl,status";
+            "timestamp,groupId,artifactId,version,classifier,extension,repositoryId,repositoryUrl,artifactUrl,status,context,scope";
 
     private final String format;
     private final List<BufferedWriter> writers;
 
-    public TransferLog(Path globalPath, /* @Nullable */ Path projectPath, String format) throws IOException {
+    public AuditLog(Path globalPath, /* @Nullable */ Path projectPath, String format) throws IOException {
         requireNonNull(globalPath, "globalPath");
         requireNonNull(format, "format");
         this.format = format;
@@ -60,8 +62,14 @@ public final class TransferLog implements Closeable {
         return writer;
     }
 
-    public synchronized void record(RemoteRepository repo, Artifact artifact, String status) throws IOException {
-        requireNonNull(repo, "repo");
+    public synchronized void record(
+            ArtifactRepository repository,
+            Artifact artifact,
+            String status,
+            String context,
+            String scope,
+            Map<String, String> checksums) {
+        requireNonNull(repository, "repository");
         requireNonNull(artifact, "artifact");
         requireNonNull(status, "status");
 
@@ -71,8 +79,8 @@ public final class TransferLog implements Closeable {
         String version = artifact.getVersion();
         String classifier = artifact.getClassifier() != null ? artifact.getClassifier() : "";
         String extension = artifact.getExtension() != null ? artifact.getExtension() : "";
-        String repoId = repo.getId();
-        String repoUrl = repo.getUrl();
+        String repoId = repository.getId();
+        String repoUrl = repository instanceof RemoteRepository ? ((RemoteRepository) repository).getUrl() : "";
         String artifactUrl = repoUrl.endsWith("/")
                 ? repoUrl + Artifacts.artifactRepositoryPath(artifact)
                 : repoUrl + "/" + Artifacts.artifactRepositoryPath(artifact);
@@ -99,6 +107,10 @@ public final class TransferLog implements Closeable {
                     + escapeJson(artifactUrl)
                     + "\",\"status\":\""
                     + escapeJson(status)
+                    + "\",\"context\":\""
+                    + escapeJson(context)
+                    + "\",\"scope\":\""
+                    + escapeJson(scope)
                     + "\"}";
         } else {
             line = csvField(timestamp)
@@ -119,15 +131,23 @@ public final class TransferLog implements Closeable {
                     + ","
                     + csvField(artifactUrl)
                     + ","
-                    + csvField(status);
+                    + csvField(status)
+                    + ","
+                    + csvField(context)
+                    + ","
+                    + csvField(scope);
         }
 
-        for (BufferedWriter writer : writers) {
-            writer.write(line);
-            writer.newLine();
-        }
-        for (BufferedWriter writer : writers) {
-            writer.flush();
+        try {
+            for (BufferedWriter writer : writers) {
+                writer.write(line);
+                writer.newLine();
+            }
+            for (BufferedWriter writer : writers) {
+                writer.flush();
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 

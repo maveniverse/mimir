@@ -7,17 +7,21 @@
  */
 package eu.maveniverse.maven.mimir.extension3;
 
+import eu.maveniverse.maven.mimir.shared.AuditLog;
 import eu.maveniverse.maven.mimir.shared.MimirUtils;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.repository.ArtifactRepository;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.spi.resolution.ArtifactResolverPostProcessor;
 
@@ -27,7 +31,7 @@ public class MimirArtifactResolverPostProcessor extends ComponentSupport impleme
     @Override
     public void postProcess(RepositorySystemSession session, List<ArtifactResult> artifactResults) {
         MimirUtils.mayGetSession(session).ifPresent(ms -> {
-            if (ms.config().resolverResolverPostProcessorEnabled()) {
+            if (ms.config().resolverLocalRepositoryVacuuming()) {
                 for (ArtifactResult artifactResult : artifactResults) {
                     if (artifactResult.getRepository() instanceof RemoteRepository remoteRepository) {
                         Artifact artifact = artifactResult.getArtifact();
@@ -49,6 +53,29 @@ public class MimirArtifactResolverPostProcessor extends ComponentSupport impleme
                     }
                 }
             }
+            ms.auditLog().ifPresent(log -> {
+                for (ArtifactResult artifactResult : artifactResults) {
+                    ArtifactRequest artifactRequest = artifactResult.getRequest();
+
+                    ArtifactRepository repository = artifactResult.getRepository();
+                    Artifact artifact = artifactResult.getArtifact();
+                    boolean resolved = artifactResult.isResolved();
+                    String status = resolved ? AuditLog.STATUS_RESOLVED : AuditLog.STATUS_FAILED;
+                    String context = artifactRequest.getRequestContext();
+                    String scope = "(model)";
+                    if (artifactRequest.getDependencyNode() != null) {
+                        scope = "(direct)";
+                        if (artifactRequest.getDependencyNode().getDependency() != null) {
+                            scope = artifactRequest
+                                    .getDependencyNode()
+                                    .getDependency()
+                                    .getScope();
+                        }
+                    }
+                    Map<String, String> hashes = Collections.emptyMap();
+                    log.record(repository, artifact, status, context, scope, hashes);
+                }
+            });
         });
     }
 }
