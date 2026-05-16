@@ -154,15 +154,21 @@ public final class ResolvingLog implements Closeable {
 
     @Override
     public synchronized void close() throws IOException {
-        IOException first = null;
+        ArrayList<IOException> errors = new ArrayList<>();
         for (BufferedWriter writer : writers) {
             try {
                 writer.close();
             } catch (IOException e) {
-                if (first == null) first = e;
+                errors.add(e);
             }
         }
-        if (first != null) throw first;
+        if (errors.size() == 1) {
+            throw errors.get(0);
+        } else if (errors.size() > 1) {
+            IOException e = new IOException("Multiple errors occurred");
+            errors.forEach(e::addSuppressed);
+            throw e;
+        }
     }
 
     private static String csvField(String value) {

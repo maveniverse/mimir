@@ -230,11 +230,14 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
 
     @Override
     protected void doClose() throws IOException {
-        if (config.localNodeInstance().isEmpty()) {
-            localNode.close();
-        }
-        if (resolvingLog != null) {
-            resolvingLog.close();
+        try {
+            if (config.localNodeInstance().isEmpty()) {
+                localNode.close();
+            }
+        } finally {
+            if (resolvingLog != null) {
+                resolvingLog.close();
+            }
         }
         logger.info("Mimir session closed (RETRIEVED={} CACHED={})", stats.transferSuccess(), stats.storeSuccess());
     }
