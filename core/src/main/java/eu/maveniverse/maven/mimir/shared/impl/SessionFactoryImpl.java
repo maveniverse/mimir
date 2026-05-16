@@ -9,7 +9,7 @@ package eu.maveniverse.maven.mimir.shared.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mimir.shared.AuditLog;
+import eu.maveniverse.maven.mimir.shared.ResolvingLog;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
@@ -82,14 +82,14 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
             logger.debug("  Supported checksums: {}", checksumFactories.keySet());
         }
 
-        AuditLog auditLog = null;
-        if (config.auditLogEnabled()) {
-            Path globalPath = config.auditLogPath();
-            Path projectPath = config.auditLogProjectPath().orElse(null);
-            auditLog = new AuditLog(globalPath, projectPath, config.auditLogFormat());
-            logger.info("Mimir audit log: {}", globalPath);
+        ResolvingLog resolvingLog = null;
+        if (config.resolvingLogPath().isPresent()) {
+            Path globalPath = config.resolvingLogPath().orElseThrow();
+            Path projectPath = config.resolvingLogProjectPath().orElse(null);
+            resolvingLog = new ResolvingLog(globalPath, projectPath, config.resolvingLogFormat());
+            logger.info("Mimir resolving log: {}", globalPath);
             if (projectPath != null) {
-                logger.info("Mimir audit log (project): {}", projectPath);
+                logger.info("Mimir resolving log (project): {}", projectPath);
             }
         }
 
@@ -100,7 +100,7 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
                 a -> !a.isSnapshot(),
                 localNode,
                 checksumAlgorithmFactorySelector,
-                auditLog);
+                resolvingLog);
     }
 
     private Optional<? extends LocalNode> createLocalNode(String name, SessionConfig cfg) throws IOException {

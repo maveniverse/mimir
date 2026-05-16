@@ -44,9 +44,9 @@ public interface Session extends Closeable {
     List<String> checksumAlgorithms() throws IOException;
 
     /**
-     * Returns the {@link AuditLog}, if enabled.
+     * Returns the {@link ResolvingLog}, if enabled.
      */
-    Optional<AuditLog> auditLog();
+    Optional<ResolvingLog> resolvingLog();
 
     /**
      * Locates cache entry by key.

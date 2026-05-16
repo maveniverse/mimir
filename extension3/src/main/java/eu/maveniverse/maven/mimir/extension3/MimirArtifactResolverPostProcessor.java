@@ -7,8 +7,8 @@
  */
 package eu.maveniverse.maven.mimir.extension3;
 
-import eu.maveniverse.maven.mimir.shared.AuditLog;
 import eu.maveniverse.maven.mimir.shared.MimirUtils;
+import eu.maveniverse.maven.mimir.shared.ResolvingLog;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -54,7 +54,7 @@ public class MimirArtifactResolverPostProcessor extends ComponentSupport impleme
                     }
                 }
             }
-            ms.auditLog().ifPresent(log -> {
+            ms.resolvingLog().ifPresent(log -> {
                 for (ArtifactResult artifactResult : artifactResults) {
                     ArtifactRequest artifactRequest = artifactResult.getRequest();
                     LocalArtifactResult localArtifactResult = artifactResult.getLocalArtifactResult();
@@ -63,8 +63,8 @@ public class MimirArtifactResolverPostProcessor extends ComponentSupport impleme
                     Artifact artifact = artifactResult.getArtifact();
                     boolean resolved = artifactResult.isResolved();
                     String status = resolved
-                            ? (localArtifactResult != null ? AuditLog.STATUS_CACHE : AuditLog.STATUS_REMOTE)
-                            : AuditLog.STATUS_FAILED;
+                            ? (localArtifactResult != null ? ResolvingLog.STATUS_CACHE : ResolvingLog.STATUS_REMOTE)
+                            : ResolvingLog.STATUS_FAILED;
                     String context = artifactRequest.getRequestContext();
                     String scope = "(model)";
                     if (artifactRequest.getDependencyNode() != null) {

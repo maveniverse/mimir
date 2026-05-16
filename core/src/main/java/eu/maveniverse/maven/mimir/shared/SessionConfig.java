@@ -155,41 +155,39 @@ public interface SessionConfig {
     Set<String> mirrors();
 
     /**
-     * Enables artifact audit logging. Defaults to {@code false}.
+     * Enables artifact resolution logging. Defaults to {@code false}.
      * <p>
-     * Configuration key {@code mimir.auditLog.enabled}
+     * Configuration key {@code mimir.resolvingLog.enabled}
      */
-    String CONF_AUDIT_LOG_ENABLED = CONF_PREFIX + "auditLog.enabled";
+    String CONF_RESOLVING_LOG_ENABLED = CONF_PREFIX + "resolvingLog.enabled";
 
     /**
-     * Path to the global audit log file. Defaults to {@code mimir-audit-log.csv} under {@link #basedir()}.
+     * Path to the global resolution log file. Defaults to {@code mimir-resolving-log.csv} under {@link #basedir()}.
      * <p>
-     * Configuration key {@code mimir.auditLog.path}
+     * Configuration key {@code mimir.resolvingLog.path}
      */
-    String CONF_AUDIT_LOG_PATH = CONF_PREFIX + "auditLog.path";
+    String CONF_RESOLVING_LOG_PATH = CONF_PREFIX + "resolvingLog.path";
 
     /**
-     * Optional path to the project audit log file. When set, is resolved against {@link #projectDir()}, if applicable.
+     * Optional path to the project resolution log file. When set, is resolved against {@link #projectDir()}, if applicable.
      * When unset, no second log file is written.
      * <p>
-     * Configuration key {@code mimir.auditLog.projectPath}
+     * Configuration key {@code mimir.resolvingLog.projectPath}
      */
-    String CONF_AUDIT_LOG_PROJECT_PATH = CONF_PREFIX + "auditLog.projectPath";
+    String CONF_RESOLVING_LOG_PROJECT_PATH = CONF_PREFIX + "resolvingLog.projectPath";
 
     /**
-     * Audit log output format. Accepted values: {@code csv} (default) or {@code jsonl}.
+     * Resolution log output format. Accepted values: {@code csv} (default) or {@code jsonl}.
      * <p>
-     * Configuration key {@code mimir.auditLog.format}
+     * Configuration key {@code mimir.resolvingLog.format}
      */
-    String CONF_AUDIT_LOG_FORMAT = CONF_PREFIX + "auditLog.format";
+    String CONF_RESOLVING_LOG_FORMAT = CONF_PREFIX + "resolvingLog.format";
 
-    boolean auditLogEnabled();
+    Optional<Path> resolvingLogPath();
 
-    Path auditLogPath();
+    Optional<Path> resolvingLogProjectPath();
 
-    Optional<Path> auditLogProjectPath();
-
-    String auditLogFormat();
+    String resolvingLogFormat();
 
     // components on/off
 
@@ -418,11 +416,10 @@ public interface SessionConfig {
             private final boolean resolverLocalRepositoryVacuuming;
             private final boolean resolverTrustedChecksumsSourceEnabled;
 
-            // audit log config (derived from effectiveProperties)
-            private final boolean auditLogEnabled;
-            private final Path auditLogPath;
-            private final Path auditLogProjectPath;
-            private final String auditLogFormat;
+            // resolving log config (derived from effectiveProperties)
+            private final Path resolvingLogPath;
+            private final Path resolvingLogProjectPath;
+            private final String resolvingLogFormat;
 
             // session impl config (derived from that above)
             private final Set<String> overlayNodes;
@@ -490,17 +487,23 @@ public interface SessionConfig {
 
                 // transfer log (derived from those above)
 
-                this.auditLogEnabled = Boolean.parseBoolean(
-                        effectiveProperties.getOrDefault(CONF_AUDIT_LOG_ENABLED, Boolean.FALSE.toString()));
-                String auditPath = effectiveProperties.getOrDefault(CONF_AUDIT_LOG_PATH, "mimir-audit-log.csv");
-                this.auditLogPath = this.basedir.resolve(auditPath);
-                if (this.projectDir != null && effectiveProperties.containsKey(CONF_AUDIT_LOG_PROJECT_PATH)) {
-                    this.auditLogProjectPath = projectDir.resolve(effectiveProperties.get(CONF_AUDIT_LOG_PROJECT_PATH));
+                boolean resolvingLogEnabled = Boolean.parseBoolean(
+                        effectiveProperties.getOrDefault(CONF_RESOLVING_LOG_ENABLED, Boolean.FALSE.toString()));
+                if (resolvingLogEnabled) {
+                    this.resolvingLogPath = this.basedir.resolve(
+                            effectiveProperties.getOrDefault(CONF_RESOLVING_LOG_PATH, "mimir-resolving-log.csv"));
+                    if (this.projectDir != null && effectiveProperties.containsKey(CONF_RESOLVING_LOG_PROJECT_PATH)) {
+                        this.resolvingLogProjectPath =
+                                projectDir.resolve(effectiveProperties.get(CONF_RESOLVING_LOG_PROJECT_PATH));
+                    } else {
+                        this.resolvingLogProjectPath = null;
+                    }
                 } else {
-                    this.auditLogProjectPath = null;
+                    this.resolvingLogPath = null;
+                    this.resolvingLogProjectPath = null;
                 }
-                this.auditLogFormat = effectiveProperties
-                        .getOrDefault(CONF_AUDIT_LOG_FORMAT, "csv")
+                this.resolvingLogFormat = effectiveProperties
+                        .getOrDefault(CONF_RESOLVING_LOG_FORMAT, "csv")
                         .toLowerCase();
 
                 // session impl (derived from those above)
@@ -620,23 +623,18 @@ public interface SessionConfig {
             }
 
             @Override
-            public boolean auditLogEnabled() {
-                return auditLogEnabled;
+            public Optional<Path> resolvingLogPath() {
+                return Optional.ofNullable(resolvingLogPath);
             }
 
             @Override
-            public Path auditLogPath() {
-                return auditLogPath;
+            public Optional<Path> resolvingLogProjectPath() {
+                return Optional.ofNullable(resolvingLogProjectPath);
             }
 
             @Override
-            public Optional<Path> auditLogProjectPath() {
-                return Optional.ofNullable(auditLogProjectPath);
-            }
-
-            @Override
-            public String auditLogFormat() {
-                return auditLogFormat;
+            public String resolvingLogFormat() {
+                return resolvingLogFormat;
             }
 
             @Override

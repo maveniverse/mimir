@@ -17,8 +17,8 @@ String first = firstLog.text
 // Also, consider Maven 3 vs 4 diff: they resolve differently; do not assert counts
 
 // first run: both were empty: retrieved==0 cached!=0
-assert first.contains('[INFO] Mimir audit log: ')
-assert first.contains('[INFO] Mimir audit log (project): ')
+assert first.contains('[INFO] Mimir resolving log: ')
+assert first.contains('[INFO] Mimir resolving log (project): ')
 assert first.contains('[INFO] Mimir session closed')
 assert first.contains('RETRIEVED=0')
 assert first.contains('CACHED=') && !first.contains('CACHED=0')

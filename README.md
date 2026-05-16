@@ -57,7 +57,7 @@ Build requirements:
 * Java 21
 * Maven 3.9.9+
 
-## Audit Log
+## Resolving Log
 
 Mimir can log every artifact resolution, giving you a full record of what was resolved during a
 build — including groupId, artifactId, version, classifier, extension, the repository it came from, the
@@ -65,28 +65,28 @@ canonical artifact URL, and whether the file was served from cache or downloaded
 
 ### Enabling
 
-Add `-Dmimir.auditLog.enabled=true` to your Maven invocation:
+Add `-Dmimir.resolvingLog.enabled=true` to your Maven invocation:
 
 ```
-mvn verify -Dmimir.auditLog.enabled=true
+mvn verify -Dmimir.resolvingLog.enabled=true
 ```
 
 Or set it permanently in `~/.mimir/session.properties`:
 
 ```properties
-mimir.auditLog.enabled=true
+mimir.resolvingLog.enabled=true
 ```
 
 ### Output files
 
-By default a single file is written to `~/.mimir/mimir-audit-log.csv`. This file **accumulates
+By default a single file is written to `~/.mimir/mimir-resolving-log.csv`. This file **accumulates
 across builds** — each build appends to it. It persists until you delete it manually (log rotation is
 your responsibility if the file grows large).
 
 To also write a per-project log that gets wiped by `mvn clean`, configure a project-relative path:
 
 ```properties
-mimir.auditLog.projectPath=target/mimir-audit-log.csv
+mimir.resolvingLog.projectPath=target/mimir-resolving-log.csv
 ```
 
 Both files are written simultaneously when both are configured.
@@ -94,7 +94,7 @@ Both files are written simultaneously when both are configured.
 To override the global file location:
 
 ```properties
-mimir.auditLog.path=/path/to/my-audit-log.csv
+mimir.resolvingLog.path=/path/to/my-resolving-log.csv
 ```
 
 ### Format
@@ -132,10 +132,10 @@ existence-check probes are not logged.
 
 ### Configuration reference
 
-| Property                     | Default                        | Description                                           |
-|------------------------------|--------------------------------|-------------------------------------------------------|
-| `mimir.auditLog.enabled`     | `false`                        | Enable audit logging                                  |
-| `mimir.auditLog.path`        | `~/.mimir/mimir-audit-log.csv` | Path to the global log file                           |
-| `mimir.auditLog.projectPath` | *(unset)*                      | Optional second log file (relative to execution root) |
-| `mimir.auditLog.format`      | `csv`                          | Output format: `csv` or `jsonl`                       |
+| Property                     | Default                            | Description                                           |
+|------------------------------|------------------------------------|-------------------------------------------------------|
+| `mimir.resolvingLog.enabled`     | `false`                            | Enable resolving logging                              |
+| `mimir.resolvingLog.path`        | `~/.mimir/mimir-resolving-log.csv` | Path to the global log file                           |
+| `mimir.resolvingLog.projectPath` | *(unset)*                          | Optional second log file (relative to execution root) |
+| `mimir.resolvingLog.format`      | `csv`                              | Output format: `csv` or `jsonl`                       |
 

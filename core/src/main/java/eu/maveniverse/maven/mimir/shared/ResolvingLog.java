@@ -29,7 +29,7 @@ import org.eclipse.aether.repository.RemoteRepository;
  * Appends one record per artifact resolution to one or two log files (global and optional per-project).
  * Thread-safe. Supported formats: {@code csv} and {@code jsonl}.
  */
-public final class AuditLog implements Closeable {
+public final class ResolvingLog implements Closeable {
     public static final String STATUS_CACHE = "cache";
     public static final String STATUS_REMOTE = "remote";
     public static final String STATUS_FAILED = "failed";
@@ -40,7 +40,7 @@ public final class AuditLog implements Closeable {
     private final String format;
     private final List<BufferedWriter> writers;
 
-    public AuditLog(Path globalPath, /* @Nullable */ Path projectPath, String format) throws IOException {
+    public ResolvingLog(Path globalPath, /* @Nullable */ Path projectPath, String format) throws IOException {
         requireNonNull(globalPath, "globalPath");
         requireNonNull(format, "format");
         this.format = format;
