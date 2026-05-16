@@ -37,7 +37,7 @@ public final class BundleEntry extends EntrySupport implements LocalEntry {
     @Override
     public void transferTo(Path file) throws IOException {
         Files.deleteIfExists(file);
-        try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(file)) {
+        try (FileUtils.CollocatedTempFile f = FileUtils.newCollocatedTempFile(file)) {
             FileUtils.copy(bundleFsPath, f.getPath());
             f.move();
         }

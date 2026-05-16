@@ -19,7 +19,7 @@
 
   <groupId>eu.maveniverse.maven.mimir</groupId>
   <artifactId>mimir</artifactId>
-  <version>0.11.4-SNAPSHOT</version>
+  <version>0.11.5-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>${project.groupId}:${project.artifactId}</name>
@@ -63,7 +63,7 @@
   </ciManagement>
 
   <properties>
-    <project.build.outputTimestamp>2026-04-08T13:22:19Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-05-15T14:51:25Z</project.build.outputTimestamp>
 
     <!--
     Build time: latest stable Maven and Java 21+
@@ -73,13 +73,13 @@
     <requireRuntimeMavenVersion.range>[3.9,)</requireRuntimeMavenVersion.range>
 
     <!-- Dependency versions -->
-    <version.maveniverseShared>0.1.11</version.maveniverseShared>
-    <version.maven>3.9.14</version.maven>
+    <version.maveniverseShared>0.2.3</version.maveniverseShared>
+    <version.maven>3.9.15</version.maven>
     <version.resolver>1.9.27</version.resolver>
-    <version.mima>2.4.42</version.mima>
+    <version.mima>2.4.43</version.mima>
     <version.slf4j>1.7.36</version.slf4j>
     <version.okhttp3>5.3.2</version.okhttp3>
-    <version.testcontainers>2.0.4</version.testcontainers>
+    <version.testcontainers>2.0.5</version.testcontainers>
   </properties>
 
   <dependencyManagement>
@@ -199,7 +199,7 @@
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm</artifactId>
-        <version>9.9.1</version>
+        <version>9.10</version>
       </dependency>
 
       <!-- Resolver + Maven -->
@@ -290,7 +290,7 @@
       <dependency>
         <groupId>org.jgroups</groupId>
         <artifactId>jgroups</artifactId>
-        <version>5.5.4.Final</version>
+        <version>5.5.5.Final</version>
       </dependency>
 
       <dependency>
@@ -303,7 +303,7 @@
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-        <version>1.21.0</version>
+        <version>1.22.0</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
@@ -313,7 +313,7 @@
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
-        <version>2.21.0</version>
+        <version>2.22.0</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>

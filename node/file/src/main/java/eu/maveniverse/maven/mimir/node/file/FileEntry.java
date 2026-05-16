@@ -39,7 +39,7 @@ public final class FileEntry extends EntrySupport implements LocalEntry {
     @Override
     public void transferTo(Path file) throws IOException {
         Files.deleteIfExists(file);
-        try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(file)) {
+        try (FileUtils.CollocatedTempFile f = FileUtils.newCollocatedTempFile(file)) {
             FileUtils.copyOrLink(path, f.getPath(), mayLink);
             f.move();
         }

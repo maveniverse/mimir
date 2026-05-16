@@ -14,7 +14,7 @@
   <parent>
     <groupId>eu.maveniverse.maven.mimir</groupId>
     <artifactId>mimir</artifactId>
-    <version>0.11.4-SNAPSHOT</version>
+    <version>0.11.5-SNAPSHOT</version>
   </parent>
 
   <groupId>eu.maveniverse.maven.mimir.it</groupId>
@@ -42,7 +42,7 @@
         <plugin>
           <groupId>eu.maveniverse.maven.plugins</groupId>
           <artifactId>toolbox</artifactId>
-          <version>0.15.8</version>
+          <version>0.15.9</version>
         </plugin>
       </plugins>
     </pluginManagement>

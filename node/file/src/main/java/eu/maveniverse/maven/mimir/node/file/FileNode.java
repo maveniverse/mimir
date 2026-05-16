@@ -145,7 +145,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
         HashMap<String, String> metadata = new HashMap<>(md);
         FileTime fileTime = Files.getLastModifiedTime(file);
         ChecksumEnforcer checksumEnforcer;
-        try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
+        try (FileUtils.CollocatedTempFile f = FileUtils.newCollocatedTempFile(path)) {
             try (InputStream enforced = new ChecksumInputStream(
                     Files.newInputStream(file),
                     checksumAlgorithms().stream()
@@ -171,7 +171,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
         checkClosed();
         Path path = resolveKey(key, false).orElseThrow(() -> new IllegalArgumentException("Unsupported URI"));
         if (entry instanceof RemoteEntry remoteEntry) {
-            try (FileUtils.CollocatedTempFile f = FileUtils.newTempFile(path)) {
+            try (FileUtils.CollocatedTempFile f = FileUtils.newCollocatedTempFile(path)) {
                 remoteEntry.handleContent(inputStream -> {
                     ChecksumEnforcer checksumEnforcer;
                     try (InputStream enforced = new ChecksumInputStream(
