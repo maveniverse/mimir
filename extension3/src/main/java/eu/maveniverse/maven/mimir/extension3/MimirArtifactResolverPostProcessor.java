@@ -20,6 +20,7 @@ import javax.inject.Singleton;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.ArtifactRepository;
+import org.eclipse.aether.repository.LocalArtifactResult;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResult;
@@ -56,11 +57,14 @@ public class MimirArtifactResolverPostProcessor extends ComponentSupport impleme
             ms.auditLog().ifPresent(log -> {
                 for (ArtifactResult artifactResult : artifactResults) {
                     ArtifactRequest artifactRequest = artifactResult.getRequest();
+                    LocalArtifactResult localArtifactResult = artifactResult.getLocalArtifactResult();
 
                     ArtifactRepository repository = artifactResult.getRepository();
                     Artifact artifact = artifactResult.getArtifact();
                     boolean resolved = artifactResult.isResolved();
-                    String status = resolved ? AuditLog.STATUS_RESOLVED : AuditLog.STATUS_FAILED;
+                    String status = resolved
+                            ? (localArtifactResult != null ? AuditLog.STATUS_CACHE : AuditLog.STATUS_REMOTE)
+                            : AuditLog.STATUS_FAILED;
                     String context = artifactRequest.getRequestContext();
                     String scope = "(model)";
                     if (artifactRequest.getDependencyNode() != null) {

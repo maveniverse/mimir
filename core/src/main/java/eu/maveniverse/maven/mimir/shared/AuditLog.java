@@ -30,7 +30,8 @@ import org.eclipse.aether.repository.RemoteRepository;
  * Thread-safe. Supported formats: {@code csv} and {@code jsonl}.
  */
 public final class AuditLog implements Closeable {
-    public static final String STATUS_RESOLVED = "resolved";
+    public static final String STATUS_CACHE = "cache";
+    public static final String STATUS_REMOTE = "remote";
     public static final String STATUS_FAILED = "failed";
 
     private static final String CSV_HEADER =

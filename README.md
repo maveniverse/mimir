@@ -57,36 +57,36 @@ Build requirements:
 * Java 21
 * Maven 3.9.9+
 
-## Transfer Log
+## Audit Log
 
-Mimir can log every artifact download to a file, giving you a full record of what was fetched during a
+Mimir can log every artifact resolution, giving you a full record of what was resolved during a
 build — including groupId, artifactId, version, classifier, extension, the repository it came from, the
 canonical artifact URL, and whether the file was served from cache or downloaded fresh.
 
 ### Enabling
 
-Add `-Dmimir.transferLog.enabled=true` to your Maven invocation:
+Add `-Dmimir.auditLog.enabled=true` to your Maven invocation:
 
 ```
-mvn verify -Dmimir.transferLog.enabled=true
+mvn verify -Dmimir.auditLog.enabled=true
 ```
 
 Or set it permanently in `~/.mimir/session.properties`:
 
 ```properties
-mimir.transferLog.enabled=true
+mimir.auditLog.enabled=true
 ```
 
 ### Output files
 
-By default a single file is written to `~/.mimir/mimir-transfer-log.csv`. This file **accumulates
+By default a single file is written to `~/.mimir/mimir-audit-log.csv`. This file **accumulates
 across builds** — each build appends to it. It persists until you delete it manually (log rotation is
 your responsibility if the file grows large).
 
 To also write a per-project log that gets wiped by `mvn clean`, configure a project-relative path:
 
 ```properties
-mimir.transferLog.projectPath=target/mimir-transfer-log.csv
+mimir.auditLog.projectPath=target/mimir-audit-log.csv
 ```
 
 Both files are written simultaneously when both are configured.
@@ -94,7 +94,7 @@ Both files are written simultaneously when both are configured.
 To override the global file location:
 
 ```properties
-mimir.transferLog.path=/path/to/my-transfer-log.csv
+mimir.auditLog.path=/path/to/my-audit-log.csv
 ```
 
 ### Format
@@ -102,9 +102,11 @@ mimir.transferLog.path=/path/to/my-transfer-log.csv
 The default format is CSV with a header row:
 
 ```
-timestamp,groupId,artifactId,version,classifier,extension,repositoryId,repositoryUrl,artifactUrl,status
-2026-04-30T10:15:03Z,com.google.guava,guava,33.6.0-jre,,jar,central,https://repo.maven.apache.org/maven2,https://repo.maven.apache.org/maven2/com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar,cache
-2026-04-30T10:15:03Z,com.google.guava,guava,33.6.0-jre,,pom,central,https://repo.maven.apache.org/maven2,https://repo.maven.apache.org/maven2/com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.pom,remote
+timestamp,groupId,artifactId,version,classifier,extension,repositoryId,repositoryUrl,artifactUrl,status,context,scope
+2026-05-16T14:46:29.899608696Z,org.slf4j,slf4j-api,2.0.17,,pom,central,https://repo.maven.apache.org/maven2,https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.pom,cache,project,(model)
+2026-05-16T14:46:29.940286004Z,org.slf4j,slf4j-parent,2.0.17,,pom,central,https://repo.maven.apache.org/maven2,https://repo.maven.apache.org/maven2/org/slf4j/slf4j-parent/2.0.17/slf4j-parent-2.0.17.pom,cache,project,(model)
+2026-05-16T14:46:29.981917992Z,org.slf4j,slf4j-bom,2.0.17,,pom,central,https://repo.maven.apache.org/maven2,https://repo.maven.apache.org/maven2/org/slf4j/slf4j-bom/2.0.17/slf4j-bom-2.0.17.pom,cache,project,(model)
+2026-05-16T14:46:30.366891049Z,org.slf4j,slf4j-api,2.0.17,,jar,central,https://repo.maven.apache.org/maven2,https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar,cache,project/compile,compile
 ```
 
 To use JSON Lines instead:
@@ -130,13 +132,10 @@ existence-check probes are not logged.
 
 ### Configuration reference
 
-| Property | Default | Description |
-|---|---|---|
-| `mimir.transferLog.enabled` | `false` | Enable transfer logging |
-| `mimir.transferLog.path` | `~/.mimir/mimir-transfer-log.csv` | Path to the global log file |
-| `mimir.transferLog.projectPath` | *(unset)* | Optional second log file (relative to execution root) |
-| `mimir.transferLog.format` | `csv` | Output format: `csv` or `jsonl` |
+| Property                     | Default                        | Description                                           |
+|------------------------------|--------------------------------|-------------------------------------------------------|
+| `mimir.auditLog.enabled`     | `false`                        | Enable audit logging                                  |
+| `mimir.auditLog.path`        | `~/.mimir/mimir-audit-log.csv` | Path to the global log file                           |
+| `mimir.auditLog.projectPath` | *(unset)*                      | Optional second log file (relative to execution root) |
+| `mimir.auditLog.format`      | `csv`                          | Output format: `csv` or `jsonl`                       |
 
-## High level design
-
-TBD
