@@ -52,6 +52,17 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
     public Session createSession(SessionConfig config) throws IOException {
         requireNonNull(config);
 
+        ResolvingLog resolvingLog = null;
+        Path globalPath = config.resolvingLogGlobalPath().orElse(null);
+        Path projectPath = config.resolvingLogProjectPath().orElse(null);
+        if (globalPath != null || projectPath != null) {
+            resolvingLog = new ResolvingLog(globalPath, projectPath, config.resolvingLogFormat());
+            logger.info("Mimir resolving log: {}", globalPath);
+            if (projectPath != null) {
+                logger.info("Mimir resolving log (project): {}", projectPath);
+            }
+        }
+
         ArrayList<LocalNode> overlays = new ArrayList<>();
         if (!config.overlayNodes().isEmpty()) {
             for (String overlay : config.overlayNodes()) {
@@ -80,17 +91,6 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
             logger.debug("  Repositories: {}", repositories);
             logger.debug("  Used checksums: {}", localNode.checksumAlgorithms());
             logger.debug("  Supported checksums: {}", checksumFactories.keySet());
-        }
-
-        ResolvingLog resolvingLog = null;
-        Path globalPath = config.resolvingLogGlobalPath().orElse(null);
-        Path projectPath = config.resolvingLogProjectPath().orElse(null);
-        if (globalPath != null || projectPath != null) {
-            resolvingLog = new ResolvingLog(globalPath, projectPath, config.resolvingLogFormat());
-            logger.info("Mimir resolving log: {}", globalPath);
-            if (projectPath != null) {
-                logger.info("Mimir resolving log (project): {}", projectPath);
-            }
         }
 
         return new SessionImpl(
