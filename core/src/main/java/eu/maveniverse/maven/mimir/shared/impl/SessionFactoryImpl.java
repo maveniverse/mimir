@@ -57,7 +57,9 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
         Path projectPath = config.resolvingLogProjectPath().orElse(null);
         if (globalPath != null || projectPath != null) {
             resolvingLog = new ResolvingLog(globalPath, projectPath, config.resolvingLogFormat());
-            logger.info("Mimir resolving log: {}", globalPath);
+            if (globalPath != null) {
+                logger.info("Mimir resolving log (global): {}", globalPath);
+            }
             if (projectPath != null) {
                 logger.info("Mimir resolving log (project): {}", projectPath);
             }
