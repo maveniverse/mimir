@@ -77,8 +77,7 @@ public class MimirArtifactResolverPostProcessor extends ComponentSupport impleme
                                     .getScope();
                         }
                     }
-                    Map<String, String> hashes = Collections.emptyMap();
-                    log.record(repository, artifact, status, context, scope, hashes);
+                    log.record(session, repository, artifact, status, context, scope, Map.of());
                 }
             });
         });

@@ -154,22 +154,16 @@ public interface SessionConfig {
     Set<String> mirrors();
 
     /**
-     * Enables artifact resolution logging. Defaults to {@code false}.
+     * Path to the global resolution log file. When set, is resolved against {@link #basedir()}, if applicable.
+     * When unset, no global log file is written.
      * <p>
-     * Configuration key {@code mimir.resolvingLog.enabled}
+     * Configuration key {@code mimir.resolvingLog.globalPath}
      */
-    String CONF_RESOLVING_LOG_ENABLED = CONF_PREFIX + "resolvingLog.enabled";
-
-    /**
-     * Path to the global resolution log file. Defaults to {@code mimir-resolving-log.csv} under {@link #basedir()}.
-     * <p>
-     * Configuration key {@code mimir.resolvingLog.path}
-     */
-    String CONF_RESOLVING_LOG_PATH = CONF_PREFIX + "resolvingLog.path";
+    String CONF_RESOLVING_LOG_GLOBAL_PATH = CONF_PREFIX + "resolvingLog.globalPath";
 
     /**
      * Optional path to the project resolution log file. When set, is resolved against {@link #projectDir()}, if applicable.
-     * When unset, no second log file is written.
+     * When unset, no project log file is written.
      * <p>
      * Configuration key {@code mimir.resolvingLog.projectPath}
      */
@@ -182,7 +176,7 @@ public interface SessionConfig {
      */
     String CONF_RESOLVING_LOG_FORMAT = CONF_PREFIX + "resolvingLog.format";
 
-    Optional<Path> resolvingLogPath();
+    Optional<Path> resolvingLogGlobalPath();
 
     Optional<Path> resolvingLogProjectPath();
 
@@ -416,7 +410,7 @@ public interface SessionConfig {
             private final boolean resolverTrustedChecksumsSourceEnabled;
 
             // resolving log config (derived from effectiveProperties)
-            private final Path resolvingLogPath;
+            private final Path resolvingLogGlobalPath;
             private final Path resolvingLogProjectPath;
             private final String resolvingLogFormat;
 
@@ -486,19 +480,16 @@ public interface SessionConfig {
 
                 // transfer log (derived from those above)
 
-                boolean resolvingLogEnabled = Boolean.parseBoolean(
-                        effectiveProperties.getOrDefault(CONF_RESOLVING_LOG_ENABLED, Boolean.FALSE.toString()));
-                if (resolvingLogEnabled) {
-                    this.resolvingLogPath = this.basedir.resolve(
-                            effectiveProperties.getOrDefault(CONF_RESOLVING_LOG_PATH, "mimir-resolving-log.csv"));
-                    if (this.projectDir != null && effectiveProperties.containsKey(CONF_RESOLVING_LOG_PROJECT_PATH)) {
-                        this.resolvingLogProjectPath =
-                                projectDir.resolve(effectiveProperties.get(CONF_RESOLVING_LOG_PROJECT_PATH));
-                    } else {
-                        this.resolvingLogProjectPath = null;
-                    }
+                if (effectiveProperties.containsKey(CONF_RESOLVING_LOG_GLOBAL_PATH)) {
+                    this.resolvingLogGlobalPath =
+                            this.basedir.resolve(effectiveProperties.get(CONF_RESOLVING_LOG_GLOBAL_PATH));
                 } else {
-                    this.resolvingLogPath = null;
+                    this.resolvingLogGlobalPath = null;
+                }
+                if (this.projectDir != null && effectiveProperties.containsKey(CONF_RESOLVING_LOG_PROJECT_PATH)) {
+                    this.resolvingLogProjectPath =
+                            projectDir.resolve(effectiveProperties.get(CONF_RESOLVING_LOG_PROJECT_PATH));
+                } else {
                     this.resolvingLogProjectPath = null;
                 }
                 this.resolvingLogFormat = effectiveProperties
@@ -622,8 +613,8 @@ public interface SessionConfig {
             }
 
             @Override
-            public Optional<Path> resolvingLogPath() {
-                return Optional.ofNullable(resolvingLogPath);
+            public Optional<Path> resolvingLogGlobalPath() {
+                return Optional.ofNullable(resolvingLogGlobalPath);
             }
 
             @Override

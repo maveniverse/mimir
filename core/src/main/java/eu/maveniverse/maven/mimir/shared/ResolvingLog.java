@@ -21,6 +21,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.ArtifactRepository;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -34,20 +36,26 @@ public final class ResolvingLog implements Closeable {
     public static final String STATUS_REMOTE = "remote";
     public static final String STATUS_FAILED = "failed";
 
+    private static final String TS_KEY = ResolvingLog.class.getName() + ".timeStamp";
+    private static final String COUNTER_KEY = ResolvingLog.class.getName() + ".counter";
     private static final String CSV_HEADER =
-            "timestamp,groupId,artifactId,version,classifier,extension,repositoryId,repositoryUrl,artifactUrl,status,context,scope";
+            "seq,groupId,artifactId,version,classifier,extension,repositoryId,repositoryUrl,artifactUrl,status,context,scope";
 
     private final String format;
     private final List<BufferedWriter> writers;
 
-    public ResolvingLog(Path globalPath, /* @Nullable */ Path projectPath, String format) throws IOException {
-        requireNonNull(globalPath, "globalPath");
+    public ResolvingLog(Path globalPath, Path projectPath, String format) throws IOException {
         requireNonNull(format, "format");
         this.format = format;
         this.writers = new ArrayList<>(2);
-        writers.add(openWriter(globalPath));
+        if (globalPath != null) {
+            writers.add(openWriter(globalPath));
+        }
         if (projectPath != null) {
             writers.add(openWriter(projectPath));
+        }
+        if (writers.isEmpty()) {
+            throw new IllegalStateException("No resolving log output files set!");
         }
     }
 
@@ -64,6 +72,7 @@ public final class ResolvingLog implements Closeable {
     }
 
     public synchronized void record(
+            RepositorySystemSession session,
             ArtifactRepository repository,
             Artifact artifact,
             String status,
@@ -74,7 +83,9 @@ public final class ResolvingLog implements Closeable {
         requireNonNull(artifact, "artifact");
         requireNonNull(status, "status");
 
-        String timestamp = Instant.now().toString();
+        Instant timestamp = (Instant) session.getData().computeIfAbsent(TS_KEY, Instant::now);
+        AtomicLong counter = (AtomicLong) session.getData().computeIfAbsent(COUNTER_KEY, AtomicLong::new);
+        String seq = timestamp.toString() + "@" + counter.incrementAndGet();
         String groupId = artifact.getGroupId();
         String artifactId = artifact.getArtifactId();
         String version = artifact.getVersion();
@@ -88,8 +99,8 @@ public final class ResolvingLog implements Closeable {
 
         String line;
         if ("jsonl".equals(format)) {
-            line = "{\"timestamp\":\""
-                    + escapeJson(timestamp)
+            line = "{\"seq\":\""
+                    + escapeJson(seq)
                     + "\",\"groupId\":\""
                     + escapeJson(groupId)
                     + "\",\"artifactId\":\""
@@ -114,7 +125,7 @@ public final class ResolvingLog implements Closeable {
                     + escapeJson(scope)
                     + "\"}";
         } else {
-            line = csvField(timestamp)
+            line = csvField(seq)
                     + ","
                     + csvField(groupId)
                     + ","
