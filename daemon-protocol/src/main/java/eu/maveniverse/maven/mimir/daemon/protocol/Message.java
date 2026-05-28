@@ -21,7 +21,7 @@ public abstract class Message {
         if (data().containsKey(key)) {
             return data().get(key);
         } else {
-            throw new IllegalStateException(String.format("Key '%s' not found in data", key));
+            throw new IllegalStateException("Key '%s' not found in data".formatted(key));
         }
     }
 
@@ -30,7 +30,7 @@ public abstract class Message {
         if (session().containsKey(key)) {
             return session().get(key);
         } else {
-            throw new IllegalStateException(String.format("Key '%s' not found in session", key));
+            throw new IllegalStateException("Key '%s' not found in session".formatted(key));
         }
     }
 }
