@@ -3,7 +3,7 @@ package eu.maveniverse.maven.mimir.shared.naming;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Collections;
+import java.util.List;
 import java.util.function.Predicate;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
@@ -41,7 +41,7 @@ public class RemoteRepositoriesTest {
             .setReleasePolicy(new RepositoryPolicy(
                     true, RepositoryPolicy.UPDATE_POLICY_NEVER, RepositoryPolicy.CHECKSUM_POLICY_FAIL))
             .setSnapshotPolicy(new RepositoryPolicy(false, "", ""))
-            .setMirroredRepositories(Collections.singletonList(central))
+            .setMirroredRepositories(List.of(central))
             .build();
     /**
      * Proper definition but protocol is SFTP.
@@ -85,7 +85,7 @@ public class RemoteRepositoriesTest {
 
     @Test
     void any() {
-        Predicate<RemoteRepository> predicate = RemoteRepositories.repositoryPredicate(Collections.singletonList("*"));
+        Predicate<RemoteRepository> predicate = RemoteRepositories.repositoryPredicate(List.of("*"));
 
         assertTrue(predicate.test(central));
         assertTrue(predicate.test(centralLazy));
@@ -98,8 +98,7 @@ public class RemoteRepositoriesTest {
 
     @Test
     void anyHttpsOnly() {
-        Predicate<RemoteRepository> predicate =
-                RemoteRepositories.repositoryPredicate(Collections.singletonList("*(httpsOnly)"));
+        Predicate<RemoteRepository> predicate = RemoteRepositories.repositoryPredicate(List.of("*(httpsOnly)"));
 
         assertTrue(predicate.test(central));
         assertTrue(predicate.test(centralLazy));
@@ -113,7 +112,7 @@ public class RemoteRepositoriesTest {
     @Test
     void anyDirectOnlyHttpsOnly() {
         Predicate<RemoteRepository> predicate =
-                RemoteRepositories.repositoryPredicate(Collections.singletonList("*(directOnly,httpsOnly)"));
+                RemoteRepositories.repositoryPredicate(List.of("*(directOnly,httpsOnly)"));
 
         assertTrue(predicate.test(central));
         assertTrue(predicate.test(centralLazy));
@@ -126,8 +125,7 @@ public class RemoteRepositoriesTest {
 
     @Test
     void byIdCentral() {
-        Predicate<RemoteRepository> predicate =
-                RemoteRepositories.repositoryPredicate(Collections.singletonList("central"));
+        Predicate<RemoteRepository> predicate = RemoteRepositories.repositoryPredicate(List.of("central"));
 
         assertTrue(predicate.test(central));
         assertTrue(predicate.test(centralLazy));
@@ -140,8 +138,7 @@ public class RemoteRepositoriesTest {
 
     @Test
     void byIdCentralHttpsOnly() {
-        Predicate<RemoteRepository> predicate =
-                RemoteRepositories.repositoryPredicate(Collections.singletonList("central(httpsOnly)"));
+        Predicate<RemoteRepository> predicate = RemoteRepositories.repositoryPredicate(List.of("central(httpsOnly)"));
 
         assertTrue(predicate.test(central));
         assertTrue(predicate.test(centralLazy));
@@ -154,8 +151,7 @@ public class RemoteRepositoriesTest {
 
     @Test
     void byIdSnapshots() {
-        Predicate<RemoteRepository> predicate =
-                RemoteRepositories.repositoryPredicate(Collections.singletonList("snapshots"));
+        Predicate<RemoteRepository> predicate = RemoteRepositories.repositoryPredicate(List.of("snapshots"));
 
         assertFalse(predicate.test(central)); // id != snapshots
         assertFalse(predicate.test(centralLazy)); // id != snapshots

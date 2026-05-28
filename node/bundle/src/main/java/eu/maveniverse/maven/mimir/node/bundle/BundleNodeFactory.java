@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystems;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -60,7 +60,7 @@ public class BundleNodeFactory extends ComponentSupport implements LocalNodeFact
                                 sessionConfig.repositorySystemSession().orElseThrow(),
                                 new ArtifactRequest(
                                         artifactSource.artifact(),
-                                        Collections.singletonList(artifactSource.remoteRepository()),
+                                        List.of(artifactSource.remoteRepository()),
                                         "mimir-bundle-node"));
                         artifact = artifactResult.getArtifact();
                     } catch (ArtifactResolutionException e) {
