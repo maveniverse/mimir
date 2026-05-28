@@ -44,6 +44,11 @@ public interface Session extends Closeable {
     List<String> checksumAlgorithms() throws IOException;
 
     /**
+     * Returns the {@link ResolvingLog}, if enabled.
+     */
+    Optional<ResolvingLog> resolvingLog();
+
+    /**
      * Locates cache entry by key.
      */
     Optional<Entry> locate(RemoteRepository remoteRepository, Artifact artifact) throws IOException;

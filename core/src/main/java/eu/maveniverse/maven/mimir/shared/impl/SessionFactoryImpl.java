@@ -9,6 +9,7 @@ package eu.maveniverse.maven.mimir.shared.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mimir.shared.ResolvingLog;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.SessionFactory;
@@ -19,6 +20,7 @@ import eu.maveniverse.maven.mimir.shared.node.LocalNode;
 import eu.maveniverse.maven.mimir.shared.node.LocalNodeFactory;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
@@ -49,6 +51,19 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
     @Override
     public Session createSession(SessionConfig config) throws IOException {
         requireNonNull(config);
+
+        ResolvingLog resolvingLog = null;
+        Path globalPath = config.resolvingLogGlobalPath().orElse(null);
+        Path projectPath = config.resolvingLogProjectPath().orElse(null);
+        if (globalPath != null || projectPath != null) {
+            resolvingLog = new ResolvingLog(globalPath, projectPath, config.resolvingLogFormat());
+            if (globalPath != null) {
+                logger.info("Mimir resolving log (global): {}", globalPath);
+            }
+            if (projectPath != null) {
+                logger.info("Mimir resolving log (project): {}", projectPath);
+            }
+        }
 
         ArrayList<LocalNode> overlays = new ArrayList<>();
         if (!config.overlayNodes().isEmpty()) {
@@ -86,7 +101,8 @@ public final class SessionFactoryImpl extends ComponentSupport implements Sessio
                 Mirrors.parseMirrors(config, config.mirrors()),
                 a -> !a.isSnapshot(),
                 localNode,
-                checksumAlgorithmFactorySelector);
+                checksumAlgorithmFactorySelector,
+                resolvingLog);
     }
 
     private Optional<? extends LocalNode> createLocalNode(String name, SessionConfig cfg) throws IOException {

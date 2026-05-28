@@ -10,6 +10,7 @@ package eu.maveniverse.maven.mimir.shared.impl;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mimir.shared.Entry;
+import eu.maveniverse.maven.mimir.shared.ResolvingLog;
 import eu.maveniverse.maven.mimir.shared.Session;
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
 import eu.maveniverse.maven.mimir.shared.mirror.MirroredRemoteRepository;
@@ -39,6 +40,8 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
     private final LocalNode localNode;
     private final ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector;
 
+    private final ResolvingLog resolvingLog;
+
     private final Stats stats;
     private final ConcurrentHashMap<RemoteRepository, Set<String>> retrievedFromCache;
     private final ConcurrentHashMap<RemoteRepository, Set<String>> storedToCache;
@@ -49,13 +52,17 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
             Map<String, List<RemoteRepository>> repositoryMirrors,
             Predicate<Artifact> artifactPredicate,
             LocalNode localNode,
-            ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector) {
+            ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector,
+            ResolvingLog resolvingLog) {
         super(sessionConfig);
         this.repositoryPredicate = requireNonNull(repositoryPredicate);
         this.repositoryMirrors = requireNonNull(repositoryMirrors);
         this.artifactPredicate = requireNonNull(artifactPredicate);
         this.localNode = requireNonNull(localNode);
         this.checksumAlgorithmFactorySelector = requireNonNull(checksumAlgorithmFactorySelector);
+
+        // nullable
+        this.resolvingLog = resolvingLog;
 
         this.stats = new Stats();
         this.retrievedFromCache = new ConcurrentHashMap<>();
@@ -104,6 +111,10 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
     public List<String> checksumAlgorithms() throws IOException {
         checkClosed();
         return localNode.checksumAlgorithms();
+    }
+
+    public Optional<ResolvingLog> resolvingLog() {
+        return Optional.ofNullable(resolvingLog);
     }
 
     @Override
@@ -219,8 +230,14 @@ public final class SessionImpl extends CloseableConfigSupport<SessionConfig> imp
 
     @Override
     protected void doClose() throws IOException {
-        if (config.localNodeInstance().isEmpty()) {
-            localNode.close();
+        try {
+            if (config.localNodeInstance().isEmpty()) {
+                localNode.close();
+            }
+        } finally {
+            if (resolvingLog != null) {
+                resolvingLog.close();
+            }
         }
         logger.info("Mimir session closed (RETRIEVED={} CACHED={})", stats.transferSuccess(), stats.storeSuccess());
     }

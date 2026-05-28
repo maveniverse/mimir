@@ -57,6 +57,93 @@ Build requirements:
 * Java 21
 * Maven 3.9.9+
 
-## High level design
+## Resolving Log
 
-TBD
+Mimir can log every artifact resolution, giving you a full record of what was resolved during a
+build — including groupId, artifactId, version, classifier, extension, the repository it came from, the
+canonical artifact URL, and whether the file was served from cache or downloaded fresh.
+
+### Enabling
+
+Add `-Dmimir.resolvingLog.globalPath=/some/path` or `-Dmimir.resolvingLog.projectPath=/some/path` to your Maven invocation:
+
+```
+mvn verify -Dmimir.resolvingLog.projectPath=/some/path
+```
+
+Or set it permanently in `~/.mimir/session.properties`:
+
+```properties
+mimir.resolvingLog.globalPath=/some/path
+```
+
+### Output files
+
+When enabled, the configured files are written out to configured paths. Global file **accumulates
+across builds** — each build appends to it. It persists until you delete it manually (log rotation is
+your responsibility if the file grows large).
+
+The `mimir.resolvingLog.globalPath` provided path is resolved against Mimir basedir (default `~/.mimir`).
+
+To also write a per-project log that gets wiped by `mvn clean`, configure a project-relative path:
+
+```properties
+mimir.resolvingLog.projectPath=target/mimir-resolving-log.csv
+```
+
+The `mimir.resolvingLog.projectPath` is resolved against project basedir.
+
+Both files are written simultaneously when both are configured.
+
+To override the global file location:
+
+```properties
+mimir.resolvingLog.globalPath=/path/to/my-resolving-log.csv
+```
+
+### Format
+
+The default format is CSV with a header row:
+
+```csv
+seq,groupId,artifactId,version,classifier,extension,repositoryId,repositoryUrl,artifactUrl,status,context,scope
+2026-05-16T14:46:29.899608696Z@1,org.slf4j,slf4j-api,2.0.17,,pom,central,https://repo.maven.apache.org/maven2,https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.pom,cache,project,(model)
+2026-05-16T14:46:29.899608696Z@2,org.slf4j,slf4j-parent,2.0.17,,pom,central,https://repo.maven.apache.org/maven2,https://repo.maven.apache.org/maven2/org/slf4j/slf4j-parent/2.0.17/slf4j-parent-2.0.17.pom,cache,project,(model)
+2026-05-16T14:46:29.899608696Z@3,org.slf4j,slf4j-bom,2.0.17,,pom,central,https://repo.maven.apache.org/maven2,https://repo.maven.apache.org/maven2/org/slf4j/slf4j-bom/2.0.17/slf4j-bom-2.0.17.pom,cache,project,(model)
+2026-05-16T14:46:29.899608696Z@4,org.slf4j,slf4j-api,2.0.17,,jar,central,https://repo.maven.apache.org/maven2,https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar,cache,project/compile,compile
+```
+
+To use JSON Lines instead:
+
+```properties
+mimir.resolverLog.format=jsonl
+```
+
+```json
+{"seq":"2026-05-16T14:46:29.899608696Z@1","groupId":"com.google.guava","artifactId":"guava","version":"33.6.0-jre","classifier":"","extension":"jar","repositoryId":"central","repositoryUrl":"https://repo.maven.apache.org/maven2","artifactUrl":"https://repo.maven.apache.org/maven2/com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar","status":"cache"}
+```
+
+The `seq` field is a unique identifier for each resolution event, combining a timestamp with a sequence number to 
+ensure uniqueness even for multiple resolutions occurring at the same time. The timestamp is created at the very
+first artifact resolution of a Maven session and counter is incremented for each resolution.
+
+### Status values
+
+| Value | Meaning |
+|---|---|
+| `cache` | Served from the Mimir local cache — no network request was made |
+| `remote` | Downloaded from the remote repository and stored in cache |
+| `failed` | Download was attempted but failed (network error, 404, etc.) |
+
+All artifact types are logged: `.jar`, `.pom`, `.asc` signatures, `.war`, `.aar`, etc. Internal
+existence-check probes are not logged.
+
+### Configuration reference
+
+| Property                     | Default                            | Description                                           |
+|------------------------------|------------------------------------|-------------------------------------------------------|
+| `mimir.resolvingLog.enabled`     | `false`                            | Enable resolving logging                              |
+| `mimir.resolvingLog.path`        | `~/.mimir/mimir-resolving-log.csv` | Path to the global log file                           |
+| `mimir.resolvingLog.projectPath` | *(unset)*                          | Optional second log file (relative to execution root) |
+| `mimir.resolvingLog.format`      | `csv`                              | Output format: `csv` or `jsonl`                       |
+
