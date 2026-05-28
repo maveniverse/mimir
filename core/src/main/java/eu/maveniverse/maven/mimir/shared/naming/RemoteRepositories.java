@@ -22,12 +22,12 @@ import org.eclipse.aether.repository.RemoteRepository;
 public final class RemoteRepositories {
     public static final String CENTRAL_REPOSITORY_ID = "central";
 
-    public static final Set<String> DEFAULT = Set.of(String.format(
-            "%s(%s,%s,%s)",
-            RemoteRepositories.CENTRAL_REPOSITORY_ID,
-            RemoteRepositories.MOD_DIRECT_ONLY,
-            RemoteRepositories.MOD_RELEASE_ONLY,
-            RemoteRepositories.MOD_HTTPS_ONLY));
+    public static final Set<String> DEFAULT = Set.of("%s(%s,%s,%s)"
+            .formatted(
+                    RemoteRepositories.CENTRAL_REPOSITORY_ID,
+                    RemoteRepositories.MOD_DIRECT_ONLY,
+                    RemoteRepositories.MOD_RELEASE_ONLY,
+                    RemoteRepositories.MOD_HTTPS_ONLY));
 
     public static final String MOD_DIRECT_ONLY = "directOnly";
     public static final String MOD_RELEASE_ONLY = "releaseOnly";

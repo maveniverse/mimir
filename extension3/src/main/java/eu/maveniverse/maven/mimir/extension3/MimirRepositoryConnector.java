@@ -18,7 +18,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -149,7 +148,7 @@ public class MimirRepositoryConnector extends ComponentSupport implements Reposi
                                 remoteRepository,
                                 potentiallyCached.artifact,
                                 artifactDownload.getFile().toPath(),
-                                Collections.emptyMap(),
+                                Map.of(),
                                 potentiallyCached.checksumCalculator.getChecksums());
                     } catch (IOException e) {
                         artifactDownload.setException(

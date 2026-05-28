@@ -11,7 +11,6 @@ import eu.maveniverse.maven.mimir.shared.Entry;
 import eu.maveniverse.maven.mimir.shared.MimirUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +34,7 @@ public class MimirTrustedChecksumsSource implements TrustedChecksumsSource {
             Artifact artifact,
             ArtifactRepository artifactRepository,
             List<ChecksumAlgorithmFactory> checksumAlgorithmFactories) {
-        AtomicReference<Map<String, String>> resultRef = new AtomicReference<>(Collections.emptyMap());
+        AtomicReference<Map<String, String>> resultRef = new AtomicReference<>(Map.of());
         MimirUtils.mayGetSession(session).ifPresent(ms -> {
             if (ms.config().resolverTrustedChecksumsSourceEnabled()
                     && artifactRepository instanceof RemoteRepository remoteRepository) {

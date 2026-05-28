@@ -12,7 +12,6 @@ import eu.maveniverse.maven.mimir.shared.ResolvingLog;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Named;
@@ -44,7 +43,7 @@ public class MimirArtifactResolverPostProcessor extends ComponentSupport impleme
                                         remoteRepository,
                                         artifact,
                                         artifact.getFile().toPath(),
-                                        Collections.emptyMap())) {
+                                        Map.of())) {
                                     logger.debug("Stored artifact {} ({})", artifact, artifact.getFile());
                                 }
                             } catch (IOException e) {

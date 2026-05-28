@@ -19,7 +19,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -240,7 +239,7 @@ public interface SessionConfig {
                 mimirBasedir,
                 null,
                 mimirSessionConfigPath,
-                Collections.emptyMap(),
+                Map.of(),
                 MavenUtils.toMap(System.getProperties()),
                 null,
                 null);

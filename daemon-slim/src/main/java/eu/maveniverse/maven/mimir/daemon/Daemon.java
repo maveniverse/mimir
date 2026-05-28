@@ -41,7 +41,6 @@ import java.nio.channels.AsynchronousCloseException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -407,8 +406,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                                     + source.artifact().getFile());
                         }
                         cr = new CollectRequest(
-                                new Dependency(source.artifact(), ""),
-                                Collections.singletonList(source.remoteRepository()));
+                                new Dependency(source.artifact(), ""), List.of(source.remoteRepository()));
                         cr.setRequestContext("mimir-daemon");
                         dr = c.repositorySystem().resolveDependencies(session, new DependencyRequest(cr, null));
                         logger.info(

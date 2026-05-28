@@ -16,7 +16,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,8 +41,8 @@ public class JGroupsNodeTest {
         Files.createDirectories(contentPath.getParent());
         Files.writeString(contentPath, content);
 
-        FileNodeConfig configOne = FileNodeConfig.of(
-                one, one, true, Collections.singletonList("SHA-1"), false, FileNodeConfig.CachePurge.OFF);
+        FileNodeConfig configOne =
+                FileNodeConfig.of(one, one, true, List.of("SHA-1"), false, FileNodeConfig.CachePurge.OFF);
         FileNode nodeOne = new FileNode(
                 configOne.basedir(),
                 configOne.baseLockDir(),
@@ -54,8 +53,8 @@ public class JGroupsNodeTest {
                 Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory()),
                 DirectoryLocker.INSTANCE,
                 new MetadataMarshaller.PropertiesMetadataMarshaller());
-        FileNodeConfig configTwo = FileNodeConfig.of(
-                two, two, true, Collections.singletonList("SHA-1"), false, FileNodeConfig.CachePurge.OFF);
+        FileNodeConfig configTwo =
+                FileNodeConfig.of(two, two, true, List.of("SHA-1"), false, FileNodeConfig.CachePurge.OFF);
         FileNode nodeTwo = new FileNode(
                 configTwo.basedir(),
                 configTwo.baseLockDir(),

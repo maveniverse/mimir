@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -103,6 +102,6 @@ public class MirrorRepositoryConnector extends CloseableSupport implements Repos
     }
 
     private static <T> List<T> safe(Collection<T> items) {
-        return (items != null) ? new ArrayList<>(items) : Collections.emptyList();
+        return (items != null) ? new ArrayList<>(items) : List.of();
     }
 }

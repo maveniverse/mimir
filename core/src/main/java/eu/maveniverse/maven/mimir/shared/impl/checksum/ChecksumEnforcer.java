@@ -57,8 +57,8 @@ public final class ChecksumEnforcer implements Consumer<Map<String, String>> {
                     matches++;
                 } else {
                     throw new UncheckedIOException(new ChecksumEnforcerException(
-                            String.format(
-                                    "Checksum %s does not match expected value %s", checksum, expectedEntry.getValue()),
+                            "Checksum %s does not match expected value %s"
+                                    .formatted(checksum, expectedEntry.getValue()),
                             expectedChecksums,
                             checksums));
                 }
@@ -66,9 +66,8 @@ public final class ChecksumEnforcer implements Consumer<Map<String, String>> {
         }
         if (matches == 0) {
             throw new UncheckedIOException(new ChecksumEnforcerException(
-                    String.format(
-                            "No checksum algorithm intersection exists: expected %s vs calculated %s",
-                            expectedChecksums.keySet(), checksums.keySet()),
+                    "No checksum algorithm intersection exists: expected %s vs calculated %s"
+                            .formatted(expectedChecksums.keySet(), checksums.keySet()),
                     expectedChecksums,
                     checksums));
         }
