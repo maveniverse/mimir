@@ -106,6 +106,7 @@
                   </properties>
                   <environmentVariables>
                     <CI>false</CI>
+                    <MAVEN_ARGS>-V</MAVEN_ARGS>
                     <GITHUB_ACTIONS>false</GITHUB_ACTIONS>
                   </environmentVariables>
                   <cloneClean>true</cloneClean>
