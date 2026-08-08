@@ -11,7 +11,8 @@ Used by Maven CI among others.
 Goal: A system-wide cache for Maven. Will make you to love to nuke your local repository. It adds a layer of
 cache between resolver and transport. This implies it works irrelevant of location of your local repository 
 and its kind (enhanced, split, whatever). You have one single "local" system-wide cache (by def in `~/.mimir/local`) and it
-is consulted before Maven would go remote. For now, only "central" release remote repository is supported.
+is consulted before Maven would go remote. Out of the box Mimir caches release artifacts from Maven Central, but it is
+not limited to it: you can tell Mimir which remote repositories to cache (see [Which repositories are cached](#which-repositories-are-cached) below).
 This local cache can be used by all Maven builds running on same workstation.
 
 Another goal is to introduce "local cache sharing" across LAN, so make Mimir able to share caches across LAN from several
@@ -25,7 +26,7 @@ Concept:
 * the node could offer locally and also remotely cached contents
 * on local caching, "hard linking" should be used whenever possible (otherwise fallback to plain "copy") to avoid content duplication
 * is irrelevant is project using it sits on "classic" or "split" or whatever local repository (as it is cache layer "above" local repository)
-* RemoteRepository handling has a huge deal of TBDs, right now is almost trivial.
+* RemoteRepository handling is configurable: you pick which repositories (by id, with optional filters) get cached; there are still TBDs here, especially around real MRM integration.
 
 ## To use it
 
@@ -56,6 +57,46 @@ And just build with Maven...
 Build requirements:
 * Java 21
 * Maven 3.9.9+
+
+## Which repositories are cached
+
+By default Mimir caches release artifacts coming from Maven Central only. But you are not stuck with
+that: the `mimir.session.repositories` setting lets you list exactly which remote repositories Mimir
+should cache. Put it in `~/.mimir/session.properties` (or pass it as `-Dmimir.session.repositories=...`):
+
+```properties
+mimir.session.repositories=central,foo,bar
+```
+
+The value is a comma-separated list of repository specs, and each spec is matched against the remote
+repositories your build actually uses. The matching predicates are OR-ed together, so an artifact is
+cached if it comes from *any* listed repository.
+
+A spec can be:
+
+* a repository **id** (e.g. `foo`) — matches the remote repository whose id is `foo`;
+* the wildcard **`*`** — matches *any* release repository Mimir encounters;
+* an id or `*` followed by **modifiers** in parentheses, comma-separated and without spaces, for
+  example `foo(releaseOnly,httpsOnly)` or `*(httpsOnly)`.
+
+Available modifiers:
+
+| Modifier      | Meaning                                                                    |
+|---------------|----------------------------------------------------------------------------|
+| `directOnly`  | Repository is used directly (not a `mirrorOf` target and not an MRM).      |
+| `releaseOnly` | Repository has only its release policy enabled (no snapshots).             |
+| `httpsOnly`   | Repository is served over HTTPS.                                           |
+
+A couple of things worth knowing:
+
+* Mimir only ever caches **release** artifacts — snapshots are always ignored, because caching mutable
+  content would be unsafe. So do not use Mimir if your workflow relies on mutable release artifacts.
+* When you leave the setting unset, the effective default is
+  `central(directOnly,releaseOnly,httpsOnly)` — i.e. Maven Central, accessed directly over HTTPS.
+* If you list `central` as a **plain id** (as in the `central,foo,bar` example above), it no longer
+  carries those strict modifiers. If you want to keep Central strict while adding more repositories,
+  spell it out: `central(directOnly,releaseOnly,httpsOnly),foo,bar`.
+
 
 ## Resolving Log
 
