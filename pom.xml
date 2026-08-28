@@ -78,7 +78,7 @@
     <version.resolver>1.9.27</version.resolver>
     <version.mima>2.4.48</version.mima>
     <version.slf4j>1.7.36</version.slf4j>
-    <version.okhttp3>5.4.0</version.okhttp3>
+    <version.okhttp3>5.5.0</version.okhttp3>
     <version.testcontainers>2.0.5</version.testcontainers>
   </properties>
 
