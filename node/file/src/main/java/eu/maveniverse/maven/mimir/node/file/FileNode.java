@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
@@ -211,13 +212,19 @@ public final class FileNode extends NodeSupport implements SystemNode {
                         }
                         Path targetMd = metadataPath(target, true);
                         Path shadowMd = metadataPath(shadow, false);
+                        Files.createDirectories(targetMd.getParent());
+                        Files.createDirectories(target.getParent());
                         switch (cachePurge) {
                             case ON_BEGIN -> {
-                                Files.move(
-                                        shadowMd,
-                                        targetMd,
-                                        StandardCopyOption.ATOMIC_MOVE,
-                                        StandardCopyOption.REPLACE_EXISTING);
+                                try {
+                                    Files.move(
+                                            shadowMd,
+                                            targetMd,
+                                            StandardCopyOption.ATOMIC_MOVE,
+                                            StandardCopyOption.REPLACE_EXISTING);
+                                } catch (NoSuchFileException ignore) {
+                                    // ignore; forgiving for older mimir caches w/o md; will be recreated
+                                }
                                 Files.move(
                                         shadow,
                                         target,
@@ -225,11 +232,15 @@ public final class FileNode extends NodeSupport implements SystemNode {
                                         StandardCopyOption.REPLACE_EXISTING);
                             }
                             case ON_END -> {
-                                Files.copy(
-                                        shadowMd,
-                                        targetMd,
-                                        StandardCopyOption.REPLACE_EXISTING,
-                                        StandardCopyOption.COPY_ATTRIBUTES);
+                                try {
+                                    Files.copy(
+                                            shadowMd,
+                                            targetMd,
+                                            StandardCopyOption.REPLACE_EXISTING,
+                                            StandardCopyOption.COPY_ATTRIBUTES);
+                                } catch (NoSuchFileException ignore) {
+                                    // ignore; forgiving for older mimir caches w/o md; will be recreated
+                                }
                                 Files.copy(
                                         shadow,
                                         target,
