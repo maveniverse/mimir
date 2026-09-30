@@ -14,7 +14,7 @@
   <parent>
     <groupId>eu.maveniverse.maven.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>62</version>
+    <version>63</version>
   </parent>
 
   <groupId>eu.maveniverse.maven.mimir</groupId>
@@ -189,7 +189,7 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>33.7.1-jre</version>
+        <version>33.7.2-jre</version>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
