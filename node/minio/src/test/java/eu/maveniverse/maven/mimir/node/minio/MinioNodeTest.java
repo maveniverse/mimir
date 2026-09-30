@@ -26,6 +26,7 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmHelper;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers(disabledWithoutDocker = true)
 public class MinioNodeTest {
@@ -37,7 +38,9 @@ public class MinioNodeTest {
 
     @Test
     void smoke() throws Exception {
-        try (MinIOContainer container = new MinIOContainer("minio/minio:RELEASE.2025-04-22T22-12-26Z")) {
+        try (MinIOContainer container =
+                new MinIOContainer(DockerImageName.parse("pgsty/silo:RELEASE.2026-09-03T13-18-01Z-distroless")
+                        .asCompatibleSubstituteFor("minio/minio")); ) {
             container.start();
             try (MinioClient minioClient = MinioClient.builder()
                     .endpoint(container.getS3URL())
