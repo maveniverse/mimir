@@ -25,6 +25,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -50,6 +51,17 @@ public class Handle implements Closeable {
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
         serverSocketChannel.configureBlocking(true);
         serverSocketChannel.bind(UnixDomainSocketAddress.of(domainSocketPath));
+        // daemon reads/writes any path clients send; only the owner may talk to it
+        // ponytail: brief window between bind and chmod; bind into a 0700 directory if that ever matters
+        if (domainSocketPath.getFileSystem().supportedFileAttributeViews().contains("posix")) {
+            try {
+                Files.setPosixFilePermissions(domainSocketPath, PosixFilePermissions.fromString("rw-------"));
+            } catch (IOException e) {
+                serverSocketChannel.close();
+                Files.deleteIfExists(domainSocketPath);
+                throw e;
+            }
+        }
         return new ServerHandle() {
             private final AtomicBoolean closed = new AtomicBoolean(false);
 

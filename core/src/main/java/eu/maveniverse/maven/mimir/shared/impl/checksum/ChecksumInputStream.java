@@ -50,13 +50,31 @@ public final class ChecksumInputStream extends FilterInputStream {
     public int read(byte[] b, int off, int len) throws IOException {
         int res = super.read(b, off, len);
         if (res != -1) {
-            ByteBuffer buffer = ByteBuffer.wrap(b, off, res);
             for (ChecksumAlgorithm checksumAlgorithm : checksumAlgorithms.values()) {
-                buffer.rewind();
-                checksumAlgorithm.update(buffer);
+                checksumAlgorithm.update(ByteBuffer.wrap(b, off, res));
             }
         }
         return res;
+    }
+
+    /**
+     * Skipped bytes must be hashed too, so skip by reading (FilterInputStream would delegate past us).
+     */
+    @Override
+    public long skip(long n) throws IOException {
+        if (n <= 0) {
+            return 0;
+        }
+        byte[] buf = new byte[(int) Math.min(n, 8192)];
+        long remaining = n;
+        while (remaining > 0) {
+            int res = read(buf, 0, (int) Math.min(remaining, buf.length));
+            if (res < 0) {
+                break;
+            }
+            remaining -= res;
+        }
+        return n - remaining;
     }
 
     @Override

@@ -5,15 +5,21 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.maveniverse.maven.mimir.shared.SessionConfig;
+import eu.maveniverse.maven.mimir.shared.impl.node.EntrySupport;
 import eu.maveniverse.maven.mimir.shared.naming.UriEncoders;
+import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
+import eu.maveniverse.maven.mimir.shared.node.RemoteEntry;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.eclipse.aether.artifact.Artifact;
@@ -81,10 +87,36 @@ public class MinioNodeTest {
                             "861844d6704e8573fec34d967e20bcfef3d424cf48be04e6dc08f2bd58c729743371015ead891cc3cf1c9d34b49264b510751b1ff9e537937bc46b5d6ff4ecc8",
                             localEntry.checksums().get(Sha512ChecksumAlgorithmFactory.NAME));
                     System.out.println(localEntry.metadata());
+
+                    // store from remote entry: metadata (checksums) must be persisted as well
+                    Artifact junitSources = new DefaultArtifact("junit:junit:jar:sources:3.13.2");
+                    HashMap<String, String> remoteMetadata = new HashMap<>();
+                    Entry.setContentLength(remoteMetadata, data.length);
+                    RemoteEntry remoteEntry = new RemoteTestEntry(remoteMetadata, checksums, data);
+                    minioNode.store(UriEncoders.artifactKeyBuilder(central, junitSources), remoteEntry);
+                    entry = minioNode.locate(UriEncoders.artifactKeyBuilder(central, junitSources));
+                    assertTrue(entry.isPresent());
+                    assertEquals(
+                            "2ef7bde608ce5404e97d5f042f95f89f1c232871",
+                            entry.orElseThrow().checksums().get(Sha1ChecksumAlgorithmFactory.NAME));
                 }
             } finally {
                 container.stop();
             }
+        }
+    }
+
+    private static class RemoteTestEntry extends EntrySupport implements RemoteEntry {
+        private final byte[] data;
+
+        private RemoteTestEntry(Map<String, String> metadata, Map<String, String> checksums, byte[] data) {
+            super(metadata, checksums);
+            this.data = data;
+        }
+
+        @Override
+        public void handleContent(IOConsumer consumer) throws IOException {
+            consumer.accept(new ByteArrayInputStream(data));
         }
     }
 }

@@ -25,16 +25,19 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 public class HttpServerPublisher extends PublisherSupport {
     private final HttpServer httpServer;
+    private final ExecutorService executor;
 
     public HttpServerPublisher(LocalNode localNode, PublisherConfig publisherConfig) throws IOException {
         super(localNode, publisherConfig);
         httpServer = HttpServer.create(new InetSocketAddress(publisherConfig.hostPort()), 0);
 
-        httpServer.setExecutor(Executors.executorService());
+        executor = Executors.executorService();
+        httpServer.setExecutor(executor);
         httpServer.createContext("/txid", new TxHandler(this::publishedEntry));
         logger.info(
                 "HTTP publisher starting at {} -> {}:{}",
@@ -54,6 +57,7 @@ public class HttpServerPublisher extends PublisherSupport {
     protected void doClose() {
         logger.info("HTTP publisher stopping at {}", httpServer.getAddress());
         httpServer.stop(0);
+        executor.shutdown();
     }
 
     @Override

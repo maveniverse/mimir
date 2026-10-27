@@ -28,7 +28,6 @@ import eu.maveniverse.maven.mimir.shared.impl.node.CachingSystemNode;
 import eu.maveniverse.maven.mimir.shared.node.Entry;
 import eu.maveniverse.maven.mimir.shared.node.LocalEntry;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -184,9 +183,9 @@ final class DaemonServer extends ComponentSupport implements Runnable {
                     }
                     default -> handle.writeResponse(Response.koMessage(request, "Bad command"));
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 try {
-                    handle.writeResponse(Response.koMessage(request, e.getMessage()));
+                    handle.writeResponse(Response.koMessage(request, String.valueOf(e.getMessage())));
                 } catch (Exception ignored) {
                     // fall thru
                 }

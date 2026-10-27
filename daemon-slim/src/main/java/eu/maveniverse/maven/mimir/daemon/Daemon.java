@@ -48,6 +48,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import javax.inject.Inject;
@@ -91,7 +93,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
             // clear up possible remnants; stale socket path
             Files.deleteIfExists(daemonConfig.socketPath());
 
-            Daemon daemon = Guice.createInjector(new WireModule(
+            Guice.createInjector(new WireModule(
                             new AbstractModule() {
                                 @Override
                                 protected void configure() {
@@ -111,8 +113,6 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                             new SpaceModule(
                                     new URLClassSpace(Daemon.class.getClassLoader()), BeanScanning.INDEX, false)))
                     .getInstance(Daemon.class);
-
-            java.lang.Runtime.getRuntime().addShutdownHook(new Thread(daemon::shutdown));
         } catch (Exception e) {
             e.printStackTrace(System.out);
             System.exit(1);
@@ -212,29 +212,34 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
 
         // open the UDS; daemon is ready
         this.serverHandle = Handle.serverDomainSocket(daemonConfig.socketPath());
+        // constructor runs the accept loop until shutdown; hook must be registered before it, but only after
+        // successful bind: closing nodes on failed startup would apply ON_END cache purge
+        java.lang.Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown));
         try (this.serverHandle) {
             while (serverHandle.isOpen()) {
                 Handle handle = serverHandle.accept();
-                executor.submit(new DaemonServer(
-                        handle,
-                        daemonData,
-                        new CachingSystemNode(systemNode, remoteNodes),
-                        clientPredicate,
-                        this::preseedItself,
-                        this::preseedGAVS,
-                        this::shutdown));
+                try {
+                    executor.submit(new DaemonServer(
+                            handle,
+                            daemonData,
+                            new CachingSystemNode(systemNode, remoteNodes),
+                            clientPredicate,
+                            this::preseedItself,
+                            this::preseedGAVS,
+                            // off the worker: doClose() drains the executor this request runs on
+                            () -> new Thread(this::shutdown, "mimir-daemon-shutdown").start()));
+                } catch (RejectedExecutionException e) {
+                    // accepted while shutting down; do not leave client hanging
+                    handle.close();
+                }
             }
         } catch (AsynchronousCloseException ignored) {
             // we are done
         } catch (Exception e) {
             logger.error("Error while accepting client connection", e);
         } finally {
-            try {
-                Files.deleteIfExists(daemonConfig.socketPath());
-            } finally {
-                DirectoryLocker.INSTANCE.unlockDirectory(config.daemonLockDir());
-            }
-            logger.info("Daemon stopped");
+            // no-op if already closing; lock and socket are released by doClose() once nodes are closed
+            shutdown();
         }
     }
 
@@ -254,7 +259,15 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
             logger.warn("Error closing server socket channel", e);
         }
         try {
+            // let active requests finish before closing the nodes they use
             executor.shutdown();
+            if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
+                logger.warn("Active requests did not finish in time; interrupting them");
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
         } catch (Exception e) {
             logger.warn("Error closing executor", e);
         }
@@ -270,6 +283,18 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         } catch (IOException e) {
             logger.warn("Error closing local node", e);
         }
+        // only now: lock guards basedir from another daemon until nodes (and cache purge) are done
+        try {
+            Files.deleteIfExists(config.socketPath());
+        } catch (IOException e) {
+            logger.warn("Error deleting socket", e);
+        }
+        try {
+            DirectoryLocker.INSTANCE.unlockDirectory(config.daemonLockDir());
+        } catch (IOException e) {
+            logger.warn("Error unlocking daemon directory", e);
+        }
+        logger.info("Daemon stopped");
     }
 
     protected <T> T withResolver(BiFunction<Runtime, Context, T> resolver) {

@@ -16,6 +16,8 @@ import eu.maveniverse.maven.mimir.shared.publisher.Publisher;
 import eu.maveniverse.maven.shared.core.component.CloseableSupport;
 import java.io.IOException;
 import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,7 +46,14 @@ public abstract class PublisherSupport extends CloseableSupport implements Publi
 
     protected final LocalNode localNode;
     protected final PublisherConfig publisherConfig;
-    protected final ConcurrentMap<String, LocalEntry> publishedEntries;
+    /**
+     * Handles never fetched (ie. requester picked another member's handle) would accumulate forever; expire them.
+     */
+    private static final Duration HANDLE_TTL = Duration.ofMinutes(10);
+
+    private record Published(Instant created, LocalEntry entry) {}
+
+    protected final ConcurrentMap<String, Published> publishedEntries;
 
     protected PublisherSupport(LocalNode localNode, PublisherConfig publisherConfig) {
         this.localNode = requireNonNull(localNode);
@@ -59,14 +68,16 @@ public abstract class PublisherSupport extends CloseableSupport implements Publi
             String token = UUID.randomUUID().toString();
             URI publishHandle = createHandle(token);
             LocalEntry e = (LocalEntry) entry.orElseThrow();
-            publishedEntries.put(token, e);
+            Instant now = Instant.now();
+            publishedEntries.values().removeIf(p -> p.created().isBefore(now.minus(HANDLE_TTL)));
+            publishedEntries.put(token, new Published(now, e));
             return Optional.of(new HandleImpl(publishHandle, e));
         }
         return Optional.empty();
     }
 
     protected Optional<LocalEntry> publishedEntry(String token) {
-        return Optional.ofNullable(publishedEntries.remove(token));
+        return Optional.ofNullable(publishedEntries.remove(token)).map(Published::entry);
     }
 
     protected abstract URI createHandle(String token) throws IOException;

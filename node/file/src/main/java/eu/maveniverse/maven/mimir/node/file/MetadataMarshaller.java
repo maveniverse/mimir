@@ -115,8 +115,9 @@ public interface MetadataMarshaller {
                 try (ObjectOutputStream oos = new ObjectOutputStream(
                         Files.newOutputStream(p, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))) {
                     oos.writeInt(metadata.size());
-                    for (Map.Entry<String, String> entry :
-                            metadata.entrySet().stream().sorted().toList()) {
+                    for (Map.Entry<String, String> entry : metadata.entrySet().stream()
+                            .sorted(Map.Entry.comparingByKey())
+                            .toList()) {
                         oos.writeUTF(entry.getKey());
                         oos.writeUTF(entry.getValue());
                     }
