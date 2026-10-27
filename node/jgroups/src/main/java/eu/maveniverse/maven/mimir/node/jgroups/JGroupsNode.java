@@ -96,7 +96,8 @@ public class JGroupsNode extends RemoteNodeSupport implements Receiver, RequestH
                         URI handle = URI.create(requireNonNull(data.remove(PUBLISHER_HANDLE), PUBLISHER_HANDLE));
                         return Optional.of(new PublisherRemoteEntry(splitMetadata(data), splitChecksums(data), handle));
                     } else {
-                        throw new IOException(data.remove(RSP_ERROR));
+                        // one member failing must not prevent us from using others
+                        logger.warn("Member {} failed to locate: {}", responder, data.get(RSP_ERROR));
                     }
                 } else {
                     logger.info("Ignoring null/empty response from {}", responder);
@@ -137,7 +138,6 @@ public class JGroupsNode extends RemoteNodeSupport implements Receiver, RequestH
         executor.submit(() -> {
             Thread.currentThread().setName("JVT");
             HashMap<String, String> responseMap = new HashMap<>();
-            boolean responseException = false;
             try {
                 List<String> req = msg.getObject();
                 if (req.size() == 2 && CMD_LOCATE.equals(req.get(0))) {
@@ -156,13 +156,14 @@ public class JGroupsNode extends RemoteNodeSupport implements Receiver, RequestH
                     }
                 } else {
                     responseMap.put(RSP_ERROR, "Unknown command");
-                    responseException = true;
                     logger.info("UNKNOWN COMMAND: {}", req);
                 }
-                response.send(responseMap, responseException);
-            } catch (IOException e) {
-                responseMap.put(RSP_ERROR, e.getMessage());
-                response.send(responseMap, true);
+                response.send(responseMap, false);
+            } catch (Exception e) {
+                // errors are sent as plain map: requester casts "exception" replies to Throwable
+                responseMap.clear();
+                responseMap.put(RSP_ERROR, String.valueOf(e.getMessage()));
+                response.send(responseMap, false);
             }
         });
     }
@@ -180,5 +181,6 @@ public class JGroupsNode extends RemoteNodeSupport implements Receiver, RequestH
         }
         messageDispatcher.close();
         channel.close();
+        executor.shutdown();
     }
 }

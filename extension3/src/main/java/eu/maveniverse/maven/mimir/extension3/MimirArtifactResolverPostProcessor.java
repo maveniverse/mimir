@@ -11,7 +11,6 @@ import eu.maveniverse.maven.mimir.shared.MimirUtils;
 import eu.maveniverse.maven.mimir.shared.ResolvingLog;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Named;
@@ -47,7 +46,7 @@ public class MimirArtifactResolverPostProcessor extends ComponentSupport impleme
                                     logger.debug("Stored artifact {} ({})", artifact, artifact.getFile());
                                 }
                             } catch (IOException e) {
-                                throw new UncheckedIOException(e);
+                                logger.warn("Failed to store artifact {} to Mimir cache", artifact, e);
                             }
                         }
                     }

@@ -91,7 +91,7 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
             // clear up possible remnants; stale socket path
             Files.deleteIfExists(daemonConfig.socketPath());
 
-            Daemon daemon = Guice.createInjector(new WireModule(
+            Guice.createInjector(new WireModule(
                             new AbstractModule() {
                                 @Override
                                 protected void configure() {
@@ -111,8 +111,6 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                             new SpaceModule(
                                     new URLClassSpace(Daemon.class.getClassLoader()), BeanScanning.INDEX, false)))
                     .getInstance(Daemon.class);
-
-            java.lang.Runtime.getRuntime().addShutdownHook(new Thread(daemon::shutdown));
         } catch (Exception e) {
             e.printStackTrace(System.out);
             System.exit(1);
@@ -209,6 +207,9 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
 
         Predicate<Request> clientPredicate =
                 req -> Objects.equals(req.requireData(Session.NODE_VERSION), daemonData.get(Session.DAEMON_VERSION));
+
+        // constructor runs the accept loop until shutdown; hook must be registered before it
+        java.lang.Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown));
 
         // open the UDS; daemon is ready
         this.serverHandle = Handle.serverDomainSocket(daemonConfig.socketPath());

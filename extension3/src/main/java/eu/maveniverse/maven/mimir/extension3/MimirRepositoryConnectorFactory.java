@@ -65,7 +65,7 @@ public class MimirRepositoryConnectorFactory extends ComponentSupport implements
                                 "SHA-1,MD5", // copied from Maven2RepositoryLayoutFactory
                                 "aether.checksums.algorithms." + repository.getId(),
                                 "aether.checksums.algorithms",
-                                "aether.layout.maven2.checksumAlgorithms" + repository.getId(),
+                                "aether.layout.maven2.checksumAlgorithms." + repository.getId(),
                                 "aether.layout.maven2.checksumAlgorithms")));
                 return new MimirRepositoryConnector(
                         ms,

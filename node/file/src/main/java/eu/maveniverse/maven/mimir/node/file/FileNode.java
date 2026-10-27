@@ -225,11 +225,18 @@ public final class FileNode extends NodeSupport implements SystemNode {
                                 } catch (NoSuchFileException ignore) {
                                     // ignore; forgiving for older mimir caches w/o md; will be recreated
                                 }
-                                Files.move(
-                                        shadow,
-                                        target,
-                                        StandardCopyOption.ATOMIC_MOVE,
-                                        StandardCopyOption.REPLACE_EXISTING);
+                                try {
+                                    Files.move(
+                                            shadow,
+                                            target,
+                                            StandardCopyOption.ATOMIC_MOVE,
+                                            StandardCopyOption.REPLACE_EXISTING);
+                                } catch (NoSuchFileException e) {
+                                    // concurrent locate of same key already moved it
+                                    if (!Files.isRegularFile(target)) {
+                                        throw e;
+                                    }
+                                }
                             }
                             case ON_END -> {
                                 try {
@@ -255,7 +262,7 @@ public final class FileNode extends NodeSupport implements SystemNode {
                     try {
                         FileUtils.deleteRecursively(shadow.getParent());
                     } catch (IOException e1) {
-                        logger.warn("Unable to drop shadow '{}'", shadow, e);
+                        logger.warn("Unable to drop shadow '{}'", shadow, e1);
                     }
                 }
             }

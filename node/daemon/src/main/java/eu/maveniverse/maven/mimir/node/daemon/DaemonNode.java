@@ -67,7 +67,7 @@ public class DaemonNode extends NodeSupport implements LocalNode {
     public List<String> checksumAlgorithms() throws IOException {
         try (Handle handle = clientHandle.getHandle()) {
             handle.writeRequest(Request.lsChecksums(session));
-            return new ArrayList<>(handle.readResponse().data().keySet());
+            return new ArrayList<>(readOkResponse(handle).data().keySet());
         }
     }
 
@@ -77,7 +77,7 @@ public class DaemonNode extends NodeSupport implements LocalNode {
         logger.debug("LOCATE '{}'", keyString);
         try (Handle handle = clientHandle.getHandle()) {
             handle.writeRequest(Request.locate(session, keyString));
-            Response locateResponse = handle.readResponse();
+            Response locateResponse = readOkResponse(handle);
             if (!locateResponse.data().isEmpty()) {
                 return Optional.of(new DaemonEntry(
                         splitMetadata(locateResponse.data()), splitChecksums(locateResponse.data()), keyString));
@@ -95,7 +95,7 @@ public class DaemonNode extends NodeSupport implements LocalNode {
         logger.debug("STORE PATH '{}' -> '{}'", keyString, filePath);
         try (Handle handle = clientHandle.getHandle()) {
             handle.writeRequest(Request.storePath(session, keyString, filePath, mergeEntry(metadata, checksums)));
-            Response storePathResponse = handle.readResponse();
+            Response storePathResponse = readOkResponse(handle);
             if (!storePathResponse.data().isEmpty()) {
                 return new DaemonEntry(
                         splitMetadata(storePathResponse.data()), splitChecksums(storePathResponse.data()), keyString);
@@ -114,10 +114,21 @@ public class DaemonNode extends NodeSupport implements LocalNode {
                     logger.info("Daemon shutdown initiated");
                 }
                 handle.writeRequest(Request.bye(session, autostop));
-                Response byeResponse = handle.readResponse();
+                Response byeResponse = readOkResponse(handle);
                 logger.debug("Bye OK {}", byeResponse.data());
             }
         }
+    }
+
+    /**
+     * Reads response and throws if daemon reported failure; KO responses carry a message in data.
+     */
+    static Response readOkResponse(Handle handle) throws IOException {
+        Response response = handle.readResponse();
+        if (Response.STATUS_KO.equals(response.status())) {
+            throw new IOException("Daemon failure: " + response.data().get(Response.DATA_MESSAGE));
+        }
+        return response;
     }
 
     @Override
@@ -151,7 +162,7 @@ public class DaemonNode extends NodeSupport implements LocalNode {
             try (Handle handle = clientHandle.getHandle()) {
                 handle.writeRequest(Request.transfer(
                         session, keyString, FileUtils.canonicalPath(file).toString()));
-                handle.readResponse();
+                readOkResponse(handle);
             }
         }
     }

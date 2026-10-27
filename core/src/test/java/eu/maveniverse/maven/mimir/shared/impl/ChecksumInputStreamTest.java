@@ -1,16 +1,23 @@
 package eu.maveniverse.maven.mimir.shared.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import eu.maveniverse.maven.mimir.shared.impl.checksum.ChecksumInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.eclipse.aether.internal.impl.checksum.Md5ChecksumAlgorithmFactory;
 import org.eclipse.aether.internal.impl.checksum.Sha1ChecksumAlgorithmFactory;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmHelper;
 import org.junit.jupiter.api.Test;
 
 public class ChecksumInputStreamTest {
@@ -51,5 +58,38 @@ public class ChecksumInputStreamTest {
                 cis.transferTo(OutputStream.nullOutputStream());
             }
         }
+    }
+
+    @Test
+    void readWithOffset() throws IOException {
+        byte[] data = new byte[10_000];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = (byte) (i * 31);
+        }
+        Sha1ChecksumAlgorithmFactory sha1 = new Sha1ChecksumAlgorithmFactory();
+        String expected = ChecksumAlgorithmHelper.calculate(data, List.of(sha1)).get(Sha1ChecksumAlgorithmFactory.NAME);
+        AtomicReference<Map<String, String>> result = new AtomicReference<>();
+        try (ChecksumInputStream cis = new ChecksumInputStream(
+                new ByteArrayInputStream(data),
+                Map.of(Sha1ChecksumAlgorithmFactory.NAME, sha1.getAlgorithm()),
+                result::set)) {
+            // offset 100: the first byte is not at index 0 of the buffer
+            cis.readNBytes(new byte[data.length + 100], 100, data.length);
+        }
+        assertEquals(expected, result.get().get(Sha1ChecksumAlgorithmFactory.NAME));
+    }
+
+    @Test
+    void skipIsHashed() throws IOException {
+        byte[] data = "Hello World!".getBytes(StandardCharsets.UTF_8);
+        AtomicReference<Map<String, String>> result = new AtomicReference<>();
+        try (ChecksumInputStream cis = new ChecksumInputStream(
+                new ByteArrayInputStream(data),
+                Map.of(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory().getAlgorithm()),
+                result::set)) {
+            assertEquals(6, cis.skip(6));
+            cis.transferTo(OutputStream.nullOutputStream());
+        }
+        assertEquals("2ef7bde608ce5404e97d5f042f95f89f1c232871", result.get().get(Sha1ChecksumAlgorithmFactory.NAME));
     }
 }

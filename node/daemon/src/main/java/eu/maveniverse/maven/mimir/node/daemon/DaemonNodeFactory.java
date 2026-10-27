@@ -132,7 +132,7 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
             for (int attempt = 0; attempt < 3; attempt++) {
                 try (Handle handle = clientHandle.getHandle()) {
                     handle.writeRequest(Request.hello(clientData));
-                    Response helloResponse = handle.readResponse();
+                    Response helloResponse = DaemonNode.readOkResponse(handle);
                     sessionMap = helloResponse.session();
                     daemonDataMap = helloResponse.data();
                     logger.debug("Hello OK {}", helloResponse.data());
@@ -216,6 +216,7 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
                 throw new IOException("Failed to start daemon; check daemon logs in " + cfg.daemonLog());
             }
         } else {
+            locker.unlock(cfg.daemonLockDir());
             throw new IOException("Mimir daemon JAR not found");
         }
     }

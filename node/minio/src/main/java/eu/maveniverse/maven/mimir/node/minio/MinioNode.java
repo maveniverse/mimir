@@ -91,7 +91,11 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                 return Optional.of(new MinioEntry(
                         splitMetadata(userMetadata), splitChecksums(userMetadata), minioClient, localKey));
             } catch (ErrorResponseException e) {
-                return Optional.empty();
+                String code = e.errorResponse().code();
+                if ("NoSuchKey".equals(code) || "NoSuchBucket".equals(code)) {
+                    return Optional.empty();
+                }
+                throw new IOException("locate()", e);
             } catch (MinioException e) {
                 logger.debug(e.httpTrace());
                 throw new IOException("inputStream()", e);
@@ -139,6 +143,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                     minioClient.copyObject(CopyObjectArgs.builder()
                             .bucket(localKey.container())
                             .object(localKey.path())
+                            .metadataDirective(Directive.REPLACE)
                             .userMetadata(pushMap(mergeEntry(entry.metadata(), checksumEnforcer.getChecksums())))
                             .source(SourceObject.builder()
                                     .bucket(localKey.container())

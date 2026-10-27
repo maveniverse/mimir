@@ -19,15 +19,18 @@ import org.eclipse.aether.transfer.TransferEvent;
 public class MimirTransferListener extends AbstractTransferListener {
     private final ChecksumCalculator checksumCalculator;
     private final AtomicBoolean valid;
+    private final AtomicBoolean started;
 
     public MimirTransferListener(ChecksumCalculator checksumCalculator) {
         this.checksumCalculator = requireNonNull(checksumCalculator, "checksumCalculator");
         this.valid = new AtomicBoolean(true);
+        this.started = new AtomicBoolean(false);
     }
 
     @Override
     public void transferStarted(TransferEvent event) {
-        valid.set(event.getTransferredBytes() == 0);
+        // a restarted (retried) transfer would feed calculator twice; do not cache those
+        valid.set(!started.getAndSet(true) && event.getTransferredBytes() == 0);
     }
 
     @Override
@@ -45,11 +48,6 @@ public class MimirTransferListener extends AbstractTransferListener {
     @Override
     public void transferCorrupted(TransferEvent event) {
         valid.set(false);
-    }
-
-    @Override
-    public void transferSucceeded(TransferEvent event) {
-        valid.compareAndSet(true, true);
     }
 
     /**

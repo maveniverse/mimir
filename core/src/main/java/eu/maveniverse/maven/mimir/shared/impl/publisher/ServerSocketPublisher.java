@@ -22,6 +22,8 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 
 public class ServerSocketPublisher extends PublisherSupport {
+    private static final int TOKEN_READ_TIMEOUT_MILLIS = 30_000;
+
     private final ServerSocket serverSocket;
     private final ExecutorService executor;
 
@@ -38,6 +40,8 @@ public class ServerSocketPublisher extends PublisherSupport {
                     Socket accepted = serverSocket.accept();
                     executor.submit(() -> {
                         try (Socket socket = accepted) {
+                            // client sends token right after connect; do not let idle clients pin threads
+                            socket.setSoTimeout(TOKEN_READ_TIMEOUT_MILLIS);
                             byte[] buf = socket.getInputStream().readNBytes(36);
                             OutputStream out = socket.getOutputStream();
                             if (buf.length == 36) {

@@ -151,8 +151,8 @@ public class MimirRepositoryConnector extends ComponentSupport implements Reposi
                                 Map.of(),
                                 potentiallyCached.checksumCalculator.getChecksums());
                     } catch (IOException e) {
-                        artifactDownload.setException(
-                                new ArtifactTransferException(artifactDownload.getArtifact(), remoteRepository, e));
+                        // artifact was downloaded fine; failing to cache it must not fail the build
+                        logger.warn("Failed to store {} to Mimir cache", artifactDownload.getArtifact(), e);
                     }
                 }
             }
