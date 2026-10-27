@@ -14,7 +14,7 @@
   <parent>
     <groupId>eu.maveniverse.maven.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>63</version>
+    <version>64</version>
   </parent>
 
   <groupId>eu.maveniverse.maven.mimir</groupId>
@@ -73,12 +73,12 @@
     <requireRuntimeMavenVersion.range>[3.9,)</requireRuntimeMavenVersion.range>
 
     <!-- Dependency versions -->
-    <version.maveniverseShared>0.2.6</version.maveniverseShared>
+    <version.maveniverseShared>0.2.7</version.maveniverseShared>
     <version.maven>3.9.16</version.maven>
     <version.resolver>1.9.27</version.resolver>
     <version.mima>2.4.48</version.mima>
     <version.slf4j>1.7.36</version.slf4j>
-    <version.okhttp3>5.5.0</version.okhttp3>
+    <version.okhttp3>5.5.1</version.okhttp3>
     <version.testcontainers>2.0.5</version.testcontainers>
   </properties>
 
@@ -199,7 +199,7 @@
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm</artifactId>
-        <version>9.10.1</version>
+        <version>9.11.1</version>
       </dependency>
 
       <!-- Resolver + Maven -->
@@ -284,13 +284,13 @@
       <dependency>
         <groupId>org.immutables</groupId>
         <artifactId>value</artifactId>
-        <version>2.12.2</version>
+        <version>2.12.3</version>
       </dependency>
 
       <dependency>
         <groupId>org.jgroups</groupId>
         <artifactId>jgroups</artifactId>
-        <version>5.5.7.Final</version>
+        <version>5.5.8.Final</version>
       </dependency>
 
       <dependency>
@@ -303,7 +303,7 @@
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-        <version>1.22.1</version>
+        <version>1.23.0</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
