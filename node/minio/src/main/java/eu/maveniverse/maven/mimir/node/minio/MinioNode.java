@@ -121,6 +121,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
             remoteEntry.handleContent(inputStream -> {
                 try {
                     ChecksumEnforcer checksumEnforcer;
+                    String etag;
                     try (InputStream enforced = new ChecksumInputStream(
                             inputStream,
                             checksumAlgorithms().stream()
@@ -129,10 +130,14 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                                     .collect(Collectors.toMap(
                                             AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)),
                             checksumEnforcer = new ChecksumEnforcer(entry.checksums()))) {
-                        minioClient.putObject(
-                                PutObjectArgs.builder().bucket(localKey.container()).object(localKey.path()).stream(
-                                                enforced, contentLength, null)
-                                        .build());
+                        etag = minioClient
+                                .putObject(
+                                        PutObjectArgs.builder()
+                                                .bucket(localKey.container())
+                                                .object(localKey.path())
+                                                .stream(enforced, contentLength, null)
+                                                .build())
+                                .etag();
                     } catch (ChecksumEnforcer.ChecksumEnforcerException e) {
                         minioClient.removeObject(RemoveObjectArgs.builder()
                                 .bucket(localKey.container())
@@ -148,6 +153,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                             .source(SourceObject.builder()
                                     .bucket(localKey.container())
                                     .object(localKey.path())
+                                    .matchETag(etag) // fail if overlapping store replaced our upload
                                     .build())
                             .build());
                 } catch (MinioException e) {

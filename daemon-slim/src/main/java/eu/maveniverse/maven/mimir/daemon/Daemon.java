@@ -208,11 +208,11 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         Predicate<Request> clientPredicate =
                 req -> Objects.equals(req.requireData(Session.NODE_VERSION), daemonData.get(Session.DAEMON_VERSION));
 
-        // constructor runs the accept loop until shutdown; hook must be registered before it
-        java.lang.Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown));
-
         // open the UDS; daemon is ready
         this.serverHandle = Handle.serverDomainSocket(daemonConfig.socketPath());
+        // constructor runs the accept loop until shutdown; hook must be registered before it, but only after
+        // successful bind: closing nodes on failed startup would apply ON_END cache purge
+        java.lang.Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown));
         try (this.serverHandle) {
             while (serverHandle.isOpen()) {
                 Handle handle = serverHandle.accept();
