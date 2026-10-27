@@ -196,6 +196,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
         Entry.setContentLastModified(metadata, Files.getLastModifiedTime(file).toInstant());
         try {
             ChecksumEnforcer checksumEnforcer;
+            String etag;
             try (InputStream enforced = new ChecksumInputStream(
                     Files.newInputStream(file),
                     checksumAlgorithms().stream()
@@ -204,10 +205,11 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                             .collect(Collectors.toMap(
                                     AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)),
                     checksumEnforcer = new ChecksumEnforcer(checksums))) {
-                minioClient.putObject(
-                        PutObjectArgs.builder().bucket(localKey.container()).object(localKey.path()).stream(
+                etag = minioClient
+                        .putObject(PutObjectArgs.builder().bucket(localKey.container()).object(localKey.path()).stream(
                                         enforced, contentLength, null)
-                                .build());
+                                .build())
+                        .etag();
             } catch (ChecksumEnforcer.ChecksumEnforcerException e) {
                 minioClient.removeObject(RemoveObjectArgs.builder()
                         .bucket(localKey.container())
@@ -223,6 +225,7 @@ public final class MinioNode extends NodeSupport implements SystemNode {
                     .source(SourceObject.builder()
                             .bucket(localKey.container())
                             .object(localKey.path())
+                            .matchETag(etag) // fail if overlapping store replaced our upload
                             .build())
                     .build());
             return new MinioEntry(metadata, checksumEnforcer.getChecksums(), minioClient, localKey);

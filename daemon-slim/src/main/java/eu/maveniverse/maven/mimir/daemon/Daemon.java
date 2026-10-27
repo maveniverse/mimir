@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
@@ -217,27 +218,28 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         try (this.serverHandle) {
             while (serverHandle.isOpen()) {
                 Handle handle = serverHandle.accept();
-                executor.submit(new DaemonServer(
-                        handle,
-                        daemonData,
-                        new CachingSystemNode(systemNode, remoteNodes),
-                        clientPredicate,
-                        this::preseedItself,
-                        this::preseedGAVS,
-                        // off the worker: doClose() drains the executor this request runs on
-                        () -> new Thread(this::shutdown, "mimir-daemon-shutdown").start()));
+                try {
+                    executor.submit(new DaemonServer(
+                            handle,
+                            daemonData,
+                            new CachingSystemNode(systemNode, remoteNodes),
+                            clientPredicate,
+                            this::preseedItself,
+                            this::preseedGAVS,
+                            // off the worker: doClose() drains the executor this request runs on
+                            () -> new Thread(this::shutdown, "mimir-daemon-shutdown").start()));
+                } catch (RejectedExecutionException e) {
+                    // accepted while shutting down; do not leave client hanging
+                    handle.close();
+                }
             }
         } catch (AsynchronousCloseException ignored) {
             // we are done
         } catch (Exception e) {
             logger.error("Error while accepting client connection", e);
         } finally {
-            try {
-                Files.deleteIfExists(daemonConfig.socketPath());
-            } finally {
-                DirectoryLocker.INSTANCE.unlockDirectory(config.daemonLockDir());
-            }
-            logger.info("Daemon stopped");
+            // no-op if already closing; lock and socket are released by doClose() once nodes are closed
+            shutdown();
         }
     }
 
@@ -281,6 +283,18 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
         } catch (IOException e) {
             logger.warn("Error closing local node", e);
         }
+        // only now: lock guards basedir from another daemon until nodes (and cache purge) are done
+        try {
+            Files.deleteIfExists(config.socketPath());
+        } catch (IOException e) {
+            logger.warn("Error deleting socket", e);
+        }
+        try {
+            DirectoryLocker.INSTANCE.unlockDirectory(config.daemonLockDir());
+        } catch (IOException e) {
+            logger.warn("Error unlocking daemon directory", e);
+        }
+        logger.info("Daemon stopped");
     }
 
     protected <T> T withResolver(BiFunction<Runtime, Context, T> resolver) {

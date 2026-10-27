@@ -125,7 +125,7 @@ public class DaemonNode extends NodeSupport implements LocalNode {
      */
     static Response readOkResponse(Handle handle) throws IOException {
         Response response = handle.readResponse();
-        if (Response.STATUS_KO.equals(response.status())) {
+        if (!Response.STATUS_OK.equals(response.status())) {
             throw new IOException("Daemon failure: " + response.data().get(Response.DATA_MESSAGE));
         }
         return response;

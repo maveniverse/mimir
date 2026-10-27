@@ -240,19 +240,11 @@ public final class FileNode extends NodeSupport implements SystemNode {
                             }
                             case ON_END -> {
                                 try {
-                                    Files.copy(
-                                            shadowMd,
-                                            targetMd,
-                                            StandardCopyOption.REPLACE_EXISTING,
-                                            StandardCopyOption.COPY_ATTRIBUTES);
+                                    copyAtomically(shadowMd, targetMd);
                                 } catch (NoSuchFileException ignore) {
                                     // ignore; forgiving for older mimir caches w/o md; will be recreated
                                 }
-                                Files.copy(
-                                        shadow,
-                                        target,
-                                        StandardCopyOption.REPLACE_EXISTING,
-                                        StandardCopyOption.COPY_ATTRIBUTES);
+                                copyAtomically(shadow, target);
                             }
                             default -> throw new IllegalArgumentException("Unsupported CachePurge mode: " + cachePurge);
                         }
@@ -269,6 +261,16 @@ public final class FileNode extends NodeSupport implements SystemNode {
             return Optional.of(target);
         } else {
             return Optional.empty();
+        }
+    }
+
+    /**
+     * Concurrent locate of same key may copy too: never expose partially copied target.
+     */
+    private static void copyAtomically(Path source, Path target) throws IOException {
+        try (FileUtils.CollocatedTempFile f = FileUtils.newCollocatedTempFile(target)) {
+            Files.copy(source, f.getPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+            f.move();
         }
     }
 

@@ -129,10 +129,16 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
             Handle.ClientHandle clientHandle = Handle.clientDomainSocket(cfg.socketPath());
             Map<String, String> sessionMap = null;
             Map<String, String> daemonDataMap = null;
+            String refused = null;
             for (int attempt = 0; attempt < 3; attempt++) {
                 try (Handle handle = clientHandle.getHandle()) {
                     handle.writeRequest(Request.hello(clientData));
-                    Response helloResponse = DaemonNode.readOkResponse(handle);
+                    Response helloResponse = handle.readResponse();
+                    if (!Response.STATUS_OK.equals(helloResponse.status())) {
+                        // daemon answered (ie version mismatch); retrying will not help
+                        refused = helloResponse.data().get(Response.DATA_MESSAGE);
+                        break;
+                    }
                     sessionMap = helloResponse.session();
                     daemonDataMap = helloResponse.data();
                     logger.debug("Hello OK {}", helloResponse.data());
@@ -144,6 +150,10 @@ public class DaemonNodeFactory extends ComponentSupport implements LocalNodeFact
                     // give some time to server
                     Thread.sleep(100);
                 }
+            }
+            if (refused != null) {
+                clientHandle.close();
+                throw new IOException("Daemon refused connection: " + refused);
             }
             if (sessionMap == null || daemonDataMap == null) {
                 clientHandle.close();

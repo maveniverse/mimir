@@ -32,7 +32,6 @@ import org.eclipse.aether.spi.connector.MetadataUpload;
 import org.eclipse.aether.spi.connector.RepositoryConnector;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithm;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
-import org.eclipse.aether.transfer.ArtifactTransferException;
 import org.eclipse.aether.util.FileUtils;
 import org.eclipse.aether.util.listener.ChainedTransferListener;
 
@@ -125,8 +124,10 @@ public class MimirRepositoryConnector extends ComponentSupport implements Reposi
                             ads.add(artifactDownload);
                         }
                     } catch (IOException e) {
-                        artifactDownload.setException(
-                                new ArtifactTransferException(artifactDownload.getArtifact(), remoteRepository, e));
+                        // cache failure must not fail the build; let delegate fetch it
+                        logger.warn(
+                                "Mimir cache failed for {}; fetching from remote", artifactDownload.getArtifact(), e);
+                        ads.add(artifactDownload);
                     }
                 }
             }

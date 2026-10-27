@@ -54,7 +54,13 @@ public class Handle implements Closeable {
         // daemon reads/writes any path clients send; only the owner may talk to it
         // ponytail: brief window between bind and chmod; bind into a 0700 directory if that ever matters
         if (domainSocketPath.getFileSystem().supportedFileAttributeViews().contains("posix")) {
-            Files.setPosixFilePermissions(domainSocketPath, PosixFilePermissions.fromString("rw-------"));
+            try {
+                Files.setPosixFilePermissions(domainSocketPath, PosixFilePermissions.fromString("rw-------"));
+            } catch (IOException e) {
+                serverSocketChannel.close();
+                Files.deleteIfExists(domainSocketPath);
+                throw e;
+            }
         }
         return new ServerHandle() {
             private final AtomicBoolean closed = new AtomicBoolean(false);
