@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import javax.inject.Inject;
@@ -223,7 +224,8 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
                         clientPredicate,
                         this::preseedItself,
                         this::preseedGAVS,
-                        this::shutdown));
+                        // off the worker: doClose() drains the executor this request runs on
+                        () -> new Thread(this::shutdown, "mimir-daemon-shutdown").start()));
             }
         } catch (AsynchronousCloseException ignored) {
             // we are done
@@ -255,7 +257,15 @@ public class Daemon extends CloseableConfigSupport<DaemonConfig> implements Clos
             logger.warn("Error closing server socket channel", e);
         }
         try {
+            // let active requests finish before closing the nodes they use
             executor.shutdown();
+            if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
+                logger.warn("Active requests did not finish in time; interrupting them");
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
         } catch (Exception e) {
             logger.warn("Error closing executor", e);
         }
